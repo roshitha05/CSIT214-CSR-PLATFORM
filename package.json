@@ -1,0 +1,22 @@
+{
+  "name": "csit214-csr-platform",
+  "version": "1.0.0",
+  "description": "CSR Matching System developed with agile practices. Includes multiple user roles (Admin, CSR Rep, Person-in-Need, Platform Manager) and features such as service requests, volunteer matching, history tracking, and reporting.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roshitha05/CSIT214-CSR-PLATFORM.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/roshitha05/CSIT214-CSR-PLATFORM/issues"
+  },
+  "homepage": "https://github.com/roshitha05/CSIT214-CSR-PLATFORM#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
