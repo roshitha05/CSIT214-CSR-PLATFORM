@@ -1,5 +1,5 @@
 {
-  "id": "dd2030f3-cd9e-4d90-a246-1cd438e9a0f1",
+  "id": "a83b73dc-001a-4e10-816f-c0a159e5cf8c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -8,27 +8,10 @@
       "name": "user_profiles",
       "schema": "",
       "columns": {
-        "user_profile_id": {
-          "name": "user_profile_id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "user_profiles_user_profile_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
-        },
         "name": {
           "name": "name",
           "type": "varchar(256)",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true
         },
         "description": {
@@ -47,15 +30,7 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "user_profiles_name_unique": {
-          "name": "user_profiles_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -111,8 +86,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "data_of_birth": {
-          "name": "data_of_birth",
+        "date_of_birth": {
+          "name": "date_of_birth",
           "type": "date",
           "primaryKey": false,
           "notNull": false
@@ -125,7 +100,7 @@
         },
         "user_profile": {
           "name": "user_profile",
-          "type": "integer",
+          "type": "varchar(256)",
           "primaryKey": false,
           "notNull": true
         },
@@ -139,15 +114,15 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "users_user_profile_user_profiles_user_profile_id_fk": {
-          "name": "users_user_profile_user_profiles_user_profile_id_fk",
+        "users_user_profile_user_profiles_name_fk": {
+          "name": "users_user_profile_user_profiles_name_fk",
           "tableFrom": "users",
           "tableTo": "user_profiles",
           "columnsFrom": [
             "user_profile"
           ],
           "columnsTo": [
-            "user_profile_id"
+            "name"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"

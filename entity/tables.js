@@ -14,17 +14,16 @@ export const usersTable = pgTable('users', {
     password: text().notNull(),
     phone_number: varchar({ length: 256 }).notNull(),
     address: text().notNull(),
-    data_of_birth: date(),
+    date_of_birth: date(),
     status: varchar({ length: 256 }).notNull(),
-    user_profile: integer()
-        .references(() => userProfilesTable.user_profile_id)
+    user_profile: varchar({ length: 256 })
+        .references(() => userProfilesTable.name)
         .notNull(),
     created_at: timestamp().defaultNow(),
 });
 
 export const userProfilesTable = pgTable('user_profiles', {
-    user_profile_id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    name: varchar({ length: 256 }).notNull().unique(),
+    name: varchar({ length: 256 }).primaryKey(),
     description: text().notNull(),
     other: text(),
 });
