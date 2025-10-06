@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { usersTable, userProfilesTable } from './tables.js';
 import { users } from './seeds.js';
-import DB from './db.js';
+import DB from '../db.js';
 
 const getEmail = (name) => `${name.replace(' ', '_')}@CSR.com`;
 const getPassword = (name) => name.replace(' ', '');
