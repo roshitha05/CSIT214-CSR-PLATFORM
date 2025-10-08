@@ -87,3 +87,4 @@ export class IdentityRegistry {
     return rows[0] || null;
   }
 }
+
