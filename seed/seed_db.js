@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { usersTable, userProfilesTable } from './tables.js';
 import { users } from './seeds.js';
-import DB from '../db.js';
+import DB from '../database/db.js';
 
 const getEmail = (name) => `${name.replace(' ', '_')}@CSR.com`;
 const getPassword = (name) => name.replace(' ', '');
@@ -92,7 +92,7 @@ async function main(tx) {
     console.log('Committing changes...');
 }
 
-const { db } = new DB();
+const db = DB.getInstance().getDatabase();
 
 await db.transaction(async (tx) => {
     await main(tx);

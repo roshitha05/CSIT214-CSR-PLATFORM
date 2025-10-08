@@ -7,7 +7,10 @@ export default class DB {
 
     constructor() {
         const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-        instance = drizzle(pool);
+        this.db = drizzle(pool);
+        this.pool = pool;
+
+        DB.instance = this;
     }
 
     static getInstance() {
@@ -15,5 +18,9 @@ export default class DB {
             DB.instance = new DB();
         }
         return DB.instance;
+    }
+
+    getDatabase() {
+        return this.db;
     }
 }
