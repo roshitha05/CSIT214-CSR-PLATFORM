@@ -5,7 +5,7 @@ import connectPg from "connect-pg-simple";
 import cors from "cors";
 import helmet from "helmet";
 import { neonPool } from "./dbConnector.js";
-import authRoutes from "./authHandler.js";
+import authRoutes from "./authRoutes.js";
 
 const app = express();
 const PgStore = connectPg(session);
