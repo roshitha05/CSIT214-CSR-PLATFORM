@@ -124,17 +124,20 @@
 
     <form id="profileForm">
       <div class="row">
-        <label for="name">Name <span style="color:var(--muted)">*</span></label>
-        <select id="name" name="name" required aria-describedby="name-hint name-error">
-          <option value="">Select a profile...</option>
-          <option value="User Admin">User Admin</option>
-          <option value="CSR Representative">CSR Representative</option>
-          <option value="Person In Need">Person In Need</option>
-          <option value="Platform Management">Platform Management</option>
-        </select>
-        <small id="name-hint" class="hint">Required. Select one role to create or edit.</small>
-        <div id="name-error" class="error">Please select a profile type.</div>
-      </div>
+      <label for="name">Name <span style="color:var(--muted)">*</span></label>
+      <input
+        id="name"
+        name="name"
+        type="text"
+        placeholder="e.g., User Admin, CSR Representative, Person In Need, Platform Management"
+        required
+        maxlength="64"
+        pattern=".*\S.*"
+        aria-describedby="name-hint name-error"
+      />
+      <small id="name-hint" class="hint">Required. 1–64 characters.</small>
+      <div id="name-error" class="error">Please enter a profile name.</div>
+    </div>
 
       <div class="row">
         <label for="description">Description</label>
@@ -164,53 +167,85 @@
     </form>
 
     <div class="footer">
-      <span>Community Support Platform</span>
-      <span>Fields: <code>name</code>, <code>description</code>, <code>other</code></span>
+      <span>© 2025 Community Support Platform</span>
+      <!-- <span>Fields: <code>name</code>, <code>description</code>, <code>other</code></span> -->
     </div>
   </div>
 
-  <script>
-    // Enable custom JS validation only when JS is available.
-    const form = document.getElementById('profileForm');
-    form.setAttribute('novalidate', ''); // disable native validation (JS on)
+<script>
+  // Form + elements
+  const form = document.getElementById('profileForm');
+  form.setAttribute('novalidate', ''); // custom JS messages (JS on)
 
-    const nameSelect = document.getElementById('name');
-    const nameError = document.getElementById('name-error');
-    const success = document.getElementById('success');
+  const nameInput = document.getElementById('name');
+  const descInput = document.getElementById('description');
+  const otherInput = document.getElementById('other');
+  const nameError = document.getElementById('name-error');
+  const success = document.getElementById('success');
 
-    function validateName() {
-      if (!nameSelect.value.trim()) {
-        nameError.style.display = 'block';
-        nameSelect.setAttribute('aria-invalid', 'true');
-        return false;
-      }
-      nameError.style.display = 'none';
-      nameSelect.removeAttribute('aria-invalid');
-      return true;
+  // Simple name validation: non-empty (after trim) and <= 64 chars
+  function validateName() {
+    const val = nameInput.value.trim();
+    const ok = val.length >= 1 && val.length <= 64;
+    if (!ok) {
+      nameError.style.display = 'block';
+      nameInput.setAttribute('aria-invalid', 'true');
+      return false;
+    }
+    nameError.style.display = 'none';
+    nameInput.removeAttribute('aria-invalid');
+    return true;
+  }
+
+  // Clear success message on reset
+  form.addEventListener('reset', () => {
+    nameError.style.display = 'none';
+    nameInput.removeAttribute('aria-invalid');
+    success.style.display = 'none';
+  });
+
+  // Live feedback after first interaction
+  nameInput.addEventListener('input', validateName);
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    if (!validateName()) {
+      nameInput.focus();
+      return;
     }
 
-    nameSelect.addEventListener('change', validateName);
+    // Payload preview (trim; empty -> null for optional fields)
+    const payload = {
+      name: nameInput.value.trim(),
+      description: (descInput.value || '').trim() || null,
+      other: (otherInput.value || '').trim() || null
+    };
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault(); // demo mode (remove when wiring backend)
-      if (!validateName()) {
-        nameSelect.focus();
-        return;
+    success.textContent = `This would POST to /profiles with: ${JSON.stringify(payload)}`;
+    success.style.display = 'block';
+
+    fetch("http://127.0.0.1:80/user-profiles", {
+      method:"POST", //Specify the HTTP method as POST
+      mode:"cors",
+      headers: {
+        'Content-Type': 'application/json' // Indicate the type of content being sent
+      },
+      body: JSON.stringify(payload) // Convert the JavaScript object to a JSON string
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("HTTP Error! Status: ${response.status}");
       }
-      const payload = {
-        name: nameSelect.value,
-        description: document.getElementById('description').value.trim() || null,
-        other: document.getElementById('other').value.trim() || null
-      };
-      success.textContent = `✔ This would POST to /profiles with: ${JSON.stringify(payload)}`;
-      success.style.display = 'block';
-
-      // To hand off to backend later:
-      // form.action = '/profiles';
-      // form.method = 'POST';
-      // form.removeAttribute('novalidate');
-      // form.submit();
-    });
-  </script>
+      return response.json(); // Parse the JSON response from the server
+    })
+    .then(data => {
+      console.log("Success:", data); // Handle the successful response data
+    })
+    .catch(response => {
+      console.error("Error:", error); // Handle any errors during the request
+    })
+  });
+</script>
 </body>
 </html>

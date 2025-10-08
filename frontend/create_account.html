@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
+    />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>User Registration</title>
@@ -113,6 +117,8 @@
         display: flex;
         gap: 12px;
         margin-top: 16px;
+        align-items: center;
+        flex-wrap: wrap;
       }
       button {
         border: 0;
@@ -165,23 +171,27 @@
         color: #854d0e;
         font-size: 0.95rem;
       }
-      .pw-field {
-        position: relative;
+      .password-wrapper { position: relative; }
+      .password-wrapper input { 
+        width: 100%; 
+        padding-right: 2.5rem; 
       }
-      .pw-field input {
-        padding-right: 64px;
-        min-height: 44px;
-      }
-      .pw-toggle {
+      .password-wrapper i {
         position: absolute;
-        top: 50%;
         right: 10px;
+        top: 50%;
         transform: translateY(-50%);
-        background: transparent;
-        border: 0;
         cursor: pointer;
-        font-size: 0.9rem;
-        color: var(--muted);
+        color: var(--accent, #3498db);
+        background: none; border: none; outline: none; padding: 0; /* no box */
+      }
+      .password-wrapper i:hover {
+        color: var(--accent-2);
+        transform: translateY(-50%) scale(1.1);
+      }
+      .password-wrapper i:focus { 
+        outline: none; 
+        box-shadow: none;
       }
       @media (max-width: 640px) {
         .grid {
@@ -207,9 +217,7 @@
         <div class="grid">
           <!-- 1. Name (required) -->
           <div class="row">
-            <label for="fullName"
-              >Name <span style="color: var(--muted)">*</span></label
-            >
+            <label for="fullName">Full Name <span style="color: var(--muted)">*</span></label>
             <input
               id="fullName"
               name="fullName"
@@ -227,9 +235,7 @@
 
           <!-- 2. Login ID (required) -->
           <div class="row">
-            <label for="loginId"
-              >Login ID <span style="color: var(--muted)">*</span></label
-            >
+            <label for="loginId">Login ID <span style="color: var(--muted)">*</span></label>
             <input
               id="loginId"
               name="loginId"
@@ -251,9 +257,7 @@
 
           <!-- 3. Email (required) -->
           <div class="row">
-            <label for="email"
-              >Email <span style="color: var(--muted)">*</span></label
-            >
+            <label for="email">Email <span style="color: var(--muted)">*</span></label>
             <input
               id="email"
               name="email"
@@ -271,10 +275,8 @@
 
           <!-- 4. Password (required) -->
           <div class="row">
-            <label for="password"
-              >Password <span style="color: var(--muted)">*</span></label
-            >
-            <div class="pw-field">
+            <label for="password">Password <span style="color: var(--muted)">*</span></label>
+            <div class="password-wrapper">
               <input
                 id="password"
                 name="password"
@@ -285,30 +287,15 @@
                 autocomplete="new-password"
                 placeholder="At least 8 characters"
               />
-              <button
-                type="button"
-                class="pw-toggle"
-                id="pwToggle"
-                aria-controls="password"
-                aria-label="Show or hide password"
-              >
-                Show
-              </button>
+              <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
-
-            <small class="hint"
-              >Required. Password should be at least 8 characters.</small
-            >
-            <div id="err-password" class="error">
-              Please enter a password (8–128 chars).
-            </div>
+            <small class="hint">Required. Password should be at least 8 characters.</small>
+            <div id="err-password" class="error">Please enter a password (8–128 chars).</div>
           </div>
 
           <!-- 5. Phone Number (required) -->
           <div class="row">
-            <label for="phone"
-              >Phone Number <span style="color: var(--muted)">*</span></label
-            >
+            <label for="phone">Phone Number <span style="color: var(--muted)">*</span></label>
             <input
               id="phone"
               name="phone"
@@ -331,9 +318,7 @@
 
           <!-- 6. Address (required) -->
           <div class="row" style="grid-column: 1 / -1">
-            <label for="address"
-              >Address <span style="color: var(--muted)">*</span></label
-            >
+            <label for="address">Address <span style="color: var(--muted)">*</span></label>
             <textarea
               id="address"
               name="address"
@@ -351,9 +336,7 @@
 
           <!-- 7. DOB (required) -->
           <div class="row">
-            <label for="dob"
-              >Date of Birth <span style="color: var(--muted)">*</span></label
-            >
+            <label for="dob">Date of Birth <span style="color: var(--muted)">*</span></label>
             <input id="dob" name="dob" type="date" required max="" />
             <small class="hint">Required.</small>
             <div id="err-dob" class="error">
@@ -363,9 +346,7 @@
 
           <!-- 8. User Profile (role) required -->
           <div class="row">
-            <label for="profile"
-              >User Profile <span style="color: var(--muted)">*</span></label
-            >
+            <label for="profile">User Profile <span style="color: var(--muted)">*</span></label>
             <select
               id="profile"
               name="profile"
@@ -394,6 +375,7 @@
             Create Account
           </button>
           <button class="btn-secondary" type="reset">Clear</button>
+          <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
         </div>
 
         <div
@@ -405,180 +387,203 @@
       </form>
 
       <div class="footer">
-        <span>Community Support Platform</span>
-        <span
-          >Fields: Name, Login ID, Email, Password, Phone, Address, DOB, User
-          Profile</span
-        >
+        <span>© 2025 Community Support Platform</span>
       </div>
     </div>
+<script>
+  const form = document.getElementById("registerForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const success = document.getElementById("success");
 
-    <script>
-      const form = document.getElementById("registerForm");
-      const submitBtn = document.getElementById("submitBtn");
-      const success = document.getElementById("success");
+  // Disable native bubbles to use custom messages (JS on)
+  form.setAttribute("novalidate", "");
 
-      // Disable native bubbles to use custom messages (JS on)
-      form.setAttribute("novalidate", "");
+  // Elements
+  const $ = (id) => document.getElementById(id);
+  const fullName = $("fullName"),
+    loginId = $("loginId"),
+    email = $("email"),
+    password = $("password"),
+    phone = $("phone"),
+    address = $("address"),
+    dob = $("dob"),
+    profile = $("profile");
 
-      // Elements
-      const $ = (id) => document.getElementById(id);
-      const fullName = $("fullName"),
-        loginId = $("loginId"),
-        email = $("email"),
-        password = $("password"),
-        phone = $("phone"),
-        address = $("address"),
-        dob = $("dob"),
-        profile = $("profile");
+  const err = {
+    fullName: $("err-fullName"),
+    loginId: $("err-loginId"),
+    email: $("err-email"),
+    password: $("err-password"),
+    phone: $("err-phone"),
+    address: $("err-address"),
+    dob: $("err-dob"),
+    profile: $("err-profile"),
+  };
 
-      const err = {
-        fullName: $("err-fullName"),
-        loginId: $("err-loginId"),
-        email: $("err-email"),
-        password: $("err-password"),
-        phone: $("err-phone"),
-        address: $("err-address"),
-        dob: $("err-dob"),
-        profile: $("err-profile"),
-      };
+  // --- Submit gating: show no errors until first submit ---
+  let hasSubmitted = false;
 
-      // Password show/hide
-      const pwToggle = $("pwToggle");
-      pwToggle.addEventListener("click", () => {
-        const isHidden = password.type === "password";
-        password.type = isHidden ? "text" : "password";
-        pwToggle.textContent = isHidden ? "Hide" : "Show";
-      });
+  // Password show/hide (icon matches login form)
+  const togglePassword = document.getElementById("togglePassword");
+  if (togglePassword) {
+    togglePassword.addEventListener("click", function () {
+      const type = password.type === "password" ? "text" : "password";
+      password.type = type;
+      this.classList.toggle("fa-eye");
+      this.classList.toggle("fa-eye-slash");
+    });
+  }
 
-      // Populate profiles (front-end only; replace with real fetch later)
-      async function loadProfiles() {
-        // Example options; replace with fetch('/profiles') when backend is ready
-        const profiles = [
-          { id: "pin", name: "Person In Need" },
-          { id: "rep", name: "CSR Representative" },
-          { id: "vol", name: "Volunteer" },
-          { id: "admin", name: "User Admin" },
-          { id: "pm", name: "Platform Management" },
-        ];
-        profile.innerHTML = "";
-        profile.appendChild(new Option("Select a profile…", ""));
-        profiles.forEach((p) => profile.appendChild(new Option(p.name, p.id)));
+  // Populate profiles (front-end only; replace with real fetch later)
+  async function loadProfiles() {
+    const profiles = [
+      { id: "CSR Representative", name: "CSR Representative" },
+      { id: "Person-In-Need", name: "Person-In-Need" },
+      { id: "Platform Management", name: "Platform Management" },
+      { id: "User Admin", name: "User Admin" }
+    ];
+    profile.innerHTML = "";
+    profile.appendChild(new Option("Select a profile…", ""));
+    profiles.forEach((p) => profile.appendChild(new Option(p.name, p.id)));
+  }
+
+  // Helpers
+  const show = (el, on) => {
+    el.style.display = on ? "block" : "none";
+  };
+  const nonEmpty = (s) => s.trim().length > 0;
+  function pastDateOnly(value) {
+    const d = new Date(value);
+    const today = new Date();
+    d.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return d instanceof Date && !isNaN(d) && d < today;
+  }
+
+  // Field validations (validates entire form)
+  function validate() {
+    let ok = true;
+
+    const vName = fullName.value.trim();
+    const vLogin = loginId.value.trim();
+    const vEmail = email.value.trim();
+    const vPw = password.value;
+    const vPhone = phone.value.trim();
+    const vAddr = address.value.trim();
+    const vDob = dob.value;
+    const vProf = profile.value.trim();
+
+    const okName = nonEmpty(vName) && vName.length <= 64;
+    show(err.fullName, !okName);
+    ok &&= okName;
+
+    const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
+    show(err.loginId, !okLogin);
+    ok &&= okLogin;
+
+    const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
+    show(err.email, !okEmail);
+    ok &&= okEmail;
+
+    const okPw = vPw.length >= 8 && vPw.length <= 128;
+    show(err.password, !okPw);
+    ok &&= okPw;
+
+    const okPhone = /^[+0-9()\-. \s]{6,20}$/.test(vPhone);
+    show(err.phone, !okPhone);
+    ok &&= okPhone;
+
+    const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
+    show(err.address, !okAddr);
+    ok &&= okAddr;
+
+    const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
+    show(err.dob, !okDob);
+    ok &&= okDob;
+
+    const okProf = nonEmpty(vProf);
+    show(err.profile, !okProf);
+    ok &&= okProf;
+
+    return ok;
+  }
+
+  // Keep DOB max to current date (prevents future selection)
+  (function setDobMaxToday() {
+    const today = new Date().toISOString().split("T")[0];
+    dob.setAttribute("max", today);
+  })();
+
+  // Live validation
+  // Triggers only after 'Submit' button is clicked
+  [fullName, loginId, email, password, phone, address].forEach((i) => {
+    i.addEventListener("input", () => {
+      if (hasSubmitted) validate();
+    });
+  });
+  [dob, profile].forEach((i) =>
+    i.addEventListener("change", () => {
+      if (hasSubmitted) validate();
+    })
+  );
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadProfiles();
+  });
+
+  // Submit
+  form.addEventListener("submit", (e) => {
+    e.preventDefault(); // remove when wiring backend
+    hasSubmitted = true; // start showing errors from now on
+    if (!validate()) return;
+
+    submitBtn.disabled = true;
+
+    const payload = {
+      fullname: fullName.value.trim(),
+      username: loginId.value.trim(),
+      email: email.value.trim(),
+      password: password.value, // send over HTTPS; hash on server
+      phone_number: phone.value.trim(),
+      address: address.value.trim(),
+      date_of_birth: dob.value,
+      user_profile: profile.value,
+    };
+
+    success.textContent = `This would POST to /register with: ${JSON.stringify(
+      payload
+    )}`;
+    success.style.display = "block";
+
+    fetch("http://127.0.0.1:80/users", {
+      method:"POST", //Specify the HTTP method as POST
+      mode:"cors",
+      headers: {
+        'Content-Type': 'application/json' // Indicate the type of content being sent
+      },
+      body: JSON.stringify(payload) // Convert the JavaScript object to a JSON string
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("HTTP Error! Status: ${response.status}");
       }
+      return response.json(); // Parse the JSON response from the server
+    })
+    .then(data => {
+      console.log("Success:", data); // Handle the successful response data
+    })
+    .catch(response => {
+      console.error("Error:", error); // Handle any errors during the request
+    })
 
-      // Helpers
-      const show = (el, on) => {
-        el.style.display = on ? "block" : "none";
-      };
-      const nonEmpty = (s) => s.trim().length > 0;
-      function pastDateOnly(value) {
-        const d = new Date(value);
-        const today = new Date();
-        // Normalize to ignore time-of-day
-        d.setHours(0, 0, 0, 0);
-        today.setHours(0, 0, 0, 0);
-        return d instanceof Date && !isNaN(d) && d < today;
-      }
+    setTimeout(() => {
+      submitBtn.disabled = false;
+    }, 800);
+  });
 
-      // Field validations
-      function validate() {
-        let ok = true;
-
-        const vName = fullName.value.trim();
-        const vLogin = loginId.value.trim();
-        const vEmail = email.value.trim();
-        const vPw = password.value;
-        const vPhone = phone.value.trim();
-        const vAddr = address.value.trim();
-        const vDob = dob.value;
-        const vProf = profile.value.trim();
-
-        const okName = nonEmpty(vName) && vName.length <= 64;
-        show(err.fullName, !okName);
-        ok &&= okName;
-
-        const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
-        show(err.loginId, !okLogin);
-        ok &&= okLogin;
-
-        const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
-        show(err.email, !okEmail);
-        ok &&= okEmail;
-
-        const okPw = vPw.length >= 8 && vPw.length <= 128;
-        show(err.password, !okPw);
-        ok &&= okPw;
-
-        const okPhone = /^[+0-9()\-.\s]{6,20}$/.test(vPhone);
-        show(err.phone, !okPhone);
-        ok &&= okPhone;
-
-        const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
-        show(err.address, !okAddr);
-        ok &&= okAddr;
-
-        const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
-        show(err.dob, !okDob);
-        ok &&= okDob;
-
-        const okProf = nonEmpty(vProf);
-        show(err.profile, !okProf);
-        ok &&= okProf;
-
-        return ok;
-      }
-
-      // Keep DOB max to today (prevents future selection)
-      (function setDobMaxToday() {
-        const today = new Date().toISOString().split("T")[0];
-        dob.setAttribute("max", today);
-      })();
-
-      // Real-time hide errors on input/change
-      [fullName, loginId, email, password, phone, address].forEach((i) => {
-        i.addEventListener("input", () => validate());
-      });
-      [dob, profile].forEach((i) =>
-        i.addEventListener("change", () => validate())
-      );
-
-      document.addEventListener("DOMContentLoaded", () => {
-        loadProfiles();
-      });
-
-      // Submit (preview only)
-      form.addEventListener("submit", (e) => {
-        e.preventDefault(); // remove when wiring backend
-        if (!validate()) return;
-
-        submitBtn.disabled = true;
-
-        const payload = {
-          fullName: fullName.value.trim(),
-          loginId: loginId.value.trim(),
-          email: email.value.trim(),
-          password: password.value, // send over HTTPS; hash on server
-          phone: phone.value.trim(),
-          address: address.value.trim(),
-          dob: dob.value,
-          profileId: profile.value,
-        };
-
-        success.textContent = `✔ This would POST to /register with: ${JSON.stringify(
-          payload
-        )}`;
-        success.style.display = "block";
-
-        // To wire later:
-        // form.action = '/register';
-        // form.method = 'POST';
-        // form.removeAttribute('novalidate');
-        // form.submit();
-
-        setTimeout(() => {
-          submitBtn.disabled = false;
-        }, 800);
-      });
-    </script>
+  //document.getElementById("returnDashboard").addEventListener("click", () => {
+  //  window.location.href = "dashboard.html"; // ← replace with dashboard link
+  //});
+</script>
   </body>
 </html>
