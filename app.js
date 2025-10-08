@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import 'dotenv/config';
 import * as configs from './config.js';
 import * as https from 'https';
@@ -27,6 +28,10 @@ export default class App {
 
     init() {
         // configurations
+        if (process.env.ENV != 'production') {
+            this.app.use(cors());
+        }
+
         this.app.use(
             express.json({
                 limit: '10kb',

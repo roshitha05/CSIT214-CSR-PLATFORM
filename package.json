@@ -19,6 +19,7 @@
   "homepage": "https://github.com/roshitha05/CSIT214-CSR-PLATFORM#readme",
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.6",
     "express": "^5.1.0",
