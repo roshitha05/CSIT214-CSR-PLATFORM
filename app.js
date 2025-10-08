@@ -3,6 +3,8 @@ import 'dotenv/config';
 import * as configs from './config.js';
 import * as https from 'https';
 import * as http from 'http';
+import UserProfiles from './control/user-profiles.js';
+import ServerError from './exception/Error.js';
 
 export default class App {
     constructor() {
@@ -24,6 +26,37 @@ export default class App {
 
     init() {
         // configurations
+        this.app.use(
+            express.json({
+                limit: '10kb',
+                strict: true,
+                type: 'application/json',
+            })
+        );
+
+        const userProfiles = new UserProfiles();
+
+        this.app.use('/user-profiles', userProfiles.getRouter());
+
+        this.app.use((err, req, res, next) => {
+            let statusCode = err.statusCode || 500;
+            let message = err.message || 'Internal Server Error';
+
+            if (
+                process.env.ENV == 'production' &&
+                !(err instanceof ServerError)
+            ) {
+                statusCode = 500;
+                message = 'Internal Server Error';
+            }
+
+            res.status(statusCode).json({
+                error: {
+                    statusCode,
+                    message,
+                },
+            });
+        });
     }
 
     listen() {
