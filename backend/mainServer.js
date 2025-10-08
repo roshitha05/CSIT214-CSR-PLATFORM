@@ -5,7 +5,7 @@ import connectPg from "connect-pg-simple";
 import cors from "cors";
 import helmet from "helmet";
 import { neonPool } from "./dbConnector.js";
-import authRoutes from "./authHandler.js";
+import authRoutes from "./authRoutes.js";
 
 const app = express();
 const PgStore = connectPg(session);
@@ -48,3 +48,4 @@ app.use((_req, res) => res.status(404).json({ ok: false, error: "Unable to be lo
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running : http://localhost:${PORT}`));
+
