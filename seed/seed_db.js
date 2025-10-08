@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { usersTable, userProfilesTable } from './tables.js';
+import { usersTable, userProfilesTable } from '../database/tables.js';
 import { users } from './seeds.js';
 import DB from '../database/db.js';
 
@@ -78,6 +78,7 @@ async function main(tx) {
         else if (random < 30) profile = csr;
 
         await tx.insert(usersTable).values({
+            fullname: user,
             email: getEmail(user),
             username: user,
             password: getPassword(user),

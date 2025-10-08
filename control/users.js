@@ -11,7 +11,10 @@ export default class Users extends Control {
 
     init() {
         this.router.post('/', async (req, res) => {
-            const body = req.body;
+            const body = {
+                ...req.body,
+                status: 'ACTIVE',
+            };
 
             // todo: error checking for body contents
 

@@ -9,6 +9,7 @@ import {
 
 export const usersTable = pgTable('users', {
     user_id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    fullname: varchar({ length: 256 }).notNull(),
     email: varchar({ length: 256 }).notNull().unique(),
     username: varchar({ length: 256 }).notNull(),
     password: text().notNull(),

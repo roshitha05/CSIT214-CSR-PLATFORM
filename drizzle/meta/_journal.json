@@ -8,6 +8,13 @@
       "when": 1759745569381,
       "tag": "0000_init-db",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1759935766408,
+      "tag": "0001_add_users.fullname",
+      "breakpoints": true
     }
   ]
 }
