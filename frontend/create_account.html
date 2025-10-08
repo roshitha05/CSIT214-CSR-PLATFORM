@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>User Registration</title>
+    <style>
+      :root {
+        --bg: #f0f9ff;
+        --card: #ffffff;
+        --text: #1e293b;
+        --muted: #64748b;
+        --accent: #38bdf8;
+        --accent-2: #0ea5e9;
+        --danger: #ef4444;
+        --success-bg: #dcfce7;
+        --success-text: #166534;
+        --radius: 16px;
+        --ring: rgba(14, 165, 233, 0.3);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(180deg, #e0f2fe, var(--bg));
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: 100%;
+        max-width: 720px;
+        max-height: 90vh;
+        background: var(--card);
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        overflow: auto;
+      }
+      .header {
+        padding: 24px 28px;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #e0f2fe, #f8fafc);
+      }
+      .header h1 {
+        margin: 0 0 4px;
+        font-size: 1.4rem;
+        color: var(--accent-2);
+      }
+      .header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      form {
+        padding: 12px 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 16px;
+      }
+      .row {
+        display: flex;
+        flex-direction: column;
+      }
+      label {
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: var(--text);
+        transition: border-color 0.2s, box-shadow 0.2s;
+        font-size: 0.98rem;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 3px var(--ring);
+        outline: none;
+      }
+      textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      .hint {
+        margin-top: 6px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      .error {
+        margin-top: 6px;
+        color: var(--danger);
+        font-size: 0.9rem;
+        display: none;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+      }
+      .btn-primary {
+        background: linear-gradient(180deg, var(--accent), var(--accent-2));
+        color: #fff;
+      }
+      .btn-primary:hover {
+        transform: scale(1.02);
+      }
+      .btn-secondary {
+        background: #f1f5f9;
+        color: var(--text);
+        border: 1px solid #cbd5e1;
+      }
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+      .success {
+        display: none;
+        padding: 12px 14px;
+        margin-top: 12px;
+        border-radius: 12px;
+        background: var(--success-bg);
+        border: 1px solid #bbf7d0;
+        color: var(--success-text);
+        font-size: 0.95rem;
+      }
+      .footer {
+        padding: 18px 28px;
+        border-top: 1px solid #e2e8f0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .noscript-warning {
+        margin: 8px 0 0;
+        padding: 12px 16px;
+        background: #fef9c3;
+        border: 1px solid #fde68a;
+        border-radius: 12px;
+        color: #854d0e;
+        font-size: 0.95rem;
+      }
+      .pw-field {
+        position: relative;
+      }
+      .pw-field input {
+        padding-right: 64px;
+        min-height: 44px;
+      }
+      .pw-toggle {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      @media (max-width: 640px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .header,
+        form,
+        .footer {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" role="region" aria-labelledby="title">
+      <div class="header">
+        <h1 id="title">User Registration</h1>
+        <p>Create an account to request help, represent users, or volunteer.</p>
+      </div>
+
+      <!-- Progressive enhancement: native validation if JS is off -->
+      <form id="registerForm" autocomplete="off">
+        <div class="grid">
+          <!-- 1. Name (required) -->
+          <div class="row">
+            <label for="fullName"
+              >Name <span style="color: var(--muted)">*</span></label
+            >
+            <input
+              id="fullName"
+              name="fullName"
+              type="text"
+              required
+              maxlength="64"
+              placeholder="e.g., Jane Doe"
+              autocomplete="name"
+            />
+            <small class="hint">Required. Up to 64 characters.</small>
+            <div id="err-fullName" class="error">
+              Please enter your name (max 64 chars).
+            </div>
+          </div>
+
+          <!-- 2. Login ID (required) -->
+          <div class="row">
+            <label for="loginId"
+              >Login ID <span style="color: var(--muted)">*</span></label
+            >
+            <input
+              id="loginId"
+              name="loginId"
+              type="text"
+              required
+              maxlength="32"
+              placeholder="e.g., janedoe123"
+              autocomplete="username"
+              pattern="^[A-Za-z0-9._-]{3,32}$"
+            />
+            <small class="hint"
+              >Required. 3–32 chars: letters, numbers, dot, underscore,
+              hyphen.</small
+            >
+            <div id="err-loginId" class="error">
+              Please enter a valid Login ID (3–32 allowed chars).
+            </div>
+          </div>
+
+          <!-- 3. Email (required) -->
+          <div class="row">
+            <label for="email"
+              >Email <span style="color: var(--muted)">*</span></label
+            >
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              maxlength="254"
+              placeholder="you@example.com"
+              autocomplete="email"
+            />
+            <small class="hint">Required.</small>
+            <div id="err-email" class="error">
+              Please enter a valid email address.
+            </div>
+          </div>
+
+          <!-- 4. Password (required) -->
+          <div class="row">
+            <label for="password"
+              >Password <span style="color: var(--muted)">*</span></label
+            >
+            <div class="pw-field">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                minlength="8"
+                maxlength="128"
+                autocomplete="new-password"
+                placeholder="At least 8 characters"
+              />
+              <button
+                type="button"
+                class="pw-toggle"
+                id="pwToggle"
+                aria-controls="password"
+                aria-label="Show or hide password"
+              >
+                Show
+              </button>
+            </div>
+
+            <small class="hint"
+              >Required. Password should be at least 8 characters.</small
+            >
+            <div id="err-password" class="error">
+              Please enter a password (8–128 chars).
+            </div>
+          </div>
+
+          <!-- 5. Phone Number (required) -->
+          <div class="row">
+            <label for="phone"
+              >Phone Number <span style="color: var(--muted)">*</span></label
+            >
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              required
+              maxlength="20"
+              inputmode="tel"
+              placeholder="+65 8123 4567"
+              autocomplete="tel"
+              pattern="^[+0-9()\-.\s]{6,20}$"
+            />
+            <small class="hint"
+              >Required. Digits, +, spaces, and common separators
+              allowed.</small
+            >
+            <div id="err-phone" class="error">
+              Please enter a valid phone number (6–20 chars).
+            </div>
+          </div>
+
+          <!-- 6. Address (required) -->
+          <div class="row" style="grid-column: 1 / -1">
+            <label for="address"
+              >Address <span style="color: var(--muted)">*</span></label
+            >
+            <textarea
+              id="address"
+              name="address"
+              required
+              maxlength="255"
+              placeholder="Block/Street, Unit, Postal Code"
+              autocomplete="street-address"
+              spellcheck="false"
+            ></textarea>
+            <small class="hint">Required. Up to 255 characters.</small>
+            <div id="err-address" class="error">
+              Please enter your address (max 255 chars).
+            </div>
+          </div>
+
+          <!-- 7. DOB (required) -->
+          <div class="row">
+            <label for="dob"
+              >Date of Birth <span style="color: var(--muted)">*</span></label
+            >
+            <input id="dob" name="dob" type="date" required max="" />
+            <small class="hint">Required.</small>
+            <div id="err-dob" class="error">
+              Please choose a valid date in the past.
+            </div>
+          </div>
+
+          <!-- 8. User Profile (role) required -->
+          <div class="row">
+            <label for="profile"
+              >User Profile <span style="color: var(--muted)">*</span></label
+            >
+            <select
+              id="profile"
+              name="profile"
+              required
+              aria-describedby="hint-profile err-profile"
+            >
+              <option value="">Loading profiles…</option>
+            </select>
+            <small id="hint-profile" class="hint"
+              >Required. Select a role.</small
+            >
+            <div id="err-profile" class="error">Please select a profile.</div>
+          </div>
+        </div>
+
+        <noscript>
+          <div class="noscript-warning" role="status" aria-live="polite">
+            JavaScript is disabled. You can still submit this form and your
+            browser will validate required fields, but interactive messages and
+            previews will not appear.
+          </div>
+        </noscript>
+
+        <div class="actions">
+          <button class="btn-primary" type="submit" id="submitBtn">
+            Create Account
+          </button>
+          <button class="btn-secondary" type="reset">Clear</button>
+        </div>
+
+        <div
+          id="success"
+          class="success"
+          role="status"
+          aria-live="polite"
+        ></div>
+      </form>
+
+      <div class="footer">
+        <span>Community Support Platform</span>
+        <span
+          >Fields: Name, Login ID, Email, Password, Phone, Address, DOB, User
+          Profile</span
+        >
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("registerForm");
+      const submitBtn = document.getElementById("submitBtn");
+      const success = document.getElementById("success");
+
+      // Disable native bubbles to use custom messages (JS on)
+      form.setAttribute("novalidate", "");
+
+      // Elements
+      const $ = (id) => document.getElementById(id);
+      const fullName = $("fullName"),
+        loginId = $("loginId"),
+        email = $("email"),
+        password = $("password"),
+        phone = $("phone"),
+        address = $("address"),
+        dob = $("dob"),
+        profile = $("profile");
+
+      const err = {
+        fullName: $("err-fullName"),
+        loginId: $("err-loginId"),
+        email: $("err-email"),
+        password: $("err-password"),
+        phone: $("err-phone"),
+        address: $("err-address"),
+        dob: $("err-dob"),
+        profile: $("err-profile"),
+      };
+
+      // Password show/hide
+      const pwToggle = $("pwToggle");
+      pwToggle.addEventListener("click", () => {
+        const isHidden = password.type === "password";
+        password.type = isHidden ? "text" : "password";
+        pwToggle.textContent = isHidden ? "Hide" : "Show";
+      });
+
+      // Populate profiles (front-end only; replace with real fetch later)
+      async function loadProfiles() {
+        // Example options; replace with fetch('/profiles') when backend is ready
+        const profiles = [
+          { id: "pin", name: "Person In Need" },
+          { id: "rep", name: "CSR Representative" },
+          { id: "vol", name: "Volunteer" },
+          { id: "admin", name: "User Admin" },
+          { id: "pm", name: "Platform Management" },
+        ];
+        profile.innerHTML = "";
+        profile.appendChild(new Option("Select a profile…", ""));
+        profiles.forEach((p) => profile.appendChild(new Option(p.name, p.id)));
+      }
+
+      // Helpers
+      const show = (el, on) => {
+        el.style.display = on ? "block" : "none";
+      };
+      const nonEmpty = (s) => s.trim().length > 0;
+      function pastDateOnly(value) {
+        const d = new Date(value);
+        const today = new Date();
+        // Normalize to ignore time-of-day
+        d.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return d instanceof Date && !isNaN(d) && d < today;
+      }
+
+      // Field validations
+      function validate() {
+        let ok = true;
+
+        const vName = fullName.value.trim();
+        const vLogin = loginId.value.trim();
+        const vEmail = email.value.trim();
+        const vPw = password.value;
+        const vPhone = phone.value.trim();
+        const vAddr = address.value.trim();
+        const vDob = dob.value;
+        const vProf = profile.value.trim();
+
+        const okName = nonEmpty(vName) && vName.length <= 64;
+        show(err.fullName, !okName);
+        ok &&= okName;
+
+        const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
+        show(err.loginId, !okLogin);
+        ok &&= okLogin;
+
+        const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
+        show(err.email, !okEmail);
+        ok &&= okEmail;
+
+        const okPw = vPw.length >= 8 && vPw.length <= 128;
+        show(err.password, !okPw);
+        ok &&= okPw;
+
+        const okPhone = /^[+0-9()\-.\s]{6,20}$/.test(vPhone);
+        show(err.phone, !okPhone);
+        ok &&= okPhone;
+
+        const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
+        show(err.address, !okAddr);
+        ok &&= okAddr;
+
+        const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
+        show(err.dob, !okDob);
+        ok &&= okDob;
+
+        const okProf = nonEmpty(vProf);
+        show(err.profile, !okProf);
+        ok &&= okProf;
+
+        return ok;
+      }
+
+      // Keep DOB max to today (prevents future selection)
+      (function setDobMaxToday() {
+        const today = new Date().toISOString().split("T")[0];
+        dob.setAttribute("max", today);
+      })();
+
+      // Real-time hide errors on input/change
+      [fullName, loginId, email, password, phone, address].forEach((i) => {
+        i.addEventListener("input", () => validate());
+      });
+      [dob, profile].forEach((i) =>
+        i.addEventListener("change", () => validate())
+      );
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadProfiles();
+      });
+
+      // Submit (preview only)
+      form.addEventListener("submit", (e) => {
+        e.preventDefault(); // remove when wiring backend
+        if (!validate()) return;
+
+        submitBtn.disabled = true;
+
+        const payload = {
+          fullName: fullName.value.trim(),
+          loginId: loginId.value.trim(),
+          email: email.value.trim(),
+          password: password.value, // send over HTTPS; hash on server
+          phone: phone.value.trim(),
+          address: address.value.trim(),
+          dob: dob.value,
+          profileId: profile.value,
+        };
+
+        success.textContent = `✔ This would POST to /register with: ${JSON.stringify(
+          payload
+        )}`;
+        success.style.display = "block";
+
+        // To wire later:
+        // form.action = '/register';
+        // form.method = 'POST';
+        // form.removeAttribute('novalidate');
+        // form.submit();
+
+        setTimeout(() => {
+          submitBtn.disabled = false;
+        }, 800);
+      });
+    </script>
+  </body>
+</html>
