@@ -1,10 +1,10 @@
 import Control from './control.js';
-import UserProfilesEntity from '../entity/user-profiles.js';
+import UsersEntity from '../entity/users.js';
 
-export default class UserProfiles extends Control {
+export default class Users extends Control {
     constructor() {
         super();
-        this.userProfileEntity = new UserProfilesEntity();
+        this.usersEntity = new UsersEntity();
 
         this.init();
     }
@@ -15,10 +15,10 @@ export default class UserProfiles extends Control {
 
             // todo: error checking for body contents
 
-            await this.userProfileEntity.insertUserProfile(body);
+            const id = await this.usersEntity.insertUser(body);
 
             res.status(200).send({
-                message: `User profile ${body.name} created`,
+                message: `User ${id} created`,
             });
         });
     }

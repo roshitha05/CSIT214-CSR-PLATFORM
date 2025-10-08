@@ -5,6 +5,7 @@ import * as https from 'https';
 import * as http from 'http';
 import UserProfiles from './control/user-profiles.js';
 import ServerError from './exception/Error.js';
+import Users from './control/users.js';
 
 export default class App {
     constructor() {
@@ -35,8 +36,10 @@ export default class App {
         );
 
         const userProfiles = new UserProfiles();
+        const users = new Users();
 
         this.app.use('/user-profiles', userProfiles.getRouter());
+        this.app.use('/users', users.getRouter());
 
         this.app.use((err, req, res, next) => {
             let statusCode = err.statusCode || 500;

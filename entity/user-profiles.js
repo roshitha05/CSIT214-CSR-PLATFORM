@@ -6,11 +6,7 @@ export default class UserProfilesEntity extends Entity {
         super();
     }
 
-    async insertUserProfile(name, description, other) {
-        await this.db.insert(userProfilesTable).values({
-            name: name,
-            description: description,
-            other: other,
-        });
+    async insertUserProfile(userProfile) {
+        await this.db.insert(userProfilesTable).values(userProfile);
     }
 }
