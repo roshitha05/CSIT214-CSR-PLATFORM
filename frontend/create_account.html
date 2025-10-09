@@ -420,10 +420,9 @@
     profile: $("err-profile"),
   };
 
-  // --- Submit gating: show no errors until first submit ---
   let hasSubmitted = false;
 
-  // Password show/hide (icon matches login form)
+  // Password show/hide
   const togglePassword = document.getElementById("togglePassword");
   if (togglePassword) {
     togglePassword.addEventListener("click", function () {
@@ -550,7 +549,7 @@
       user_profile: profile.value,
     };
 
-    success.textContent = `This would POST to /register with: ${JSON.stringify(
+    success.textContent = `This would POST to /users with: ${JSON.stringify(
       payload
     )}`;
     success.style.display = "block";
@@ -581,9 +580,9 @@
     }, 800);
   });
 
-  //document.getElementById("returnDashboard").addEventListener("click", () => {
-  //  window.location.href = "dashboard.html"; // ← replace with dashboard link
-  //});
+  document.getElementById("returnDashboard").addEventListener("click", () => {
+    window.location.href = "admin_dashboard.html"; // ← replace with dashboard link
+  });
 </script>
-  </body>
+</body>
 </html>

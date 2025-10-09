@@ -161,6 +161,7 @@
       <div class="actions">
         <button class="btn-primary" type="submit" id="submitBtn">Submit</button>
         <button class="btn-secondary" type="reset">Clear</button>
+        <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
       </div>
 
       <div id="success" class="success" role="status" aria-live="polite"></div>
@@ -245,6 +246,10 @@
     .catch(response => {
       console.error("Error:", error); // Handle any errors during the request
     })
+  });
+
+  document.getElementById("returnDashboard").addEventListener("click", () => {
+    window.location.href = "admin_dashboard.html"; // ← replace with dashboard link
   });
 </script>
 </body>
