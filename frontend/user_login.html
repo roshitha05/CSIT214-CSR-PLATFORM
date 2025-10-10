@@ -222,7 +222,7 @@
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password">Password *</label>
           <div class="password-wrapper">
             <input
               type="password"
@@ -262,6 +262,8 @@
       const success = document.getElementById("success");
       const togglePassword = document.querySelector("#togglePassword");
 
+      let hasSubmitted = false;
+
       function validateFields() {
         let valid = true;
         if (!username.value.trim()) {
@@ -295,6 +297,8 @@
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
+        hasSubmitted = true;
+
         if (!validateFields()) return;
 
         const payload = {
@@ -302,12 +306,25 @@
           password: password.value.trim(),
         };
 
-        success.textContent = `✔ This would POST to /login with: ${JSON.stringify(
-          payload
-        )}`;
+        success.textContent = `This would POST to /login with: ${JSON.stringify(payload)}`;
         success.style.display = "block";
 
         // Later: send to backend via fetch('/login', { method: 'POST', body: JSON.stringify(payload) })
+      });
+
+      [username, password].forEach((input) => {
+        input.addEventListener("input", () => {
+          if (hasSubmitted) validateFields();
+        });
+      });
+
+      form.addEventListener("reset", () => {
+        userError.style.display = "none";
+        passError.style.display = "none";
+        username.removeAttribute("aria-invalid");
+        password.removeAttribute("aria-invalid");
+        success.style.display = "none";
+        hasSubmitted = false; // reset state
       });
     </script>
   </body>

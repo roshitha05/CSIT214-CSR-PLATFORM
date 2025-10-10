@@ -282,15 +282,15 @@
                 name="password"
                 type="password"
                 required
-                minlength="8"
+                minlength="6"
                 maxlength="128"
                 autocomplete="new-password"
-                placeholder="At least 8 characters"
+                placeholder="At least 6 characters"
               />
               <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
-            <small class="hint">Required. Password should be at least 8 characters.</small>
-            <div id="err-password" class="error">Please enter a password (8–128 chars).</div>
+            <small class="hint">Required. Password should be at least 6 characters.</small>
+            <div id="err-password" class="error">Please enter a password (6–128 chars).</div>
           </div>
 
           <!-- 5. Phone Number (required) -->
@@ -390,199 +390,198 @@
         <span>© 2025 Community Support Platform</span>
       </div>
     </div>
-<script>
-  const form = document.getElementById("registerForm");
-  const submitBtn = document.getElementById("submitBtn");
-  const success = document.getElementById("success");
+  <script>
+    const form = document.getElementById("registerForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const success = document.getElementById("success");
 
-  // Disable native bubbles to use custom messages (JS on)
-  form.setAttribute("novalidate", "");
+    // Disable native bubbles to use custom messages (JS on)
+    form.setAttribute("novalidate", "");
 
-  // Elements
-  const $ = (id) => document.getElementById(id);
-  const fullName = $("fullName"),
-    loginId = $("loginId"),
-    email = $("email"),
-    password = $("password"),
-    phone = $("phone"),
-    address = $("address"),
-    dob = $("dob"),
-    profile = $("profile");
+    // Elements
+    const $ = (id) => document.getElementById(id);
+    const fullName = $("fullName"),
+      loginId = $("loginId"),
+      email = $("email"),
+      password = $("password"),
+      phone = $("phone"),
+      address = $("address"),
+      dob = $("dob"),
+      profile = $("profile");
 
-  const err = {
-    fullName: $("err-fullName"),
-    loginId: $("err-loginId"),
-    email: $("err-email"),
-    password: $("err-password"),
-    phone: $("err-phone"),
-    address: $("err-address"),
-    dob: $("err-dob"),
-    profile: $("err-profile"),
-  };
-
-  let hasSubmitted = false;
-
-  // Password show/hide
-  const togglePassword = document.getElementById("togglePassword");
-  if (togglePassword) {
-    togglePassword.addEventListener("click", function () {
-      const type = password.type === "password" ? "text" : "password";
-      password.type = type;
-      this.classList.toggle("fa-eye");
-      this.classList.toggle("fa-eye-slash");
-    });
-  }
-
-  // Populate profiles (front-end only; replace with real fetch later)
-  async function loadProfiles() {
-    const profiles = [
-      { id: "CSR Representative", name: "CSR Representative" },
-      { id: "Person-In-Need", name: "Person-In-Need" },
-      { id: "Platform Management", name: "Platform Management" },
-      { id: "User Admin", name: "User Admin" }
-    ];
-    profile.innerHTML = "";
-    profile.appendChild(new Option("Select a profile…", ""));
-    profiles.forEach((p) => profile.appendChild(new Option(p.name, p.id)));
-  }
-
-  // Helpers
-  const show = (el, on) => {
-    el.style.display = on ? "block" : "none";
-  };
-  const nonEmpty = (s) => s.trim().length > 0;
-  function pastDateOnly(value) {
-    const d = new Date(value);
-    const today = new Date();
-    d.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    return d instanceof Date && !isNaN(d) && d < today;
-  }
-
-  // Field validations (validates entire form)
-  function validate() {
-    let ok = true;
-
-    const vName = fullName.value.trim();
-    const vLogin = loginId.value.trim();
-    const vEmail = email.value.trim();
-    const vPw = password.value;
-    const vPhone = phone.value.trim();
-    const vAddr = address.value.trim();
-    const vDob = dob.value;
-    const vProf = profile.value.trim();
-
-    const okName = nonEmpty(vName) && vName.length <= 64;
-    show(err.fullName, !okName);
-    ok &&= okName;
-
-    const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
-    show(err.loginId, !okLogin);
-    ok &&= okLogin;
-
-    const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
-    show(err.email, !okEmail);
-    ok &&= okEmail;
-
-    const okPw = vPw.length >= 8 && vPw.length <= 128;
-    show(err.password, !okPw);
-    ok &&= okPw;
-
-    const okPhone = /^[+0-9()\-. \s]{6,20}$/.test(vPhone);
-    show(err.phone, !okPhone);
-    ok &&= okPhone;
-
-    const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
-    show(err.address, !okAddr);
-    ok &&= okAddr;
-
-    const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
-    show(err.dob, !okDob);
-    ok &&= okDob;
-
-    const okProf = nonEmpty(vProf);
-    show(err.profile, !okProf);
-    ok &&= okProf;
-
-    return ok;
-  }
-
-  // Keep DOB max to current date (prevents future selection)
-  (function setDobMaxToday() {
-    const today = new Date().toISOString().split("T")[0];
-    dob.setAttribute("max", today);
-  })();
-
-  // Live validation
-  // Triggers only after 'Submit' button is clicked
-  [fullName, loginId, email, password, phone, address].forEach((i) => {
-    i.addEventListener("input", () => {
-      if (hasSubmitted) validate();
-    });
-  });
-  [dob, profile].forEach((i) =>
-    i.addEventListener("change", () => {
-      if (hasSubmitted) validate();
-    })
-  );
-
-  document.addEventListener("DOMContentLoaded", () => {
-    loadProfiles();
-  });
-
-  // Submit
-  form.addEventListener("submit", (e) => {
-    e.preventDefault(); // remove when wiring backend
-    hasSubmitted = true; // start showing errors from now on
-    if (!validate()) return;
-
-    submitBtn.disabled = true;
-
-    const payload = {
-      fullname: fullName.value.trim(),
-      username: loginId.value.trim(),
-      email: email.value.trim(),
-      password: password.value, // send over HTTPS; hash on server
-      phone_number: phone.value.trim(),
-      address: address.value.trim(),
-      date_of_birth: dob.value,
-      user_profile: profile.value,
+    const err = {
+      fullName: $("err-fullName"),
+      loginId: $("err-loginId"),
+      email: $("err-email"),
+      password: $("err-password"),
+      phone: $("err-phone"),
+      address: $("err-address"),
+      dob: $("err-dob"),
+      profile: $("err-profile"),
     };
 
-    success.textContent = `This would POST to /users with: ${JSON.stringify(
-      payload
-    )}`;
-    success.style.display = "block";
+    let hasSubmitted = false;
 
-    fetch("http://127.0.0.1:80/users", {
-      method:"POST", //Specify the HTTP method as POST
-      mode:"cors",
-      headers: {
-        'Content-Type': 'application/json' // Indicate the type of content being sent
-      },
-      body: JSON.stringify(payload) // Convert the JavaScript object to a JSON string
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("HTTP Error! Status: ${response.status}");
-      }
-      return response.json(); // Parse the JSON response from the server
-    })
-    .then(data => {
-      console.log("Success:", data); // Handle the successful response data
-    })
-    .catch(response => {
-      console.error("Error:", error); // Handle any errors during the request
-    })
+    // Password show/hide
+    const togglePassword = document.getElementById("togglePassword");
+    if (togglePassword) {
+      togglePassword.addEventListener("click", function () {
+        const type = password.type === "password" ? "text" : "password";
+        password.type = type;
+        this.classList.toggle("fa-eye");
+        this.classList.toggle("fa-eye-slash");
+      });
+    }
 
-    setTimeout(() => {
-      submitBtn.disabled = false;
-    }, 800);
-  });
+    // Populate profiles (front-end only; replace with real fetch later)
+    async function loadProfiles() {
+      const profiles = [
+        { id: "CSR Representative", name: "CSR Representative" },
+        { id: "Person-In-Need", name: "Person-In-Need" },
+        { id: "Platform Management", name: "Platform Management" },
+        { id: "User Admin", name: "User Admin" }
+      ];
+      profile.innerHTML = "";
+      profile.appendChild(new Option("Select a profile…", ""));
+      profiles.forEach((p) => profile.appendChild(new Option(p.name, p.id)));
+    }
 
-  document.getElementById("returnDashboard").addEventListener("click", () => {
-    window.location.href = "admin_dashboard.html"; // ← replace with dashboard link
-  });
-</script>
+    // Helpers
+    const show = (el, on) => {
+      el.style.display = on ? "block" : "none";
+    };
+    const nonEmpty = (s) => s.trim().length > 0;
+    function pastDateOnly(value) {
+      const d = new Date(value);
+      const today = new Date();
+      d.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return d instanceof Date && !isNaN(d) && d < today;
+    }
+
+    // Field validations (validates entire form)
+    function validate() {
+      let ok = true;
+
+      const vName = fullName.value.trim();
+      const vLogin = loginId.value.trim();
+      const vEmail = email.value.trim();
+      const vPw = password.value;
+      const vPhone = phone.value.trim();
+      const vAddr = address.value.trim();
+      const vDob = dob.value;
+      const vProf = profile.value.trim();
+
+      const okName = nonEmpty(vName) && vName.length <= 64;
+      show(err.fullName, !okName);
+      ok &&= okName;
+
+      const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
+      show(err.loginId, !okLogin);
+      ok &&= okLogin;
+
+      const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
+      show(err.email, !okEmail);
+      ok &&= okEmail;
+
+      const okPw = vPw.length >= 6 && vPw.length <= 128;
+      show(err.password, !okPw);
+      ok &&= okPw;
+
+      const okPhone = /^[+0-9()\-. \s]{6,20}$/.test(vPhone);
+      show(err.phone, !okPhone);
+      ok &&= okPhone;
+
+      const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
+      show(err.address, !okAddr);
+      ok &&= okAddr;
+
+      const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
+      show(err.dob, !okDob);
+      ok &&= okDob;
+
+      const okProf = nonEmpty(vProf);
+      show(err.profile, !okProf);
+      ok &&= okProf;
+
+      return ok;
+    }
+
+    // Keep DOB max to current date (prevents future selection)
+    (function setDobMaxToday() {
+      const today = new Date().toISOString().split("T")[0];
+      dob.setAttribute("max", today);
+    })();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadProfiles();
+    });
+
+    // Submit
+    form.addEventListener("submit", (e) => {
+      e.preventDefault(); // remove when wiring backend
+      hasSubmitted = true; // start showing errors from now on
+
+      if (!validate()) return;
+
+      submitBtn.disabled = true;
+
+      const payload = {
+        fullname: fullName.value.trim(),
+        username: loginId.value.trim(),
+        email: email.value.trim(),
+        password: password.value, // send over HTTPS; hash on server
+        phone_number: phone.value.trim(),
+        address: address.value.trim(),
+        date_of_birth: dob.value,
+        user_profile: profile.value,
+      };
+
+      success.textContent = `This would POST to /users with: ${JSON.stringify(payload)}`;
+      success.style.display = "block";
+
+      fetch("http://127.0.0.1:80/users", {
+        method:"POST", //Specify the HTTP method as POST
+        mode:"cors",
+        headers: {
+          'Content-Type': 'application/json' // Indicate the type of content being sent
+        },
+        body: JSON.stringify(payload) // Convert the JavaScript object to a JSON string
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("HTTP Error! Status: ${response.status}");
+        }
+        return response.json(); // Parse the JSON response from the server
+      })
+      .then(data => {
+        console.log("Success:", data); // Handle the successful response data
+      })
+      .catch(response => {
+        console.error("Error:", error); // Handle any errors during the request
+      })
+
+      setTimeout(() => {
+        submitBtn.disabled = false;
+      }, 800);
+    });
+
+    // Live validation
+    // Triggers only after 'Submit' button is clicked
+    [fullName, loginId, email, password, phone, address].forEach((i) => {
+      i.addEventListener("input", () => {
+        if (hasSubmitted) validate();
+      });
+    });
+    [dob, profile].forEach((i) =>
+      i.addEventListener("change", () => {
+        if (hasSubmitted) validate();
+      })
+    );
+
+    document.getElementById("returnDashboard").addEventListener("click", () => {
+      window.location.href = "admin_dashboard.html"; // ← replace with dashboard link
+    });
+  </script>
 </body>
 </html>
