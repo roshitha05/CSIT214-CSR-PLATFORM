@@ -1,6 +1,6 @@
 import Control from './control.js';
 
-export default class CreateUserProfiles extends Control {
+export class CreateUserProfiles extends Control {
     constructor() {
         super();
     }
