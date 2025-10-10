@@ -1,15 +1,11 @@
 import Control from './control.js';
-import UserProfilesEntity from '../entity/user-profiles.js';
 
-export default class UserProfiles extends Control {
+export default class CreateUserProfiles extends Control {
     constructor() {
         super();
-        this.userProfileEntity = new UserProfilesEntity();
-
-        this.init();
     }
 
-    init() {
+    createController() {
         this.router.post('/', async (req, res) => {
             const body = req.body;
 
@@ -21,9 +17,5 @@ export default class UserProfiles extends Control {
                 message: `User profile ${body.name} created`,
             });
         });
-    }
-
-    getRouter() {
-        return this.router;
     }
 }

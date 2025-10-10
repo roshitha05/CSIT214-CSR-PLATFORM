@@ -6,5 +6,17 @@ export default class Control {
             caseSensitive: true,
             strict: true,
         });
+        this.userProfileEntity = new UserProfilesEntity();
+        this.usersEntity = new UsersEntity();
+
+        this.createController();
+    }
+
+    createController() {
+        throw new Error('createController() must be implemented');
+    }
+
+    getRouter() {
+        return this.router;
     }
 }

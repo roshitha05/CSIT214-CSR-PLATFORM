@@ -1,21 +1,17 @@
 import Control from './control.js';
-import UsersEntity from '../entity/users.js';
 
-export default class Users extends Control {
+export default class CreateUser extends Control {
     constructor() {
         super();
-        this.usersEntity = new UsersEntity();
-
-        this.init();
     }
 
-    init() {
+    createController() {
         this.router.post('/', async (req, res) => {
             const body = {
                 ...req.body,
                 status: 'ACTIVE',
             };
-
+            console.log(body);
             // todo: error checking for body contents
 
             const id = await this.usersEntity.insertUser(body);
@@ -24,9 +20,5 @@ export default class Users extends Control {
                 message: `User ${id} created`,
             });
         });
-    }
-
-    getRouter() {
-        return this.router;
     }
 }
