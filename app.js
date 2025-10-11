@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import 'dotenv/config';
@@ -61,20 +61,27 @@ export default class App {
         });
 
         if (process.env.ENV !== 'production') {
-            this.app.use(cors());
+            this.app.use(cors({ origin: true, credentials: true }));
         }
-
         this.app.use(express.json(this.config.expressJson));
         this.app.use(session(this.config.expressSession));
         this.app.use(
             morgan(this.config.morgan.format, this.config.morgan.options)
         );
 
-        this.app.use('/', new Login().getRouter());
-        this.app.use('/', new Logout().getRouter());
-        this.app.use('/user-profiles', new CreateUserProfiles().getRouter());
-        this.app.use('/user-profiles', new GetUserProfiles().getRouter());
-        this.app.use('/users', new CreateUser().getRouter());
+        // routers
+        const apiRouter = express.Router({
+            caseSensitive: true,
+            strict: true,
+        });
+        apiRouter.use('/', new Login().getRouter());
+        apiRouter.use('/', new Logout().getRouter());
+        apiRouter.use('/user-profiles', new CreateUserProfiles().getRouter());
+        apiRouter.use('/user-profiles', new GetUserProfiles().getRouter());
+        apiRouter.use('/users', new CreateUser().getRouter());
+
+        this.app.use('/api', apiRouter);
+        this.app.use(express.static('frontend'));
 
         this.app.use((err, req, res, next) => {
             let statusCode = err.statusCode ?? 500;

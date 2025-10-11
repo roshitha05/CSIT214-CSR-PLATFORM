@@ -37,7 +37,7 @@ export class Login extends Control {
                     password: parsed.password,
                 });
             }
-            if (password !== undefined) {
+            if (parsed.password !== undefined) {
                 var userArray = await this.usersEntity.getUsers({
                     email: parsed.email,
                     password: parsed.password,
@@ -60,7 +60,7 @@ export class Login extends Control {
             //     password,
             //     user.password_hash
             // );
-            if (!user.password === password) {
+            if (!user.password === parsed.password) {
                 return next(
                     new ServerError(
                         401,
@@ -77,7 +77,9 @@ export class Login extends Control {
                 req.session.save((err) => {
                     if (err) next(new ServerError(500, err));
 
-                    res.sendStatus(200);
+                    res.status(200).json({
+                        message: 'Logged in',
+                    });
                 });
             });
         });
@@ -94,7 +96,9 @@ export class Logout extends Control {
             req.session.destroy((err) => {
                 if (err) next(new ServerError(500, err));
 
-                res.sendStatus(200);
+                res.status(200).json({
+                    message: 'Logged out',
+                });
             });
         });
     }
