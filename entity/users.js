@@ -6,7 +6,9 @@ import z from 'zod';
 
 export const insertUserSchema = createInsertSchema(usersTable, {
     fullname: z.string('Fullname is not a string'),
-    email: z.string('Email is not a string').email('Invalid email format'),
+    email: z
+        .string('Email is not a string')
+        .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
     username: z
         .string('Username is not a string')
         .min(1, 'Username must be at least 1 character'),
