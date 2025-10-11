@@ -5,28 +5,24 @@ import { createInsertSchema } from 'drizzle-zod';
 import z from 'zod';
 
 export const insertUserSchema = createInsertSchema(usersTable, {
-    fullname: z.string('Fullname is not a string'),
+    fullname: z.string(),
     email: z
-        .string('Email is not a string')
+        .string()
         .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
-    username: z
-        .string('Username is not a string')
-        .min(1, 'Username must be at least 1 character'),
-    password: z
-        .string('Password is not a string')
-        .min(8, 'Password must be at least 8 characters'),
+    username: z.string().min(1, 'Username must be at least 1 character'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
     phone_number: z
-        .string('Phone number is not a string')
+        .string()
         .regex(/^[1-9][0-9]{7}$/, 'Invalid phone number format'),
     address: z.string('Address is not a string'),
     date_of_birth: z
-        .string('Date of birth is not a string')
+        .string()
         .regex(
             /^[1-2][0-9]{3}-([0][1-9]|[1][0-2])-([0][1-9]|[1-2][0-9]|[3][0-1])$/,
             'Date must be in YYYY-MM-DD format'
         ),
-    status: z.string('Status is not a string'),
-    user_profile: z.string('User profile is not a string'),
+    status: z.string(),
+    user_profile: z.string(),
 });
 
 export default class UsersEntity extends Entity {

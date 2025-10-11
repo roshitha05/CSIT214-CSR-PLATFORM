@@ -14,6 +14,7 @@ import ServerError from './exception/Error.js';
 import { CreateUser } from './control/users.js';
 import { Login, Logout } from './control/auth.js';
 import morgan from 'morgan';
+import z from 'zod';
 
 export default class App {
     constructor() {
@@ -36,13 +37,31 @@ export default class App {
 
     init() {
         // configurations
-        if (process.env.ENV !== 'production') {
-            this.app.use(cors());
-        }
-
+        z.config({
+            customError: (iss, ctx) => {
+                if (iss.code === 'invalid_type') {
+                    if (iss.input === undefined) {
+                        const field = iss.path.join('.');
+                        const uField =
+                            field.charAt(0).toUpperCase() + field.slice(1);
+                        return { message: `${uField} is required` };
+                    }
+                    return {
+                        message: `${iss.path.join('.')} must be a ${
+                            iss.expected
+                        }`,
+                    };
+                }
+                return { message: ctx.defaultError };
+            },
+        });
         morgan.token('body', (req, res) => {
             return JSON.stringify(req.body) || {};
         });
+
+        if (process.env.ENV !== 'production') {
+            this.app.use(cors());
+        }
 
         this.app.use(express.json(this.config.expressJson));
         this.app.use(session(this.config.expressSession));
