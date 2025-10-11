@@ -19,3 +19,19 @@ export class CreateUserProfiles extends Control {
         });
     }
 }
+
+export class GetUserProfiles extends Control {
+    constructor() {
+        super();
+    }
+
+    createController() {
+        this.router.get('/', async (req, res) => {
+            const userProfiles = await this.userProfileEntity.getUserProfiles();
+
+            res.status(200).send({
+                data: userProfiles,
+            });
+        });
+    }
+}

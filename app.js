@@ -6,7 +6,10 @@ import * as configs from './config.js';
 import * as https from 'https';
 import * as http from 'http';
 
-import { CreateUserProfiles } from './control/user-profiles.js';
+import {
+    CreateUserProfiles,
+    GetUserProfiles,
+} from './control/user-profiles.js';
 import ServerError from './exception/Error.js';
 import { CreateUser } from './control/users.js';
 import { Login, Logout } from './control/auth.js';
@@ -50,6 +53,7 @@ export default class App {
         this.app.use('/', new Login().getRouter());
         this.app.use('/', new Logout().getRouter());
         this.app.use('/user-profiles', new CreateUserProfiles().getRouter());
+        this.app.use('/user-profiles', new GetUserProfiles().getRouter());
         this.app.use('/users', new CreateUser().getRouter());
 
         this.app.use((err, req, res, next) => {

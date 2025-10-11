@@ -27,7 +27,7 @@ export class BaseConfig {
         };
 
         this.morgan = {
-            format: ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :input',
+            format: ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :body',
             options: {
                 immediate: true,
             },
