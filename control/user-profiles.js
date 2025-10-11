@@ -1,3 +1,5 @@
+import { insertUserProfileSchema } from '../entity/user-profiles.js';
+import ServerError from '../exception/Error.js';
 import Control from './control.js';
 
 export class CreateUserProfiles extends Control {
@@ -6,12 +8,23 @@ export class CreateUserProfiles extends Control {
     }
 
     createController() {
-        this.router.post('/', async (req, res) => {
+        this.router.post('/', async (req, res, next) => {
             const body = req.body;
 
-            // todo: error checking for body contents
+            try {
+                var parsed = insertUserProfileSchema.parse(body);
+            } catch (error) {
+                return next(new ServerError(400, error.issues[0].message));
+            }
 
-            await this.userProfileEntity.insertUserProfile(body);
+            const nameCheck = await this.userProfileEntity.getUserProfiles({
+                name: parsed.name,
+            });
+
+            if (nameCheck.length > 0)
+                return next(new ServerError(400, 'Name already exists'));
+
+            await this.userProfileEntity.insertUserProfile(parsed);
 
             res.status(200).send({
                 message: `User profile ${body.name} created`,
