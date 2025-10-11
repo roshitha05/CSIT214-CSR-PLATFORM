@@ -19,13 +19,13 @@ export class Login extends Control {
             }
 
             if (username !== undefined) {
-                var userArray = await this.usersEntity.getUser({
+                var userArray = await this.usersEntity.getUsers({
                     username,
                     password,
                 });
             }
             if (email !== undefined) {
-                var userArray = await this.usersEntity.getUser({
+                var userArray = await this.usersEntity.getUsers({
                     email,
                     password,
                 });

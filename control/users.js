@@ -1,3 +1,4 @@
+import { insertUserSchema } from '../entity/users.js';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
 
@@ -13,19 +14,31 @@ export class CreateUser extends Control {
                 status: 'ACTIVE',
             };
 
-            const emailCheck = await this.usersEntity.getUser({
-                email: req.body.email,
+            try {
+                var parsed = insertUserSchema.parse(body);
+            } catch (error) {
+                return next(new ServerError(400, error.issues[0].message));
+            }
+
+            const emailCheck = await this.usersEntity.getUsers({
+                email: parsed.email,
             });
-            const usernameCheck = await this.usersEntity.getUser({
-                username: req.body.username,
+            const usernameCheck = await this.usersEntity.getUsers({
+                username: parsed.username,
             });
+            const userProfileCheck =
+                await this.userProfileEntity.getUserProfiles({
+                    name: parsed.user_profile,
+                });
 
             if (emailCheck.length > 0)
-                return next(new ServerError(400, 'Email already exist'));
+                return next(new ServerError(400, 'Email already exists'));
             if (usernameCheck.length > 0)
-                return next(new ServerError(400, 'Username already exist'));
+                return next(new ServerError(400, 'Username already exists'));
+            if (userProfileCheck.length === 0)
+                return next(new ServerError(400, 'Invalid user profile'));
 
-            const id = await this.usersEntity.insertUser(body);
+            const id = await this.usersEntity.insertUser(parsed);
 
             res.status(200).send({
                 message: `User ${id} created`,
