@@ -1,3 +1,4 @@
+import ServerError from '../exception/Error.js';
 import Control from './control.js';
 
 export class CreateUser extends Control {
@@ -6,13 +7,23 @@ export class CreateUser extends Control {
     }
 
     createController() {
-        this.router.post('/', async (req, res) => {
+        this.router.post('/', async (req, res, next) => {
             const body = {
                 ...req.body,
                 status: 'ACTIVE',
             };
-            console.log(body);
-            // todo: error checking for body contents
+
+            const emailCheck = await this.usersEntity.getUser({
+                email: req.body.email,
+            });
+            const usernameCheck = await this.usersEntity.getUser({
+                username: req.body.username,
+            });
+
+            if (emailCheck.length > 0)
+                return next(new ServerError(400, 'Email already exist'));
+            if (usernameCheck.length > 0)
+                return next(new ServerError(400, 'Username already exist'));
 
             const id = await this.usersEntity.insertUser(body);
 

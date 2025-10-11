@@ -11,7 +11,7 @@ export const usersTable = pgTable('users', {
     user_id: integer().primaryKey().generatedAlwaysAsIdentity(),
     fullname: varchar({ length: 256 }).notNull(),
     email: varchar({ length: 256 }).notNull().unique(),
-    username: varchar({ length: 256 }).notNull(),
+    username: varchar({ length: 256 }).notNull().unique(),
     password: text().notNull(),
     phone_number: varchar({ length: 256 }).notNull(),
     address: text().notNull(),

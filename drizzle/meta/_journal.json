@@ -15,6 +15,13 @@
       "when": 1759935766408,
       "tag": "0001_add_users.fullname",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760181979370,
+      "tag": "0002_unique_username",
+      "breakpoints": true
     }
   ]
 }
