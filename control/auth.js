@@ -71,7 +71,7 @@ export class Login extends Control {
 
             req.session.regenerate((err) => {
                 if (err) next(new ServerError(500, err));
-
+                
                 req.session.user_id = user.user_id;
 
                 req.session.save((err) => {

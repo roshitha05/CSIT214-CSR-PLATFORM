@@ -8,7 +8,7 @@ export class CreateUser extends Control {
     }
 
     createController() {
-        this.router.post('/', async (req, res, next) => {
+        this.router.post('/', this.requireAuth("User Admin"), async (req, res, next) => {
             const body = {
                 ...req.body,
                 status: 'ACTIVE',
