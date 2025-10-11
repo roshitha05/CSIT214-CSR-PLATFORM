@@ -29,6 +29,7 @@ export default class App {
             development: configs.DevelopmentConfig,
             testing: configs.TestingConfig,
             production: configs.ProductionConfig,
+            devTesting: configs.DevTestingConfig,
         };
         this.config = new (configMap[this.env] ?? configMap.development)();
 

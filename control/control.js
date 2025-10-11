@@ -21,6 +21,8 @@ export default class Control {
 
     requireAuth(allowedProfiles) {
         return async (req, res, next) => {
+            if (!req.app.config.requireAuth) next();
+
             req.session.id ?? next(new ServerError(403, 'Not authenticated'));
             const { user_profile } = this.usersEntity.getUsers({
                 user_id: req.session.id,

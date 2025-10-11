@@ -3,6 +3,8 @@ export class BaseConfig {
         this.useHTTP = true;
         this.useHTTPS = false;
 
+        this.requireAuth = true;
+
         this.expressJson = {
             limit: '10kb',
             strict: true,
@@ -60,5 +62,13 @@ export class ProductionConfig extends BaseConfig {
 export class TestingConfig extends BaseConfig {
     constructor() {
         super();
+    }
+}
+
+export class DevTestingConfig extends BaseConfig {
+    constructor() {
+        super();
+
+        this.requireAuth = false;
     }
 }
