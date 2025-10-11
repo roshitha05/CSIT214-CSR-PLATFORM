@@ -15,6 +15,8 @@ import { CreateUser } from './control/users.js';
 import { Login, Logout } from './control/auth.js';
 import morgan from 'morgan';
 import z from 'zod';
+import connectPgSimple from 'connect-pg-simple';'connect-pg-simple'
+import DB from './database/db.js'
 
 export default class App {
     constructor() {
@@ -32,6 +34,7 @@ export default class App {
             devTesting: configs.DevTestingConfig,
         };
         this.config = new (configMap[this.env] ?? configMap.development)();
+        this.app.locals.config = this.config;
 
         this.init();
     }
@@ -64,7 +67,14 @@ export default class App {
             this.app.use(cors({ origin: true, credentials: true }));
         }
         this.app.use(express.json(this.config.expressJson));
-        this.app.use(session(this.config.expressSession));
+        this.app.use(session({
+            ...this.config.expressSession,
+            store: new (connectPgSimple(session))({
+                pool: DB.getInstance().getPool(),
+                createTableIfMissing: true
+            })
+        }
+        ));
         this.app.use(
             morgan(this.config.morgan.format, this.config.morgan.options)
         );
