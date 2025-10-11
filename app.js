@@ -10,6 +10,7 @@ import { CreateUserProfiles } from './control/user-profiles.js';
 import ServerError from './exception/Error.js';
 import { CreateUser } from './control/users.js';
 import { Login, Logout } from './control/auth.js';
+import morgan from 'morgan';
 
 export default class App {
     constructor() {
@@ -36,8 +37,15 @@ export default class App {
             this.app.use(cors());
         }
 
+        morgan.token('body', (req, res) => {
+            return JSON.stringify(req.body) || {};
+        });
+
         this.app.use(express.json(this.config.expressJson));
         this.app.use(session(this.config.expressSession));
+        this.app.use(
+            morgan(this.config.morgan.format, this.config.morgan.options)
+        );
 
         this.app.use('/', new Login().getRouter());
         this.app.use('/', new Logout().getRouter());

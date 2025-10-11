@@ -25,6 +25,13 @@ export class BaseConfig {
             partitioned: false,
             sameSite: 'none',
         };
+
+        this.morgan = {
+            format: ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :input',
+            options: {
+                immediate: true,
+            },
+        };
     }
 }
 
@@ -44,6 +51,9 @@ export class ProductionConfig extends BaseConfig {
         this.expressSession.cookie.sameSite = 'lax';
         this.expressSession.cookie.partitioned = true;
         this.expressSession.cookie.maxAge = 1000 * 60 * 60;
+
+        this.morgan.format = 'combined';
+        this.morgan.options.immediate = false;
     }
 }
 
