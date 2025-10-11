@@ -1,4 +1,7 @@
 import express from 'express';
+import ServerError from '../exception/Error.js';
+import UsersEntity from '../entity/users.js';
+import UserProfilesEntity from '../entity/user-profiles.js';
 
 export default class Control {
     constructor() {
@@ -14,6 +17,30 @@ export default class Control {
 
     createController() {
         throw new Error('createController() must be implemented');
+    }
+
+    requireAuth(allowedProfiles) {
+        return async (req, res, next) => {
+            req.session.id ?? next(new ServerError(403, 'Not authenticated'));
+            const { user_profile } = this.usersEntity.getUser({
+                user_id: req.session.id,
+            });
+
+            const checkRole = (user_profile, allowed) =>
+                user_profile === allowed;
+
+            if (typeof allowedProfiles === 'string') {
+                if (checkRole(user_profile, allowedProfiles)) next();
+            }
+            if (Array.isArray(allowedProfiles)) {
+                allowedProfiles.forEach((profile) => {
+                    if (checkRole(user_profile, profile)) next();
+                });
+            }
+            if (allowedProfiles === undefined) next();
+
+            next(new ServerError(403, 'Not authenticated'));
+        };
     }
 
     getRouter() {
