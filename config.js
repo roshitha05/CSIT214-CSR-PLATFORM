@@ -25,7 +25,7 @@ export class BaseConfig {
             secure: false,
             maxAge: null,
             partitioned: false,
-            sameSite: 'none',
+            sameSite: 'lax',
         };
 
         this.morganRequest = {
