@@ -14,7 +14,6 @@ export class Login extends Control {
                     username: z.string().optional(),
                     email: z.string().optional(),
                     password: z.string(),
-                    user_profile: z.string(),
                 })
                 .refine(
                     (data) => {
@@ -48,7 +47,7 @@ export class Login extends Control {
                 return next(
                     new ServerError(
                         401,
-                        'Invalid username, email, password or user profile'
+                        'Invalid username, email or password'
                     )
                 );
             }
@@ -64,7 +63,7 @@ export class Login extends Control {
                 return next(
                     new ServerError(
                         401,
-                        'Invalid username, email, password or user profile'
+                        'Invalid username, email or password'
                     )
                 );
             }
@@ -79,6 +78,7 @@ export class Login extends Control {
 
                     res.status(200).json({
                         message: 'Logged in',
+                        data: user.user_profile
                     });
                 });
             });
