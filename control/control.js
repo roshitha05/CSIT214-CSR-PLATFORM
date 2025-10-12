@@ -30,7 +30,8 @@ export default class Control {
                 user_id: req.session.user_id,
             }))[0];
 
-            const checkRole = (user_profile, allowed) => user_profile === allowed;
+            const checkRole = (user_profile, allowed) => 
+                user_profile.toLowerCase() === allowed.toLowerCase();
 
             if (typeof allowedProfiles === 'string') {
                 if (checkRole(user_profile, allowedProfiles)) return next();
