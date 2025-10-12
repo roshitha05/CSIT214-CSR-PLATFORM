@@ -15,7 +15,7 @@ export default class UserProfilesEntity extends Entity {
         super();
     }
 
-    async getUserProfiles(searchBy) {
+    async getUserProfiles(searchBy = {}) {
         let query = this.db.select().from(userProfilesTable).$dynamic();
 
         const conditions = [];

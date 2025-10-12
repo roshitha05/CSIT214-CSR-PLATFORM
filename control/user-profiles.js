@@ -41,7 +41,7 @@ export class GetUserProfiles extends Control {
     createController() {
         this.router.get('/', async (req, res) => {
             const userProfiles = await this.userProfileEntity.getUserProfiles();
-
+            
             res.status(200).send({
                 data: userProfiles,
             });
