@@ -78,7 +78,7 @@ export class Login extends Control {
 
                     res.status(200).json({
                         message: 'Logged in',
-                        data: user.user_profile
+                        user_profile: user.user_profile
                     });
                 });
             });
