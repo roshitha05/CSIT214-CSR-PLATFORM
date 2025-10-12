@@ -169,7 +169,6 @@
 
     <div class="footer">
       <span>© 2025 Community Support Platform</span>
-      <!-- <span>Fields: <code>name</code>, <code>description</code>, <code>other</code></span> -->
     </div>
   </div>
 
@@ -181,10 +180,36 @@
     const nameInput = document.getElementById('name');
     const descInput = document.getElementById('description');
     const otherInput = document.getElementById('other');
+
     const nameError = document.getElementById('name-error');
     const success = document.getElementById('success');
 
-    // Simple name validation: non-empty (after trim) and <= 64 chars
+    const API_URL = "http://127.0.0.1:80/api/user-profiles";
+
+    // Helper functions to mirror login page behavior
+    function showOk(message) {
+      success.style.display = "block";
+      success.style.background = "#dcfce7";
+      success.style.border = "1px solid #bbf7d0";
+      success.style.color = "#166534";
+      success.textContent = message;
+    }
+    function showErr(message) {
+      success.style.display = "block";
+      success.style.background = "#fee2e2";
+      success.style.border = "1px solid #fecaca";
+      success.style.color = "#991b1b";
+      success.textContent = message;
+    }
+    function clearStatus() {
+      success.style.display = "none";
+      success.textContent = "";
+    }
+
+    // Live feedback
+    nameInput.addEventListener('input', validateName);
+
+    // Validation for Name
     function validateName() {
       const val = nameInput.value.trim();
       const ok = val.length >= 1 && val.length <= 64;
@@ -198,17 +223,15 @@
       return true;
     }
 
-    // Clear success message on reset
+    // Reset Handler
     form.addEventListener('reset', () => {
       nameError.style.display = 'none';
       nameInput.removeAttribute('aria-invalid');
-      success.style.display = 'none';
+      clearStatus();
     });
 
-    // Live feedback after first interaction
-    nameInput.addEventListener('input', validateName);
-
-    form.addEventListener('submit', (e) => {
+    // Submit Handler
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       if (!validateName()) {
@@ -216,40 +239,50 @@
         return;
       }
 
-      // Payload preview (trim; empty -> null for optional fields)
+      // Build payload
       const payload = {
         name: nameInput.value.trim(),
-        description: (descInput.value || '').trim() || null,
-        other: (otherInput.value || '').trim() || null
+        description: (descInput.value || '').trim(),
+        other: (otherInput.value || '').trim()
       };
 
-      success.textContent = `This would POST to /profiles with: ${JSON.stringify(payload)}`;
-      success.style.display = 'block';
+      try {
+        const response = await fetch(API_URL, {
+          method : "POST",
+          mode : "cors",
+          headers : { "Content-Type" : "application/json", },
+          credentials: "include", // if your API uses cookies / sessions
+          body : JSON.stringify(payload)
+        });
 
-      fetch("http://127.0.0.1:80/user-profiles", {
-        method:"POST", //Specify the HTTP method as POST
-        mode:"cors",
-        headers: {
-          'Content-Type': 'application/json' // Indicate the type of content being sent
-        },
-        body: JSON.stringify(payload) // Convert the JavaScript object to a JSON string
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("HTTP Error! Status: ${response.status}");
+        if (response.ok) {
+
+          showOk("Profile created successfully!");
+
+          // Optional: redirect after short delay
+          // setTimeout(() => { window.location.href = "admin_dashboard.html"; }, 1000);
+          
+          // Optionally clear the form
+          // form.reset()
         }
-        return response.json(); // Parse the JSON response from the server
-      })
-      .then(data => {
-        console.log("Success:", data); // Handle the successful response data
-      })
-      .catch(response => {
-        console.error("Error:", error); // Handle any errors during the request
-      })
+        else if (response.status === 400) { // refer to /control/user-profiles.js
+          showErr("Failed to create new User Profile. Name already exists.");
+        }
+        else if (response.status === 401) {
+          showErr("Unauthorized. Please log in and try again.");
+        }
+        else {
+          showErr(`Unexpected error: ${response.status}`);
+        }
+      }
+      catch (error) {
+        console.error("Network Error: ", error);
+        showErr("Network error. Please ensure the server is running.");
+      }
     });
 
     document.getElementById("returnDashboard").addEventListener("click", () => {
-      window.location.href = "admin_dashboard.html"; // ← replace with dashboard link
+      window.location.href = "admin_dashboard.html";
     });
   </script>
 </body>

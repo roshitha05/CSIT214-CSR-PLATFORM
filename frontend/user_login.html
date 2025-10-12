@@ -240,12 +240,7 @@
           <button class="btn-secondary" type="reset">Clear</button>
         </div>
 
-        <div
-          id="success"
-          class="success"
-          role="status"
-          aria-live="polite"
-        ></div>
+        <div id="success" class="success" role="status" aria-live="polite"></div>
       </form>
 
       <div class="footer">© 2025 Community Support Platform</div>
@@ -264,6 +259,29 @@
 
       let hasSubmitted = false;
 
+      const API_URL = "http://127.0.0.1:80/api/login"
+
+      // ===== Helper Functions =====
+      function showOk(message) {
+        success.style.display = "block";
+        success.style.background = "#dcfce7";
+        success.style.border = "1px solid #bbf7d0";
+        success.style.color = "#166534";
+        success.textContent = message;
+      }
+      function showErr(message) {
+        success.style.display = "block";
+        success.style.background = "#fee2e2";
+        success.style.border = "1px solid #fecaca";
+        success.style.color = "#991b1b";
+        success.textContent = message;
+      }
+      function clearStatus() {
+        success.style.display = "none";
+        success.textContent = "";
+      }
+
+      // ===== Validation =====
       function validateFields() {
         let valid = true;
         if (!username.value.trim()) {
@@ -287,6 +305,7 @@
         return valid;
       }
 
+      // ===== Show / Hide Password =====
       togglePassword.addEventListener("click", function () {
         const type =
           password.getAttribute("type") === "password" ? "text" : "password";
@@ -295,29 +314,62 @@
         this.classList.toggle("fa-eye-slash");
       });
 
-      form.addEventListener("submit", (e) => {
+      // ===== Submit =====
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
         hasSubmitted = true;
+        clearStatus();
 
         if (!validateFields()) return;
 
         const payload = {
           username: username.value.trim(),
           password: password.value.trim(),
+          user_profile: "Person-In-Need"
         };
 
-        success.textContent = `This would POST to /login with: ${JSON.stringify(payload)}`;
-        success.style.display = "block";
+        try {
+          const response = await fetch(API_URL, {
+            method : "POST",
+            mode : "cors",
+            headers : { "Content-Type": "application/json" },
+            credentials : "include", // include cookies / sessions
+            body : JSON.stringify(payload),
+          });
 
-        // Later: send to backend via fetch('/login', { method: 'POST', body: JSON.stringify(payload) })
+          if (response.ok) {
+            showOk("Login successful! Redirecting...");
+            setTimeout(() => {
+              // Redirect to admin_dashboard.html for now (temporary) - to route to respective landing pages based on roles later on.
+              window.location.href = "admin_dashboard.html";
+            }, 1000);
+          }
+          else if (response.status === 400) { // Refer to /control/auth.js
+            // Missing username or password
+            showErr("Missing username or password.");
+          }
+          else if (response.status === 401) {
+            // Invalid username or password
+            showErr("Invalid username or password. Please try again.");
+          }
+          else {
+            showErr(`Unexpected Error: ${response.status}`);
+          }
+        }
+        catch (error) {
+          console.error("Network Error: ", error);
+          showErr("Network Error. Please ensure the server is running.");
+        }
       });
 
+      // Live validation - after first submit
       [username, password].forEach((input) => {
         input.addEventListener("input", () => {
           if (hasSubmitted) validateFields();
         });
       });
 
+      // Reset UI
       form.addEventListener("reset", () => {
         userError.style.display = "none";
         passError.style.display = "none";

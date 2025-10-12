@@ -395,6 +395,8 @@
     const submitBtn = document.getElementById("submitBtn");
     const success = document.getElementById("success");
 
+    const API_URL = "http://127.0.0.1:80/api/user-profiles";
+
     // Disable native bubbles to use custom messages (JS on)
     form.setAttribute("novalidate", "");
 
@@ -435,15 +437,47 @@
 
     // Populate profiles (front-end only; replace with real fetch later)
     async function loadProfiles() {
-      const profiles = [
-        { id: "CSR Representative", name: "CSR Representative" },
-        { id: "Person-In-Need", name: "Person-In-Need" },
-        { id: "Platform Management", name: "Platform Management" },
-        { id: "User Admin", name: "User Admin" }
-      ];
-      profile.innerHTML = "";
-      profile.appendChild(new Option("Select a profile…", ""));
-      profiles.forEach((p) => profile.appendChild(new Option(p.name, p.id)));
+      const select = document.getElementById("profile");
+      select.innerHTML = '<option value="">Loading profiles...</option>';
+
+      try {
+        const response = await fetch(API_URL, {
+          method : "GET",
+          mode : "cors",
+          headers : {
+            "Content-Type" : "application/json",
+          },
+          credentials : "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Server responded with ${response.status}");
+        }
+
+        const result = await response.json();
+        const profiles = result.data || [];
+
+        // Clear and repopulate
+        select.innerHTML = "";
+        select.appendChild(new Option("Select a profile...", ""));
+
+        if (profiles.length === 0) {
+          select.appendChild(new Option("No profiles available", ""));
+          select.disabled = true;
+          return;
+        }
+
+        profiles.forEach((p) => {
+          if (p && p.name) {
+            select.appendChild(new Option(p.name, p.name));
+          }
+        })
+      } catch (error) {
+        console.error("Failed to load profiles: ", error);
+        select.innerHTML = "";
+        select.appendChild(new Option("Error loading profiles", ""));
+        select.disabled = true;
+      }
     }
 
     // Helpers
@@ -543,9 +577,7 @@
       fetch("http://127.0.0.1:80/users", {
         method:"POST", //Specify the HTTP method as POST
         mode:"cors",
-        headers: {
-          'Content-Type': 'application/json' // Indicate the type of content being sent
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload) // Convert the JavaScript object to a JSON string
       })
       .then(response => {
