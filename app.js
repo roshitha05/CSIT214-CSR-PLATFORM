@@ -26,6 +26,8 @@ export default class App {
         this.httpsPort = process.env.HTTPS_PORT ?? 443;
         this.host = process.env.HOST ?? 'localhost';
         this.env = process.env.ENV ?? 'development';
+        
+        if (process.env.DATABASE_URL === undefined) throw new Error('Missing database url in .env')
 
         const configMap = {
             development: configs.DevelopmentConfig,
