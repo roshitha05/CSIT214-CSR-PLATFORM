@@ -15,6 +15,8 @@ import { CreateUser } from './control/users.js';
 import { Login, Logout } from './control/auth.js';
 import morgan from 'morgan';
 import z from 'zod';
+import connectPgSimple from 'connect-pg-simple';'connect-pg-simple'
+import DB from './database/db.js'
 
 export default class App {
     constructor() {
@@ -24,6 +26,8 @@ export default class App {
         this.httpsPort = process.env.HTTPS_PORT ?? 443;
         this.host = process.env.HOST ?? 'localhost';
         this.env = process.env.ENV ?? 'development';
+        
+        if (process.env.DATABASE_URL === undefined) throw new Error('Missing database url in .env')
 
         const configMap = {
             development: configs.DevelopmentConfig,
@@ -32,6 +36,7 @@ export default class App {
             devTesting: configs.DevTestingConfig,
         };
         this.config = new (configMap[this.env] ?? configMap.development)();
+        this.app.locals.config = this.config;
 
         this.init();
     }
@@ -59,15 +64,37 @@ export default class App {
         morgan.token('body', (req, res) => {
             return JSON.stringify(req.body) || {};
         });
+        morgan.token('response', (req, res) => {
+            return JSON.stringify(res.responseBody) || {}
+        })
 
         if (process.env.ENV !== 'production') {
             this.app.use(cors({ origin: true, credentials: true }));
         }
         this.app.use(express.json(this.config.expressJson));
-        this.app.use(session(this.config.expressSession));
-        this.app.use(
-            morgan(this.config.morgan.format, this.config.morgan.options)
-        );
+        this.app.use((req, res, next) => {
+            const originalJson = res.json;
+            res.json = function(body) {
+                res.responseBody = body;
+                return originalJson.call(this, body);
+            };
+            next();
+        });
+        this.app.use(session({
+            ...this.config.expressSession,
+            store: new (connectPgSimple(session))({
+                pool: DB.getInstance().getPool(),
+                createTableIfMissing: true
+            })
+        }
+        ));
+        this.app.use(morgan(
+            this.config.morganRequest.format, 
+            this.config.morganRequest.options
+        ));
+        this.app.use(morgan(
+            this.config.morganResponse.format
+        ));
 
         // routers
         const apiRouter = express.Router({

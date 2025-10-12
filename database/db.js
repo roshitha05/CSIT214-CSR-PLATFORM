@@ -23,4 +23,8 @@ export default class DB {
     getDatabase() {
         return this.db;
     }
+
+    getPool() {
+        return this.pool
+    }
 }

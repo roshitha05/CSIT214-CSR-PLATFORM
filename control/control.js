@@ -21,25 +21,28 @@ export default class Control {
 
     requireAuth(allowedProfiles) {
         return async (req, res, next) => {
-            if (!req.app.config.requireAuth) next();
+            if (!req.app.locals.config.requireAuth) next();
+            
+            if (req.session.user_id === undefined) 
+                return next(new ServerError(403, 'Not authenticated'));
 
-            req.session.id ?? next(new ServerError(403, 'Not authenticated'));
-            const { user_profile } = this.usersEntity.getUsers({
-                user_id: req.session.id,
-            });
+            const { user_profile } = (await this.usersEntity.getUsers({
+                user_id: req.session.user_id,
+            }))[0];
 
             const checkRole = (user_profile, allowed) =>
                 user_profile === allowed;
 
             if (typeof allowedProfiles === 'string') {
-                if (checkRole(user_profile, allowedProfiles)) next();
+                if (checkRole(user_profile, allowedProfiles)) return next();
             }
+            
             if (Array.isArray(allowedProfiles)) {
-                allowedProfiles.forEach((profile) => {
-                    if (checkRole(user_profile, profile)) next();
-                });
+                for (const profile of allowedProfiles) {
+                    if (checkRole(user_profile, profile)) return next();
+                }
             }
-            if (allowedProfiles === undefined) next();
+            if (allowedProfiles === undefined) return next();
 
             next(new ServerError(403, 'Not authenticated'));
         };
