@@ -65,7 +65,7 @@ export default class App {
             return JSON.stringify(req.body) || {};
         });
         morgan.token('response', (req, res) => {
-            return JSON.stringify(res.responseBody)
+            return JSON.stringify(res.responseBody) || {}
         })
 
         if (process.env.ENV !== 'production') {
