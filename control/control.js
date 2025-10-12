@@ -21,7 +21,7 @@ export default class Control {
 
     requireAuth(allowedProfiles) {
         return async (req, res, next) => {
-            if (!req.app.locals.config.requireAuth) next();
+            if (!req.app.locals.config.requireAuth) return next();
             
             if (req.session.user_id === undefined) 
                 return next(new ServerError(403, 'Not authenticated'));
@@ -30,8 +30,7 @@ export default class Control {
                 user_id: req.session.user_id,
             }))[0];
 
-            const checkRole = (user_profile, allowed) =>
-                user_profile === allowed;
+            const checkRole = (user_profile, allowed) => user_profile === allowed;
 
             if (typeof allowedProfiles === 'string') {
                 if (checkRole(user_profile, allowedProfiles)) return next();

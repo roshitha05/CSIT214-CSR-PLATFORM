@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import { userProfilesTable } from '../database/tables.js';
 import Entity from './entity.js';
 import { createInsertSchema } from 'drizzle-zod';
@@ -21,7 +21,11 @@ export default class UserProfilesEntity extends Entity {
         const conditions = [];
         Object.keys(searchBy).forEach((key) => {
             if (searchBy[key] !== undefined && userProfilesTable[key]) {
+                if (key === "name") {
+                    conditions.push(ilike(userProfilesTable[key], searchBy[key]))
+                } else {
                 conditions.push(eq(userProfilesTable[key], searchBy[key]));
+                }
             }
         });
 
