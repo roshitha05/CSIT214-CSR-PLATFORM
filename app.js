@@ -64,11 +64,22 @@ export default class App {
         morgan.token('body', (req, res) => {
             return JSON.stringify(req.body) || {};
         });
+        morgan.token('response', (req, res) => {
+            return JSON.stringify(res.responseBody)
+        })
 
         if (process.env.ENV !== 'production') {
             this.app.use(cors({ origin: true, credentials: true }));
         }
         this.app.use(express.json(this.config.expressJson));
+        this.app.use((req, res, next) => {
+            const originalJson = res.json;
+            res.json = function(body) {
+                res.responseBody = body;
+                return originalJson.call(this, body);
+            };
+            next();
+        });
         this.app.use(session({
             ...this.config.expressSession,
             store: new (connectPgSimple(session))({
@@ -77,9 +88,13 @@ export default class App {
             })
         }
         ));
-        this.app.use(
-            morgan(this.config.morgan.format, this.config.morgan.options)
-        );
+        this.app.use(morgan(
+            this.config.morganRequest.format, 
+            this.config.morganRequest.options
+        ));
+        this.app.use(morgan(
+            this.config.morganResponse.format
+        ));
 
         // routers
         const apiRouter = express.Router({

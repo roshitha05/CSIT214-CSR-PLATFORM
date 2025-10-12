@@ -28,11 +28,15 @@ export class BaseConfig {
             sameSite: 'none',
         };
 
-        this.morgan = {
-            format: ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :body',
+        this.morganRequest = {
+            format: '--> :remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :body',
             options: {
                 immediate: true,
             },
+        };
+
+        this.morganResponse = {
+            format: '<-- :remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :response',
         };
     }
 }
