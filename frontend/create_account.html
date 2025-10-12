@@ -282,14 +282,14 @@
                 name="password"
                 type="password"
                 required
-                minlength="6"
+                minlength="8"
                 maxlength="128"
                 autocomplete="new-password"
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
               />
               <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
-            <small class="hint">Required. Password should be at least 6 characters.</small>
+            <small class="hint">Required. Password should be at least 8 characters.</small>
             <div id="err-password" class="error">Please enter a password (6–128 chars).</div>
           </div>
 
@@ -301,18 +301,18 @@
               name="phone"
               type="tel"
               required
-              maxlength="20"
+              minlength = "8"
+              maxlength="8"
               inputmode="tel"
-              placeholder="+65 8123 4567"
+              placeholder="8123 4567"
               autocomplete="tel"
               pattern="^[+0-9()\-.\s]{6,20}$"
             />
             <small class="hint"
-              >Required. Digits, +, spaces, and common separators
-              allowed.</small
+              >Required. 8 digits</small
             >
             <div id="err-phone" class="error">
-              Please enter a valid phone number (6–20 chars).
+              Please enter a valid phone number.
             </div>
           </div>
 
@@ -394,37 +394,81 @@
     const form = document.getElementById("registerForm");
     const submitBtn = document.getElementById("submitBtn");
     const success = document.getElementById("success");
+    form.setAttribute("novalidate", "");
 
-    const API_URL = "http://127.0.0.1:85/api/user-profiles";
+    let hasSubmitted = false;
+
+    const PROFILES_API = "http://127.0.0.1:80/api/user-profiles";
+    const REGISTER_API = "http://127.0.0.1:80/api/users";
 
     // Disable native bubbles to use custom messages (JS on)
     form.setAttribute("novalidate", "");
 
-    // Elements
+    // ===== Elements =====
     const $ = (id) => document.getElementById(id);
     const fullName = $("fullName"),
-      loginId = $("loginId"),
-      email = $("email"),
-      password = $("password"),
-      phone = $("phone"),
-      address = $("address"),
-      dob = $("dob"),
-      profile = $("profile");
+          loginId =  $("loginId"),
+          email =    $("email"),
+          password = $("password"),
+          phone =    $("phone"),
+          address =  $("address"),
+          dob =      $("dob"),
+          profile =  $("profile");
 
     const err = {
-      fullName: $("err-fullName"),
-      loginId: $("err-loginId"),
-      email: $("err-email"),
-      password: $("err-password"),
-      phone: $("err-phone"),
-      address: $("err-address"),
-      dob: $("err-dob"),
-      profile: $("err-profile"),
+      fullName:   $("err-fullName"),
+      loginId:    $("err-loginId"),
+      email:      $("err-email"),
+      password:   $("err-password"),
+      phone:      $("err-phone"),
+      address:    $("err-address"),
+      dob:        $("err-dob"),
+      profile:    $("err-profile"),
     };
 
-    let hasSubmitted = false;
+    // ===== Status helpers =====
+    function showOk(message) {
+      success.style.display = "block";
+      success.style.background = "#dcfce7";
+      success.style.border = "1px solid #bbf7d0";
+      success.style.color = "#166534";
+      success.textContent = message;
+    }
+    function showErr(message) {
+      success.style.display = "block";
+      success.style.background = "#fee2e2";
+      success.style.border = "1px solid #fecaca";
+      success.style.color = "#991b1b";
+      success.textContent = message;
+    }
+    function clearStatus() {
+      success.style.display = "none";
+      success.textContent = "";
+    }
 
-    // Password show/hide
+    // ===== Utilities =====
+    const show = (el, on) => { el.style.display = on ? "block" : "none"; };
+    const nonEmpty = (s) => s.trim().length > 0;
+
+    function pastDateOnly(value) {
+      const d = new Date(value);
+      const today = new Date();
+      d.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return d instanceof Date && !isNaN(d) && d < today;
+    }
+
+    // Keep DOB max to current date
+    (function setDobMaxToday() {
+      const today = new Date().toISOString().split("T")[0];
+      dob.setAttribute("max", today);
+    })();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadProfiles();
+    });
+
+    // Toggle Password Show / Hide
     const togglePassword = document.getElementById("togglePassword");
     if (togglePassword) {
       togglePassword.addEventListener("click", function () {
@@ -435,23 +479,21 @@
       });
     }
 
-    // Populate profiles (front-end only; replace with real fetch later)
+    // ===== Populate User Profiles (dropdown list) =====
     async function loadProfiles() {
       const select = document.getElementById("profile");
       select.innerHTML = '<option value="">Loading profiles...</option>';
 
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(PROFILES_API, {
           method : "GET",
           mode : "cors",
-          headers : {
-            "Content-Type" : "application/json",
-          },
+          headers : { "Content-Type" : "application/json" },
           credentials : "include",
         });
 
         if (!response.ok) {
-          throw new Error("Server responded with ${response.status}");
+          throw new Error(`Server responded with ${response.status}`);
         }
 
         const result = await response.json();
@@ -477,23 +519,11 @@
         select.innerHTML = "";
         select.appendChild(new Option("Error loading profiles", ""));
         select.disabled = true;
+        showErr("Unable to load profiles. Please try again later.");
       }
     }
 
-    // Helpers
-    const show = (el, on) => {
-      el.style.display = on ? "block" : "none";
-    };
-    const nonEmpty = (s) => s.trim().length > 0;
-    function pastDateOnly(value) {
-      const d = new Date(value);
-      const today = new Date();
-      d.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-      return d instanceof Date && !isNaN(d) && d < today;
-    }
-
-    // Field validations (validates entire form)
+    // ===== Field Validation =====
     function validate() {
       let ok = true;
 
@@ -518,7 +548,7 @@
       show(err.email, !okEmail);
       ok &&= okEmail;
 
-      const okPw = vPw.length >= 6 && vPw.length <= 128;
+      const okPw = vPw.length >= 8 && vPw.length <= 128;
       show(err.password, !okPw);
       ok &&= okPw;
 
@@ -541,63 +571,75 @@
       return ok;
     }
 
-    // Keep DOB max to current date (prevents future selection)
-    (function setDobMaxToday() {
-      const today = new Date().toISOString().split("T")[0];
-      dob.setAttribute("max", today);
-    })();
-
-    document.addEventListener("DOMContentLoaded", () => {
-      loadProfiles();
-    });
-
-    // Submit
-    form.addEventListener("submit", (e) => {
-      e.preventDefault(); // remove when wiring backend
-      hasSubmitted = true; // start showing errors from now on
+    // ===== Submit =====
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault(); 
+      hasSubmitted = true;
+      clearStatus();
 
       if (!validate()) return;
 
       submitBtn.disabled = true;
 
       const payload = {
-        fullname: fullName.value.trim(),
-        username: loginId.value.trim(),
-        email: email.value.trim(),
-        password: password.value, // send over HTTPS; hash on server
-        phone_number: phone.value.trim(),
-        address: address.value.trim(),
-        date_of_birth: dob.value,
-        user_profile: profile.value,
+        fullname:       fullName.value.trim(),
+        username:       loginId.value.trim(),
+        email:          email.value.trim(),
+        password:       password.value,
+        phone_number:   phone.value.trim(),
+        address:        address.value.trim(),
+        date_of_birth:  dob.value,
+        user_profile:   profile.value,
       };
 
-      success.textContent = `This would POST to /users with: ${JSON.stringify(payload)}`;
-      success.style.display = "block";
+      try {
+        const response = await fetch(REGISTER_API, {
+          method : "POST",
+          mode : "cors",
+          headers : { "Content-Type" : "application/json" },
+          credentials : "include",
+          body : JSON.stringify(payload),
+        });
 
-      fetch("http://127.0.0.1:80/users", {
-        method:"POST", //Specify the HTTP method as POST
-        mode:"cors",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) // Convert the JavaScript object to a JSON string
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("HTTP Error! Status: ${response.status}");
+        if (response.ok) {
+          showOk("Account created successfully!");
+
+          // Optionally clear the form:
+          // form.reset();
+      } else if (response.status === 400) {
+
+        // Show server-provided details if any
+        let msg = "";
+        try {
+          const ct = response.headers.get("content-type") || "";
+
+          if (ct.includes("application/json")) {
+
+            const j = await response.json();
+            msg = j.message || j.error || JSON.stringify(j);
+
+          } else { msg = await response.text(); }
+        } catch {}
+        showErr(msg ? `Registration failed: ${msg}` : "Registration failed. Please check your inputs.");
+        } 
+        else if (response.status === 401) {
+          showErr("Unauthorized. Please log in and try again.");
+        } 
+        else if (response.status === 409) {
+          showErr("This login ID or email already exists.");
+        } 
+        else {
+          showErr(`Unexpected error: ${response.status}`);
         }
-        return response.json(); // Parse the JSON response from the server
-      })
-      .then(data => {
-        console.log("Success:", data); // Handle the successful response data
-      })
-      .catch(response => {
-        console.error("Error:", error); // Handle any errors during the request
-      })
-
-      setTimeout(() => {
-        submitBtn.disabled = false;
-      }, 800);
+        } catch (error) {
+        console.error("Network Error:", error);
+        showErr("Network error. Please ensure the server is running.");
+      } 
+      finally {
+        setTimeout(() => { submitBtn.disabled = false; }, 800);
+      }
     });
-
+    
     // Live validation
     // Triggers only after 'Submit' button is clicked
     [fullName, loginId, email, password, phone, address].forEach((i) => {

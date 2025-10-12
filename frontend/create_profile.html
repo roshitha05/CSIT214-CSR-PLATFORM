@@ -173,20 +173,27 @@
   </div>
 
   <script>
-    // Form + elements
-    const form = document.getElementById('profileForm');
-    form.setAttribute('novalidate', ''); // custom JS messages (JS on)
+    
+    const $ = (id) => document.getElementById(id);
+    const form =    $("profileForm"),
+          success = $("success");
 
-    const nameInput = document.getElementById('name');
-    const descInput = document.getElementById('description');
-    const otherInput = document.getElementById('other');
+    const input = {
+      name :        $("name"),
+      description : $("description"),
+      other:        $("other"),
+    };
 
-    const nameError = document.getElementById('name-error');
-    const success = document.getElementById('success');
+    const err = {
+      name : $("name-error"),
+    }
+    
+    const API_URL = "http://127.0.0.1:80/api/user-profiles";
 
-    const API_URL = "http://127.0.0.1:85/api/user-profiles";
+    // Use custom messages (disable native)
+    form.setAttribute('novalidate', '');
 
-    // Helper functions to mirror login page behavior
+    // Helper functions
     function showOk(message) {
       success.style.display = "block";
       success.style.background = "#dcfce7";
@@ -206,33 +213,27 @@
       success.textContent = "";
     }
 
-    // Live feedback
-    nameInput.addEventListener('input', validateName);
-
     // Validation for Name
     function validateName() {
-      const val = nameInput.value.trim();
+      const val = input.name.value.trim();
       const ok = val.length >= 1 && val.length <= 64;
-      if (!ok) {
-        nameError.style.display = 'block';
-        nameInput.setAttribute('aria-invalid', 'true');
-        return false;
-      }
-      nameError.style.display = 'none';
-      nameInput.removeAttribute('aria-invalid');
-      return true;
+      err.name.style.display = ok ? "none" : "block";
+      input.name.toggleAttribute("aria-invalid", !ok);
+      return ok;
     }
 
-    // Reset Handler
-    form.addEventListener('reset', () => {
-      nameError.style.display = 'none';
-      nameInput.removeAttribute('aria-invalid');
-      clearStatus();
-    });
+    function validateForm() {
+      const okName = validateName();
+      return okName;
+    }
+
+    // Live feedback
+    input.name.addEventListener("input", validateName);
 
     // Submit Handler
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      clearStatus();
 
       if (!validateName()) {
         nameInput.focus();
@@ -241,9 +242,9 @@
 
       // Build payload
       const payload = {
-        name: nameInput.value.trim(),
-        description: (descInput.value || '').trim(),
-        other: (otherInput.value || '').trim()
+        name: input.name.value.trim(),
+        description: (input.description.value || '').trim(),
+        other: (input.other.value || '').trim()
       };
 
       try {
@@ -281,7 +282,14 @@
       }
     });
 
-    document.getElementById("returnDashboard").addEventListener("click", () => {
+    // ===== Reset =====
+    form.addEventListener('reset', () => {
+      err.name.style.display = 'none';
+      nameInput.removeAttribute('aria-invalid');
+      clearStatus();
+    });
+
+    $("returnDashboard").addEventListener("click", () => {
       window.location.href = "admin_dashboard.html";
     });
   </script>
