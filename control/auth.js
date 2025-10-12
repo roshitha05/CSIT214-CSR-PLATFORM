@@ -11,18 +11,9 @@ export class Login extends Control {
         this.router.post('/login', async (req, res, next) => {
             const loginSchema = z
                 .object({
-                    username: z.string().optional(),
-                    email: z.string().optional(),
+                    login: z.string().optional(),
                     password: z.string(),
                 })
-                .refine(
-                    (data) => {
-                        return data.username || data.email;
-                    },
-                    {
-                        message: 'Please provide username or email',
-                    }
-                );
 
             try {
                 var parsed = loginSchema.parse(req.body);
@@ -30,15 +21,13 @@ export class Login extends Control {
                 return next(400, error.issues[0].message);
             }
 
-            if (parsed.username !== undefined) {
+            var userArray = await this.usersEntity.getUsers({
+                username: parsed.login,
+                password: parsed.password,
+            });
+            if (userArray.length === 0) {
                 var userArray = await this.usersEntity.getUsers({
-                    username: parsed.username,
-                    password: parsed.password,
-                });
-            }
-            if (parsed.password !== undefined) {
-                var userArray = await this.usersEntity.getUsers({
-                    email: parsed.email,
+                    email: parsed.login,
                     password: parsed.password,
                 });
             }
