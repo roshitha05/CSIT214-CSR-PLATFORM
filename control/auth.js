@@ -11,7 +11,7 @@ export class Login extends Control {
         this.router.post('/login', async (req, res, next) => {
             const loginSchema = z
                 .object({
-                    login: z.string().optional(),
+                    login: z.string(),
                     password: z.string(),
                 })
 
