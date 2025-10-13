@@ -20,7 +20,7 @@ export class Login extends Control {
             } catch (error) {
                 return next(400, error.issues[0].message);
             }
-
+            
             var userArray = await this.usersEntity.getUsers({
                 username: parsed.login,
                 password: parsed.password,
@@ -33,15 +33,16 @@ export class Login extends Control {
             }
 
             if (userArray.length === 0) {
-                return next(
-                    new ServerError(
-                        401,
-                        'Invalid username, email or password'
-                    )
-                );
+                return next(new ServerError(
+                    401,
+                    'Invalid username, email or password'
+                ));
             }
 
             const user = userArray[0];
+            const user_profile = (await this.userProfileEntity.getUserProfiles({ 
+                name: user.user_profile 
+            }))[0];
             // dont encrypt password first
             //
             // const validPassword = await bcrypt.compare(
@@ -49,13 +50,15 @@ export class Login extends Control {
             //     user.password_hash
             // );
             if (!user.password === parsed.password) {
-                return next(
-                    new ServerError(
-                        401,
-                        'Invalid username, email or password'
-                    )
-                );
+                return next(new ServerError(
+                    401,
+                    'Invalid username, email or password'
+                ));
             }
+            if (user.status.toLowerCase() !== 'ACTIVE'.toLowerCase())
+                return next(new ServerError(400, 'Account is not active'));
+            if (user_profile.status.toLowerCase() !== 'ACTIVE'.toLowerCase())
+                return next(new ServerError(400, 'User profile is not active'));
 
             req.session.regenerate((err) => {
                 if (err) next(new ServerError(500, err));
