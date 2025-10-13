@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon ./server.js",
-    "debug": "nodemon inspect ./server.js"
+    "debug": "nodemon inspect ./server.js",
+    "seed": "node ./seed/seed_db.js"
   },
   "repository": {
     "type": "git",
