@@ -46,3 +46,24 @@ export class CreateUser extends Control {
         });
     }
 }
+
+export class GetUsers extends Control {
+    constructor() {
+        super();
+    }
+
+    createController() {
+        this.router.get('/', this.requireAuth('User Admin'), async (req, res, next) => {
+            const users = await this.usersEntity.getUsers();
+
+            for (let user of users) {
+                delete user.password
+            }
+
+            res.status(200).send({
+                message: 'Users retrieved',
+                data: users
+            })
+        });
+    };
+}

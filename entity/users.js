@@ -30,7 +30,7 @@ export default class UsersEntity extends Entity {
         super();
     }
 
-    async getUsers(searchBy) {
+    async getUsers(searchBy = {}) {
         let query = this.db.select().from(usersTable).$dynamic();
 
         const conditions = [];
