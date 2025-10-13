@@ -342,13 +342,13 @@
             body : JSON.stringify(payload),
           });
 
-          if (response.ok) {
-            const data = await response.json(); // retrieve user_role from backend
-            const role = data.user_profile?.trim();
+          if (response.ok) {                                  // refer to /control/auth.js
+            const data = await response.json();               // { message, data: {...} }
+            const user = data.data || {};                     // get the actual user object
+            const role = (user.user_profile || "").trim();    // get the role of the user object
 
             // Pick target from map ROLE_REDIRECT
             const target = ROLE_REDIRECT[role];
-            console.log(role)
             showOk("Login Successful! Redirecting...");
             
             setTimeout(() => {
