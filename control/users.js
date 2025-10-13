@@ -1,3 +1,4 @@
+import z from 'zod';
 import { insertUserSchema } from '../entity/users.js';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
@@ -54,7 +55,21 @@ export class GetUsers extends Control {
 
     createController() {
         this.router.get('/', this.requireAuth('User Admin'), async (req, res, next) => {
-            const users = await this.usersEntity.getUsers();
+            const searchUsersSchema = z.object({
+                user_id: z.string().optional(),
+                fullname: z.string().optional(),
+                email: z.string().optional(),
+                username: z.string().optional(),
+                phone_number: z.string().optional(),
+                address: z.string().optional(),
+                date_of_birth: z.string().optional(),
+                status: z.string().optional(),
+                created_at: z.date().optional(),
+            })
+            
+            const query = req.query
+            const parsed = searchUsersSchema.parse(query)
+            const users = await this.usersEntity.getUsers(parsed);
 
             for (let user of users) {
                 delete user.password
