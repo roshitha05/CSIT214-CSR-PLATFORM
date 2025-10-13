@@ -66,17 +66,22 @@ export class SuspendUserProfile extends Control {
     }
 
     createController() {
-        this.router.post('/:name/suspend', async (req, res, next) => {            
-            const name = req.params.name
-            const userProfile = (await this.userProfileEntity.getUserProfiles({ name: name }))[0];
+        this.router.post('/:name/suspend', async (req, res, next) => {    
+            const suspendUserProfileSchema = z.object({
+                name: z.string()
+            })  
+
+            const params = req.params
+            const parsed = suspendUserProfileSchema.parse(params)
+            const userProfile = (await this.userProfileEntity.getUserProfiles(parsed))[0];
 
             if (userProfile === undefined) 
                 return next(new ServerError(400, 'User profile not found'));
 
-            await this.userProfileEntity.updateUserProfile(name, { status: 'SUSPENDED '});
+            await this.userProfileEntity.updateUserProfile(parsed.name, { status: 'SUSPENDED '});
             
             res.status(200).send({
-                message: `User profile ${name} suspended`
+                message: `User profile ${parsed.name} suspended`
             });
         });
     }

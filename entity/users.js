@@ -54,4 +54,20 @@ export default class UsersEntity extends Entity {
 
         return user_id;
     }
+
+    async updateUser(user_id, update) {
+            const setQuery = {};
+            Object.keys(update).forEach((key) => {
+                if (update[key] !== undefined && usersTable[key]) {
+                    setQuery[key] = update[key]
+                }
+            });
+    
+            const query = this.db
+                .update(usersTable)
+                .set(setQuery)
+                .where(eq(usersTable.user_id, user_id))
+    
+            return await query;
+        }
 }

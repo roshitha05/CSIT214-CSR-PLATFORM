@@ -66,7 +66,7 @@ export class GetUsers extends Control {
                 status: z.string().optional(),
                 created_at: z.date().optional(),
             })
-            
+
             const query = req.query
             const parsed = searchUsersSchema.parse(query)
             const users = await this.usersEntity.getUsers(parsed);
@@ -79,6 +79,33 @@ export class GetUsers extends Control {
                 message: 'Users retrieved',
                 data: users
             })
+        });
+    };
+}
+
+export class SuspendUser extends Control {
+    constructor() {
+        super();
+    }
+
+    createController() {
+        this.router.post('/:user_id/suspend', this.requireAuth('User Admin'), async (req, res, next) => { 
+            const suspendUserSchema = z.object({
+                user_id: z.string()
+            })           
+
+            const params = req.params
+            const parsed = suspendUserSchema.parse(params)
+            const user = (await this.usersEntity.getUsers(parsed))[0];
+
+            if (user === undefined) 
+                return next(new ServerError(400, 'User not found'));
+
+            await this.usersEntity.updateUser(parsed.user_id, { status: 'SUSPENDED '});
+            
+            res.status(200).send({
+                message: `User ${parsed.user_id} suspended`
+            });
         });
     };
 }
