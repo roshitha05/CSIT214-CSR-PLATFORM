@@ -1,29 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { usersTable } from '../database/tables.js';
 import Entity from './entity.js';
-import { createInsertSchema } from 'drizzle-zod';
-import z from 'zod';
 
-export const insertUserSchema = createInsertSchema(usersTable, {
-    fullname: z.string(),
-    email: z
-        .string()
-        .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
-    username: z.string().min(1, 'Username must be at least 1 character'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    phone_number: z
-        .string()
-        .regex(/^[1-9][0-9]{7}$/, 'Invalid phone number format'),
-    address: z.string('Address is not a string'),
-    date_of_birth: z
-        .string()
-        .regex(
-            /^[1-2][0-9]{3}-([0][1-9]|[1][0-2])-([0][1-9]|[1-2][0-9]|[3][0-1])$/,
-            'Date must be in YYYY-MM-DD format'
-        ),
-    status: z.string(),
-    user_profile: z.string(),
-});
 
 export default class UsersEntity extends Entity {
     constructor() {

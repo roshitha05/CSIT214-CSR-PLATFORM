@@ -1,5 +1,8 @@
-import z from 'zod';
-import { insertUserSchema } from '../entity/users.js';
+import { 
+    insertUserSchema, 
+    searchUsersSchema, 
+    updateUserSchema,
+} from '../schemas/users.schema.js';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
 
@@ -55,18 +58,6 @@ export class GetUsers extends Control {
 
     createController() {
         this.router.get('/', this.requireAuth('User Admin'), async (req, res, next) => {
-            const searchUsersSchema = z.object({
-                user_id: z.string().optional(),
-                fullname: z.string().optional(),
-                email: z.string().optional(),
-                username: z.string().optional(),
-                phone_number: z.string().optional(),
-                address: z.string().optional(),
-                date_of_birth: z.string().optional(),
-                status: z.string().optional(),
-                created_at: z.date().optional(),
-            })
-
             const query = req.query
             const parsed = searchUsersSchema.parse(query)
             const users = await this.usersEntity.getUsers(parsed);
@@ -83,6 +74,31 @@ export class GetUsers extends Control {
     };
 }
 
+export class UpdateUser extends Control {
+    constructor() {
+        super();
+    }
+
+    createController() {
+        this.router.put('/:user_id', this.requireAuth('User Admin'), async (req, res, next) => {
+            debugger         
+            const user_id = req.params.user_id
+            const body = req.body
+            const parsed = updateUserSchema.parse(body)
+            const user = (await this.usersEntity.getUsers({ user_id }))[0];
+
+            if (user === undefined) 
+                return next(new ServerError(400, 'User not found'));
+
+            await this.usersEntity.updateUser(user_id, parsed);
+            
+            res.status(200).send({
+                message: `User ${user_id} updated`
+            });
+        });
+    };
+}
+
 export class SuspendUser extends Control {
     constructor() {
         super();
@@ -90,21 +106,16 @@ export class SuspendUser extends Control {
 
     createController() {
         this.router.post('/:user_id/suspend', this.requireAuth('User Admin'), async (req, res, next) => { 
-            const suspendUserSchema = z.object({
-                user_id: z.string()
-            })           
-
-            const params = req.params
-            const parsed = suspendUserSchema.parse(params)
-            const user = (await this.usersEntity.getUsers(parsed))[0];
+            const user_id = req.params.user_id
+            const user = (await this.usersEntity.getUsers(user_id))[0];
 
             if (user === undefined) 
                 return next(new ServerError(400, 'User not found'));
 
-            await this.usersEntity.updateUser(parsed.user_id, { status: 'SUSPENDED '});
+            await this.usersEntity.updateUser(user_id, { status: 'SUSPENDED '});
             
             res.status(200).send({
-                message: `User ${parsed.user_id} suspended`
+                message: `User ${user_id} suspended`
             });
         });
     };

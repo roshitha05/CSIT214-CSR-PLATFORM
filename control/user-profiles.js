@@ -1,5 +1,8 @@
-import z from 'zod';
-import { insertUserProfileSchema } from '../entity/user-profiles.js';
+import { 
+    insertUserProfileSchema,
+    searchUserProfilesSchema,
+    updateUserProfileSchema
+} from '../schemas/userProfiles.schema.js';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
 
@@ -40,14 +43,7 @@ export class GetUserProfiles extends Control {
     }
 
     createController() {
-        this.router.get('/', async (req, res) => {
-            const searchUserProfilesSchema = z.object({
-                name: z.string().optional(),
-                description: z.string().optional(),
-                status: z.string().optional(),
-                other: z.string().optional()
-            })
-            
+        this.router.get('/', this.requireAuth('User Admin'), async (req, res) => {
             const query = req.query
             const parsed = searchUserProfilesSchema.parse(query)
             const userProfiles = await this.userProfileEntity.getUserProfiles(parsed);
@@ -60,28 +56,47 @@ export class GetUserProfiles extends Control {
     }
 }
 
+export class UpdateUserProfile extends Control {
+    constructor() {
+        super();
+    }
+
+    createController() {
+        this.router.put('/:name', this.requireAuth('User Admin'), async (req, res, next) => {
+            const name = req.params.name
+            const body = req.body
+            const parsed = updateUserProfileSchema.parse(body)
+            const userProfile = (await this.userProfileEntity.getUserProfiles({ name }))[0];
+
+            if (userProfile === undefined) 
+                return next(new ServerError(400, 'User profile not found'));
+
+            await this.userProfileEntity.updateUserProfile(name, parsed);
+            
+            res.status(200).send({
+                message: `User profile ${name} updated`
+            });
+        })
+    }
+}
+
 export class SuspendUserProfile extends Control {
     constructor() {
         super();
     }
 
     createController() {
-        this.router.post('/:name/suspend', async (req, res, next) => {    
-            const suspendUserProfileSchema = z.object({
-                name: z.string()
-            })  
-
-            const params = req.params
-            const parsed = suspendUserProfileSchema.parse(params)
-            const userProfile = (await this.userProfileEntity.getUserProfiles(parsed))[0];
+        this.router.post('/:name/suspend', this.requireAuth('User Admin'), async (req, res, next) => {    
+            const name = req.params.name
+            const userProfile = (await this.userProfileEntity.getUserProfiles({ name }))[0];
 
             if (userProfile === undefined) 
                 return next(new ServerError(400, 'User profile not found'));
 
-            await this.userProfileEntity.updateUserProfile(parsed.name, { status: 'SUSPENDED '});
+            await this.userProfileEntity.updateUserProfile(name, { status: 'SUSPENDED '});
             
             res.status(200).send({
-                message: `User profile ${parsed.name} suspended`
+                message: `User profile ${name} suspended`
             });
         });
     }

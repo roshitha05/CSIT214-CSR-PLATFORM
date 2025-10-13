@@ -1,14 +1,6 @@
 import { and, eq, ilike } from 'drizzle-orm';
 import { userProfilesTable } from '../database/tables.js';
 import Entity from './entity.js';
-import { createInsertSchema } from 'drizzle-zod';
-import z from 'zod';
-
-export const insertUserProfileSchema = createInsertSchema(userProfilesTable, {
-    name: z.string(),
-    description: z.string(),
-    other: z.string().optional(),
-});
 
 export default class UserProfilesEntity extends Entity {
     constructor() {
