@@ -1,7 +1,8 @@
 import { 
     insertUserProfileSchema,
     searchUserProfilesSchema,
-    updateUserProfileSchema
+    updateUserProfileSchema,
+    responseUserProfileSchema
 } from '../schemas/userProfiles.schema.js';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
@@ -46,8 +47,12 @@ export class GetUserProfiles extends Control {
         this.router.get('/', this.requireAuth('User Admin'), async (req, res) => {
             const query = req.query
             const parsed = searchUserProfilesSchema.parse(query)
-            const userProfiles = await this.userProfileEntity.getUserProfiles(parsed);
+            let userProfiles = await this.userProfileEntity.getUserProfiles(parsed);
             
+            userProfiles = userProfiles.map(userProfile => 
+                responseUserProfileSchema.parse(userProfile)
+            );
+
             res.status(200).send({
                 message: 'User profiles retrieved',
                 data: userProfiles,

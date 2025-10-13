@@ -20,3 +20,10 @@ export const updateUserProfileSchema = z.object({
     description: z.string().optional(),
     other: z.string().optional(),
 })
+
+export const responseUserProfileSchema = z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    status: z.string().optional(),
+    other: z.string().optional()
+})

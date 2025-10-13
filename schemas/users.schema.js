@@ -54,3 +54,16 @@ export const updateUserSchema = z.object({
         )
         .optional(),
 });
+
+export const responseUserSchema = z.object({
+    user_id: z.int().optional(),
+    fullname: z.string().optional(),
+    email: z.string().optional(),
+    username: z.string().optional(),
+    phone_number: z.string().optional(),
+    address: z.string().optional(),
+    date_of_birth: z.string().optional(),
+    status: z.string().optional(),
+    user_profile: z.string().optional(),
+    created_at: z.date().optional(),
+})

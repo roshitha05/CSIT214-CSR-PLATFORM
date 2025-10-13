@@ -2,6 +2,7 @@ import {
     insertUserSchema, 
     searchUsersSchema, 
     updateUserSchema,
+    responseUserSchema
 } from '../schemas/users.schema.js';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
@@ -60,11 +61,11 @@ export class GetUsers extends Control {
         this.router.get('/', this.requireAuth('User Admin'), async (req, res, next) => {
             const query = req.query
             const parsed = searchUsersSchema.parse(query)
-            const users = await this.usersEntity.getUsers(parsed);
+            let users = await this.usersEntity.getUsers(parsed);
 
-            for (let user of users) {
-                delete user.password
-            }
+            users = users.map(userProfile => 
+                responseUserSchema.parse(userProfile)
+            );
 
             res.status(200).send({
                 message: 'Users retrieved',
