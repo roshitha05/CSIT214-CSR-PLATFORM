@@ -1,0 +1,5 @@
+{
+  "env": {
+    "NODE_INSPECT_RESUME_ON_START": "1"
+  }
+}
