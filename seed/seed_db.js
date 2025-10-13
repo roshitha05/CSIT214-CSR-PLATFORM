@@ -38,7 +38,7 @@ async function main(tx) {
         .insert(userProfilesTable)
         .values({
             name: 'User Admin',
-            description: `System moderator responsible for managing user accounts, maintaining platform integrity, and ensuring compliance with community guidelines. This role handles user verification, account disputes, and monitors platform activity to maintain a safe and trustworthy environment for all participants.`,
+            description: `System moderator responsible for managing user accounts, maintaining platform integrity, and ensuring compliance with community guidelines.`,
             status: 'ACTIVE'
         })
         .returning();
@@ -47,7 +47,7 @@ async function main(tx) {
         .insert(userProfilesTable)
         .values({
             name: 'Person-In-Need',
-            description: `Individual seeking volunteer assistance for various personal, professional, or community needs. These users create requests for help, communicate their specific requirements, and coordinate with volunteers to receive support ranging from simple tasks to more complex project assistance.`,
+            description: `Individual seeking volunteer assistance for various personal, professional, or community needs.`,
             status: 'ACTIVE'
         })
         .returning();
@@ -56,7 +56,7 @@ async function main(tx) {
         .insert(userProfilesTable)
         .values({
             name: 'CSR Representative',
-            description: `Corporate social responsibility liaison who coordinates volunteer programs between organizations and the platform. They manage corporate volunteer initiatives, facilitate group volunteering opportunities, and ensure alignment between company community service goals and available volunteer projects.`,
+            description: `Corporate social responsibility liaison who coordinates volunteer programs between organizations and the platform.`,
             status: 'ACTIVE'
         })
         .returning();
@@ -65,7 +65,7 @@ async function main(tx) {
         .insert(userProfilesTable)
         .values({
             name: 'Platform Management',
-            description: `System administrator overseeing platform operations, technical infrastructure, and strategic development initiatives. This role manages system performance, coordinates feature rollouts, handles technical support escalations, and ensures the platform scales effectively to serve the growing volunteer community.`,
+            description: `System administrator overseeing platform operations, technical infrastructure, and strategic development initiatives.`,
             status: 'ACTIVE'
         })
         .returning();
