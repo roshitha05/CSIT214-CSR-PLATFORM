@@ -9,6 +9,7 @@ import * as http from 'http';
 import {
     CreateUserProfiles,
     GetUserProfiles,
+    SuspendUserProfile,
 } from './control/user-profiles.js';
 import ServerError from './exception/Error.js';
 import { CreateUser, GetUsers } from './control/users.js';
@@ -103,8 +104,11 @@ export default class App {
         });
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
+
         apiRouter.use('/user-profiles', new CreateUserProfiles().getRouter());
         apiRouter.use('/user-profiles', new GetUserProfiles().getRouter());
+        apiRouter.use('/user-profiles', new SuspendUserProfile().getRouter())
+        
         apiRouter.use('/users', new CreateUser().getRouter());
         apiRouter.use('/users', new GetUsers().getRouter());
 

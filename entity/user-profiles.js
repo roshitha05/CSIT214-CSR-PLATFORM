@@ -39,4 +39,20 @@ export default class UserProfilesEntity extends Entity {
     async insertUserProfile(userProfile) {
         await this.db.insert(userProfilesTable).values(userProfile);
     }
+
+    async updateUserProfile(name, update) {
+        const setQuery = {};
+        Object.keys(update).forEach((key) => {
+            if (update[key] !== undefined && userProfilesTable[key]) {
+                setQuery[key] = update[key]
+            }
+        });
+
+        const query = this.db
+            .update(userProfilesTable)
+            .set(setQuery)
+            .where(ilike(userProfilesTable.name, name))
+
+        return await query;
+    }
 }
