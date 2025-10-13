@@ -1,3 +1,4 @@
+import z from 'zod';
 import { insertUserProfileSchema } from '../entity/user-profiles.js';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
@@ -40,9 +41,19 @@ export class GetUserProfiles extends Control {
 
     createController() {
         this.router.get('/', async (req, res) => {
-            const userProfiles = await this.userProfileEntity.getUserProfiles();
+            const searchUserProfilesSchema = z.object({
+                name: z.string().optional(),
+                description: z.string().optional(),
+                status: z.string().optional(),
+                other: z.string().optional()
+            })
+            
+            const query = req.query
+            const parsed = searchUserProfilesSchema.parse(query)
+            const userProfiles = await this.userProfileEntity.getUserProfiles(parsed);
             
             res.status(200).send({
+                message: 'User profiles retrieved',
                 data: userProfiles,
             });
         });
