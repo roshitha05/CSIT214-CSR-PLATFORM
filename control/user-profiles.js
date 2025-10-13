@@ -14,7 +14,10 @@ export class CreateUserProfiles extends Control {
 
     createController() {
         this.router.post('/', this.requireAuth("User Admin"), async (req, res, next) => {
-            const body = req.body;
+            const body = {
+                ...req.body,
+                status: 'ACTIVE'
+            }
 
             try {
                 var parsed = insertUserProfileSchema.parse(body);
@@ -48,7 +51,7 @@ export class GetUserProfiles extends Control {
             const query = req.query
             const parsed = searchUserProfilesSchema.parse(query)
             let userProfiles = await this.userProfileEntity.getUserProfiles(parsed);
-            
+            debugger
             userProfiles = userProfiles.map(userProfile => 
                 responseUserProfileSchema.parse(userProfile)
             );

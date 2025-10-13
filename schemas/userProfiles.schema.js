@@ -5,6 +5,7 @@ import { userProfilesTable } from '../database/tables.js';
 export const insertUserProfileSchema = createInsertSchema(userProfilesTable, {
     name: z.string(),
     description: z.string(),
+    status: z.string(),
     other: z.string().optional(),
 });
 
@@ -25,5 +26,5 @@ export const responseUserProfileSchema = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
     status: z.string().optional(),
-    other: z.string().optional()
+    other: z.string().nullable().optional()
 })
