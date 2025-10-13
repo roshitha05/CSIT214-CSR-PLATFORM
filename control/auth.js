@@ -1,6 +1,7 @@
 import z from 'zod';
 import ServerError from '../exception/Error.js';
 import Control from './control.js';
+import { responseUserSchema } from '../schemas/users.schema.js';
 
 export class Login extends Control {
     constructor() {
@@ -68,9 +69,10 @@ export class Login extends Control {
                 req.session.save((err) => {
                     if (err) next(new ServerError(500, err));
 
+                    const data = responseUserSchema.parse(user);
                     res.status(200).json({
                         message: 'Logged in',
-                        user_profile: user.user_profile
+                        data: data,
                     });
                 });
             });
