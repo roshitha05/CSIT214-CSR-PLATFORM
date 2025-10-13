@@ -29,6 +29,13 @@
       "when": 1760320161800,
       "tag": "0003_user_profiles_status_and_users_userprofile_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1760327839965,
+      "tag": "0004_user_profiles_update_cascade",
+      "breakpoints": true
     }
   ]
 }

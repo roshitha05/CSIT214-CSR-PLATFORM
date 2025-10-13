@@ -19,7 +19,8 @@ export const usersTable = pgTable('users', {
     status: varchar({ length: 256 }).notNull(),
     user_profile: varchar({ length: 256 })
         .references(() => userProfilesTable.name, {
-            onDelete: 'cascade'
+            onDelete: 'cascade',
+            onUpdate: 'cascade'
         })
         .notNull(),
     created_at: timestamp().defaultNow(),
