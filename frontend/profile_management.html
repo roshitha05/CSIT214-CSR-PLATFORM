@@ -252,9 +252,18 @@
   }
   function closeDeleteModal() { document.getElementById("deleteModal").style.display = "none"; }
   async function confirmDelete() {
-    // not implemented yet
-    const name = currentRow.dataset.name;
-    closeDeleteModal();
+    await fetch(`${API_URL}/user-profiles/${currentRow.dataset.userProfile}/suspend`, {
+      method : "POST",
+      mode : "cors",
+      credentials : "include",
+    })
+      .then(res => {
+        if (res.ok) return console.log('ok');
+        throw new Error('Internal server error');
+      })
+      .finally(() => {
+        closeDeleteModal();
+      });
   }
 
   document.getElementById("search").addEventListener("keyup", function () {
