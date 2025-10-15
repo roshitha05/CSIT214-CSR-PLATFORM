@@ -145,6 +145,50 @@
         background: #1f5f8b;
       }
 
+      /* Logout Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .modal-content {
+        background: #fff;
+        padding: 28px;
+        width: 420px;
+        max-width: 90vw;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,.2);
+      }
+      .modal-content h2 {
+        margin: 0 0 8px 0;
+        font-size: 1.2rem;
+      }
+      .modal-content p {
+        margin: 0 0 16px 0;
+        color: #475569;
+        line-height: 1.4;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .modal-actions button {
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn-cancel { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
+      .btn-cancel:hover { background: #e2e8f0; }
+      .btn-confirm { background: #ef4444; color: #fff; }
+      .btn-confirm[disabled] { opacity: .7; cursor: not-allowed; }
+
       @media (max-width: 768px) {
         .sidebar {
           width: 70px;
@@ -169,7 +213,7 @@
       <a href="#"><i class="fa-solid fa-list"></i><span>Reports</span></a>
       <a href="#"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
 
-      <button class="logout-btn">
+      <button class="logout-btn" id="logoutBtn">
         <i class="fa-solid fa-right-from-bracket"></i> Logout
       </button>
     </aside>
@@ -197,13 +241,13 @@
           <p>Set up new user accounts.</p>
         </div>
 
-        <div class="card">
+        <div class="card" id="profileManagementCard">
           <i class="fa-solid fa-users"></i>
           <h3>Profile management</h3>
           <p>Manage user profiles.</p>
         </div>
         
-        <div class="card">
+        <div class="card" id="accountManagementCard">
           <i class="fa-solid fa-contact-book"></i>
           <h3>Account Management</h3>
           <p>Manage and review account details.</p>
@@ -211,52 +255,109 @@
       </div>
     </main>
 
-    <script>
-      const logoutBtn = document.querySelector(".logout-btn");
-      const API_URL = "http://127.0.0.1:80/api/logout";
+    <!-- Logout Confirm Modal -->
+    <div class="modal" id="logoutModal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+      <div class="modal-content">
+        <h2 id="logoutTitle">Confirm Logout</h2>
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="cancelLogoutBtn">Cancel</button>
+          <button class="btn-confirm" id="confirmLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
 
-      logoutBtn.addEventListener("click", async () => {
-        logoutBtn.textContent = "Logging out...";
-        logoutBtn.disabled = true;
-
-        try {
-          const response = await fetch(API_URL, {
-            method : "POST",
-            mode : "cors",
-            headers : { "Content-Type" : "application/json" },
-            credentials : "include", // include cookies / sessions
-          });
-
-          if (response.ok) {
-            alert("Logout successful! Redirecting to login...");
-            setTimeout(() => {
-              window.location.href = "user_login.html";
-            }, 1000);
-          } else if (response.status === 401) {
-            alert("Session expired or already logged out. Redirecting...");
-          } else if (response.status === 500) {
-            alert("Server error during logout. Please try again.");
-          } else {
-            alert(`Unexpected error: ${response.status}`);
-          } 
-        } catch (error) {
-          console.error("Network error:", error);
-          alert("Network error. Please ensure the server is running.");
-        } finally {
-          logoutBtn.disabled = false;
-          logoutBtn.textContent = "Logout";
-        }
-      });
-
-      // Link to create_profile.html
-      document.getElementById("createProfilesCard").addEventListener("click", () => {
-        window.location.href = "create_profile.html";
-      });
-
-      // Link to create_profile.html
-      document.getElementById("createAccountsCard").addEventListener("click", () => {
-        window.location.href = "create_account.html";
-      });
-    </script>
   </body>
+  <script>
+    const API_URL = "http://127.0.0.1:80/api/logout";
+
+    const $ = (id) => document.getElementById(id);
+    const ui = {
+      logoutBtn: $("logoutBtn") || document.querySelector(".logout-btn"),
+      modal: $("logoutModal"),
+      confirm: $("confirmLogoutBtn"),
+      cancel: $("cancelLogoutBtn"),
+      cards: {
+        createProfiles: $("createProfilesCard"),
+        createAccounts: $("createAccountsCard"),
+        profileManagement: $("profileManagementCard"),
+        accountManagement: $("accountManagementCard"),
+      }
+    };
+
+    // Modal controls
+    function openLogoutModal() {
+      ui.modal.style.display = "flex";
+      ui.confirm.focus();
+    }
+
+    function closeLogoutModal() {
+      ui.modal.style.display = "none";
+    }
+
+    // wire up
+    ui.logoutBtn.addEventListener("click", openLogoutModal);
+
+    // click backdrop to close
+    ui.modal.addEventListener("click", (e) => {
+      if (e.target === ui.modal) closeLogoutModal();
+    });
+
+    // esc to close
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && ui.modal.style.display === "flex") closeLogoutModal();
+    });
+
+    // cancel
+    ui.cancel.addEventListener("click", closeLogoutModal);
+
+    // Confirm Logout
+    ui.confirm.addEventListener("click", async () => {
+    ui.confirm.disabled = true;
+    const original = ui.confirm.textContent;
+    ui.confirm.textContent = "Logging out...";
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (res.ok || res.status === 401) {
+        window.location.href = "user_login.html";
+      } else {
+        alert(`Logout failed (${res.status}). Please try again.`);
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Network error. Please ensure the server is running.");
+    } finally {
+      ui.confirm.disabled = false;
+      ui.confirm.textContent = original;
+      closeLogoutModal();
+    }
+  });
+
+    // Link to create_profile.html
+    document.getElementById("createProfilesCard").addEventListener("click", () => {
+      window.location.href = "create_profile.html";
+    });
+
+    // Link to create_account.html
+    document.getElementById("createAccountsCard").addEventListener("click", () => {
+      window.location.href = "create_account.html";
+    });
+
+    // Link to profile_management.html
+    document.getElementById("profileManagementCard").addEventListener("click", () => {
+      window.location.href = "profile_management.html";
+    });
+
+    // Link to account_management.html
+    document.getElementById("accountManagementCard").addEventListener("click", () => {
+      window.location.href = "account_management.html";
+    });
+  </script>
 </html>
