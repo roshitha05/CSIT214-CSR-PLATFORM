@@ -164,7 +164,6 @@
           <th>Full Name</th>
           <th>Email</th>
           <th>Username</th>
-          <th>Password</th>
           <th>Phone Number</th>
           <th>Address</th>
           <th>Date of Birth</th>
@@ -174,38 +173,6 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Example rows -->
-        <tr>
-          <td>Malcolm</td>
-          <td>Malcolm123456@email.com</td>
-          <td>Malcolmlsj</td>
-          <td>12345678</td>
-          <td>12345678</td>
-          <td>ABCDE</td>
-          <td>12/12/2000</td>
-          <td>AAAA</td>
-          <td>BBBBB</td>
-          <td class="actions">
-            <button class="btn-edit">Edit</button>
-            <button class="btn-delete">Delete</button>
-          </td>
-        </tr>
-        <tr>
-          <td>Darryn</td>
-          <td>Darryn@email.com</td>
-          <td>Darrynwjk</td>
-          <td>12345678</td>
-          <td>12345678</td>
-          <td>ABCDE</td>
-          <td>12/12/2000</td>
-          <td>AAAA</td>
-          <td>CCCCC</td>
-          <td class="actions">
-            <button class="btn-edit">Edit</button>
-            <button class="btn-delete">Delete</button>
-          </td>
-        </tr>
-
       </tbody>
     </table>
   </div>
@@ -213,6 +180,49 @@
 
   <script>
     // Simple search filter
+      const API_URL = 'http://127.0.0.1:85/api';
+
+    function populateTable(users) {
+      const table = document
+        .getElementById('profileTable')
+        .querySelector('tbody')
+
+      for (const user of users) {
+        const htmlString = `
+          <tr data-user-id='${user.user_id}'>
+            <td class='fullname'>${user.fullname}</td>
+            <td class='email'>${user.email}</td>
+            <td class='username'>${user.username}</td>
+            <td class='phone_number'>${user.phone_number}</td>
+            <td class='address'>${user.address}</td>
+            <td class='date_of_birth'>${user.date_of_birth}</td>
+            <td class='profile'>${user.user_profile}</td>
+            <td class='created_at'>${user.created_at}</td>
+            <td class="actions">
+              <button class="btn-edit">Edit</button>
+              <button class="btn-delete">Delete</button>
+            </td>
+          </tr>
+        `;
+        table.insertAdjacentHTML('beforeend', htmlString);
+      };
+    };
+
+    (async() => {
+      await fetch(`${API_URL}/users`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+    })
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('Internal server error');
+    })
+      .then(res => {
+        populateTable(res.data)
+      })
+    })()
+
     document.getElementById("search").addEventListener("keyup", function () {
       const filter = this.value.toLowerCase();
       const rows = document.querySelectorAll("#profileTable tbody tr");

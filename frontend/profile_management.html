@@ -177,7 +177,9 @@
   const API_URL = 'http://127.0.0.1:85/api';
 
   function populateTable(profiles) {
-    const table = document.getElementById('profileTable')
+    const table = document
+      .getElementById('profileTable')
+      .querySelector('tbody')
 
     for (const profile of profiles) {
       const htmlString = `
