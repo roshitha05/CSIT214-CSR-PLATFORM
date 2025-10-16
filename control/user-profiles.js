@@ -74,6 +74,12 @@ export class UpdateUserProfile extends Control {
             const name = req.params.name
             const body = req.body
             const parsed = updateUserProfileSchema.parse(body)
+
+            if (
+                name.toLowerCase() === 'user admin'
+                && parsed.name.toLowerCase() !== 'user admin'
+            ) return next(new ServerError(400, 'Cannot change user admin name'));
+
             const userProfile = (await this.userProfileEntity.getUserProfiles({ name }))[0];
 
             if (userProfile === undefined) 
