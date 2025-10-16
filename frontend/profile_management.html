@@ -493,23 +493,23 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
-    /* === Status helpers === */
-    const isSuspended = (p) =>
-      (typeof p.status === "string" && p.status.toLowerCase() === "suspended") ||
-      p.is_suspended === true ||
-      p.suspended === true ||
-      p.active === false ||
-      p.is_active === false;
+    const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
 
-    function renderStatusBadge(profileOrFlag) {
-      const suspended = typeof profileOrFlag === "boolean" ? profileOrFlag : isSuspended(profileOrFlag);
-      return suspended
+    /* === Status helpers === */
+    const isSuspended = (p) => String(p.status || "").toUpperCase() === STATUS.SUSPENDED;
+
+    // Accepts a STATUS string
+    function renderStatusBadgeFromStatus(statusStr) {
+      const s = String(statusStr).toUpperCase();
+      return s === STATUS.SUSPENDED
         ? '<span class="badge badge-suspended">Suspended</span>'
         : '<span class="badge badge-active">Active</span>';
     }
 
-    function actionButtonHTML(profile) {
-      return isSuspended(profile)
+    // Accepts a STATUS string
+    function actionButtonHTMLFromStatus(statusStr) {
+      const s = String(statusStr).toUpperCase();
+      return s === STATUS.SUSPENDED
         ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reactivate</button>'
         : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
     }
@@ -519,26 +519,27 @@
       const tbody = $("profileTable").querySelector("tbody");
       tbody.innerHTML = "";
 
-      // Sort A->Z by name (case-insensitive) before rendering
-      profiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+      // Sort A->Z by name (case-insensitive)
+      profiles
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+        .forEach((p) => {
+          const status = String(p.status || STATUS.ACTIVE).toUpperCase();
+          const html = `
+            <tr data-user-profile="${escapeHTML(p.name)}" data-status="${status}">
+              <td class="name">${escapeHTML(p.name)}</td>
+              <td class="description">${escapeHTML(p.description)}</td>
+              <td class="other">${p.other ? escapeHTML(p.other) : ""}</td>
+              <td class="status">${renderStatusBadgeFromStatus(status)}</td>
+              <td class="actions">
+                <div class="btn-row">
+                  <button class="btn-edit" onclick="openEditModal(this)">Edit</button>
+                  ${actionButtonHTMLFromStatus(status)}
+                </div>
+              </td>
+            </tr>`;
+          tbody.insertAdjacentHTML("beforeend", html);
+        });
 
-      for (const profile of profiles) {
-        const html = `
-          <tr data-user-profile="${escapeHTML(profile.name)}">
-            <td class="name">${escapeHTML(profile.name)}</td>
-            <td class="description">${escapeHTML(profile.description)}</td>
-            <td class="other">${profile.other ? escapeHTML(profile.other) : ""}</td>
-            <td class="status">${renderStatusBadge(profile)}</td>
-            <td class="actions">
-              <div class="btn-row">
-                <button class="btn-edit" onclick="openEditModal(this)">Edit</button>
-                ${actionButtonHTML(profile)}
-              </div>
-            </td>
-          </tr>
-        `;
-        tbody.insertAdjacentHTML("beforeend", html);
-      }
       updateNoResults();
     }
 
@@ -571,7 +572,7 @@
         populateTable(data.data || []);
       } catch (e) {
         console.error(e);
-        populateTable([]); // still render "No results"
+        populateTable([]); // still render "No results" upon error
       }
     })();
 
@@ -608,27 +609,44 @@
         );
         if (!res.ok) throw new Error("Update failed");
 
-        // Update row in place (no re-render → preserves position)
+        // Update row in place (no re-render)
         currentRow.querySelector(".name").textContent = name;
         currentRow.querySelector(".description").textContent = description;
         currentRow.querySelector(".other").textContent = other;
         currentRow.dataset.userProfile = name;
 
-        closeEditModal(); // ensure modal closes after successful save
+        closeEditModal();
       } catch (e) {
         console.error(e);
         alert("Could not save changes. Please try again.");
-        closeEditModal(); // still close for now; remove if you prefer to keep open on error
+        closeEditModal();
       }
     }
 
-    /* === Suspend / Reactivate (UI-only for now) === */
+    /* === Suspend / Reactivate === */
+    // Helper to flip a row’s status + button consistently
+    function applyStatusToRow(row, statusStr) {
+      const status = String(statusStr).toUpperCase();
+      row.dataset.status = status;
+      row.querySelector(".status").innerHTML = renderStatusBadgeFromStatus(status);
+
+      const btnRow = row.querySelector(".actions .btn-row");
+      const old = btnRow.querySelector(".btn-suspend, .btn-reactivate");
+
+      const container = document.createElement("div");
+      container.innerHTML = actionButtonHTMLFromStatus(status);
+      const fresh = container.firstElementChild;
+
+      if (old) old.replaceWith(fresh);
+      else btnRow.appendChild(fresh);
+    }
+
+    // ----- Suspend (calls backend) -----
     let pendingSuspendRow = null;
-    let pendingReactivateRow = null;
 
     function openSuspendModal(button) {
       pendingSuspendRow = button.closest("tr");
-      $("suspendModal").style.display = "flex"; 
+      $("suspendModal").style.display = "flex";
     }
 
     function closeSuspendModal() {
@@ -636,35 +654,31 @@
       pendingSuspendRow = null;
     }
 
-    function confirmSuspendUI() {
+    async function confirmSuspendUI() {
       if (!pendingSuspendRow) return;
 
-      const name = pendingSuspendRow.dataset.userProfile;
-
-      fetch(`${API_URL}/user-profiles/${encodeURIComponent(name)}/suspend`, {
-        method: "POST",
-        mode: "cors",
-        credentials: "include",
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to suspend profile");
-
-          pendingSuspendRow.querySelector(".status").innerHTML = renderStatusBadge(true);
-
-          const suspendBtn = pendingSuspendRow.querySelector(".btn-suspend");
-          if (suspendBtn) {
-            suspendBtn.outerHTML =
-              '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reactivate</button>';
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          alert("Error suspending profile. Please try again.");
-        })
-        .finally(() => {
-          closeSuspendModal();
+      const key = pendingSuspendRow.dataset.userProfile;
+      try {
+        const res = await fetch(`${API_URL}/user-profiles/${encodeURIComponent(key)}/suspend`, {
+          method: "POST",
+          mode: "cors",
+          credentials: "include",
         });
+        if (!res.ok) throw new Error("Suspend failed.");
+        const data = await res.json();
+
+        const newStatus = String((data.data && data.data.status) || STATUS.SUSPENDED).toUpperCase();
+        applyStatusToRow(pendingSuspendRow, newStatus);
+      } catch (e) {
+        console.error(e);
+        alert("Could not suspend. Please try again.");
+      } finally {
+        closeSuspendModal();
+      }
     }
+
+    // ----- Reactivate (UI-only for now) -----
+    let pendingReactivateRow = null;
 
     function openReactivateModal(button) {
       pendingReactivateRow = button.closest("tr");
@@ -676,19 +690,14 @@
       pendingReactivateRow = null;
     }
 
-    function confirmReactivateUI() {
+    async function confirmReactivateUI() {
       if (!pendingReactivateRow) return;
 
-      // 1) badge -> Active
-      pendingReactivateRow.querySelector(".status").innerHTML = renderStatusBadge(false);
+      // UI-only: flip to ACTIVE locally
+      applyStatusToRow(pendingReactivateRow, STATUS.ACTIVE);
 
-      // 2) swap Reactivate -> Suspend
-      const reactBtn = pendingReactivateRow.querySelector(".btn-reactivate");
-      if (reactBtn) {
-        reactBtn.outerHTML =
-          '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
-      }
-
+      // If/when you add a backend route, do that call here and
+      // then apply whatever status the server returns.
       closeReactivateModal();
     }
 
