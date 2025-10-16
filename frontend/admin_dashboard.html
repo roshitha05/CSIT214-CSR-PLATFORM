@@ -298,16 +298,6 @@
     // wire up
     ui.logoutBtn.addEventListener("click", openLogoutModal);
 
-    // click backdrop to close
-    ui.modal.addEventListener("click", (e) => {
-      if (e.target === ui.modal) closeLogoutModal();
-    });
-
-    // esc to close
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && ui.modal.style.display === "flex") closeLogoutModal();
-    });
-
     // cancel
     ui.cancel.addEventListener("click", closeLogoutModal);
 

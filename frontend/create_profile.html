@@ -222,6 +222,10 @@
       return ok;
     }
 
+    // Validation for Description
+    
+    // Validation for Other
+
     function validateForm() {
       const okName = validateName();
       return okName;
@@ -236,7 +240,7 @@
       clearStatus();
 
       if (!validateName()) {
-        nameInput.focus();
+        input.name.focus({preventScroll: true});
         return;
       }
 
@@ -284,8 +288,13 @@
 
     // ===== Reset =====
     form.addEventListener('reset', () => {
-      err.name.style.display = 'none';
-      nameInput.removeAttribute('aria-invalid');
+      // Hide all error messages
+      Object.values(err).forEach(el => el.style.display = 'none');
+
+      // Remove aria-invalid from all input fields
+      Object.values(input).forEach(field => field.removeAttribute('aria-invalid'));
+
+      // Clear success/error banners
       clearStatus();
     });
 

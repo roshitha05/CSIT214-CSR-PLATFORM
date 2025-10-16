@@ -17,374 +17,186 @@
       --radius:16px;
     }
 
-    /* Ensure consistent sizing */
+    /* ===== Base ===== */
     * { box-sizing: border-box; }
-
-    html, body {
-      min-height: 100%;
-      margin: 0;
-    }
-
+    html, body { min-height:100%; margin:0; }
     body {
-      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: linear-gradient(180deg, #e0f2fe, var(--bg));
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 24px;
-      min-height: 100svh;
-      overflow: hidden;
+      font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background:linear-gradient(180deg,#e0f2fe,var(--bg));
+      color:var(--text);
+      display:flex; justify-content:center; align-items:flex-start;
+      padding:24px; min-height:100svh; overflow:hidden;
     }
 
     /* ===== Card ===== */
     .card {
-      width: 100%;
-      max-width: 1000px;
-      background: var(--card);
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius);
-      box-shadow: 0 8px 24px rgba(0,0,0,.1);
-      overflow: hidden;
-      height: calc(100svh - 48px);
-      display: flex;
-      flex-direction: column;
+      width:100%; max-width:1000px; height:calc(100svh - 48px);
+      background:var(--card); border:1px solid #e2e8f0; border-radius:var(--radius);
+      box-shadow:0 8px 24px rgba(0,0,0,.1); overflow:hidden;
+      display:flex; flex-direction:column;
     }
 
     /* ===== Header ===== */
     .header {
-      padding: 18px 24px;
-      background: linear-gradient(180deg, #e0f2fe, #f8fafc);
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding:18px 24px; background:linear-gradient(180deg,#e0f2fe,#f8fafc);
+      border-bottom:1px solid #e2e8f0;
+      display:flex; justify-content:space-between; align-items:center;
     }
-
-    .header h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      color: var(--accent-2);
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .header h1 { margin:0; font-size:1.5rem; color:var(--accent-2); }
+    .header-controls { display:flex; align-items:center; gap:12px; }
 
     .btn-dashboard {
-      background: linear-gradient(180deg, var(--accent), var(--accent-2));
-      color: #fff;
-      border: 0;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-size: .9rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 3px 6px rgba(0,0,0,.1);
-      transition: .2s;
+      background:linear-gradient(180deg,var(--accent),var(--accent-2));
+      color:#fff; border:0; border-radius:10px; padding:10px 18px;
+      font-size:.9rem; font-weight:600; cursor:pointer;
+      box-shadow:0 3px 6px rgba(0,0,0,.1); transition:.2s;
     }
-
-    .btn-dashboard:hover {
-      transform: scale(1.05);
-      opacity: .9;
-    }
+    .btn-dashboard:hover { transform:scale(1.05); opacity:.9; }
 
     .search-box input {
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid #cbd5e1;
-      font-size: .95rem;
-      width: 240px;
+      width:240px; padding:10px 14px; border-radius:12px; border:1px solid #cbd5e1;
+      font-size:.95rem;
     }
-
     .search-box input:focus {
-      border-color: var(--accent-2);
-      outline: none;
-      box-shadow: 0 0 0 3px var(--ring);
+      border-color:var(--accent-2); outline:none; box-shadow:0 0 0 3px var(--ring);
     }
 
     /* ===== Table ===== */
     .table-wrap {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      scrollbar-gutter: stable;
+      flex:1; min-height:0;
+      overflow-y:auto; overflow-x:auto;
+      scrollbar-gutter:stable; position:relative;
     }
-
     table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
+      width:100%; min-width:900px;
+      border-collapse:collapse; table-layout:fixed;
     }
-
     thead th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: #f8fafc;
+      position:sticky; top:0; z-index:10;
+      background:#f8fafc; box-shadow:0 1px 0 #e2e8f0;
+      text-align:left;
     }
-
     th, td {
-      padding: 12px 14px;
-      min-width: 0;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: top;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      padding:14px 16px; min-width:0; vertical-align:middle;
+      border-bottom:1px solid #e2e8f0;
+      text-overflow:ellipsis; overflow:hidden;
     }
+    td { font-size:.93rem; color:#334155; }
 
-    th:nth-child(4),
-    td.status {
+    /* Hover and zebra */
+    tbody tr:nth-child(odd) td { background:#fcfdff; }
+    tbody tr:hover td { background:#f9fafb; }
+
+    td.description { white-space:normal; line-height:1.4; }
+    td.status { text-align:center; }
+    td.actions { text-align:center; }
+
+    th:nth-child(4), th:nth-child(5) {
       text-align: center;
     }
 
-    td {
-      font-size: .92rem;
-      color: #334155;
-    }
-
-    td.description {
-      white-space: normal;
-      line-height: 1.4;
-    }
-
-    td.name,
-    td.other,
-    td.actions {
-      white-space: nowrap;
-    }
-
-    /* Fix truncation for badges and actions */
-    td.status,
-    td.actions {
-      overflow: visible;
-      text-overflow: clip;
-    }
-
-    /* ===== Status badges ===== */
+    /* ===== Status Badges ===== */
     .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-size: .78rem;
-      font-weight: 600;
-      line-height: 1;
-      white-space: nowrap;
+      display:inline-block; padding:4px 10px; border-radius:9999px;
+      font-size:.78rem; font-weight:600; line-height:1; white-space:nowrap;
     }
-
     .badge-active {
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #86efac;
+      background:#dcfce7; color:#166534; border:1px solid #86efac;
     }
-
     .badge-suspended {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fca5a5;
+      background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;
+    }
+    .badge-protected {
+      display:inline-flex; align-items:center; gap:6px;
+      background:#fef3c7; color:#92400e; border:1px solid #fcd34d;
+      padding:2px 8px; border-radius:9999px; font-size:.75rem; font-weight:700;
     }
 
-    td.status {
-      text-align: center;
+    /* ===== Buttons ===== */
+    .btn-edit, .btn-suspend, .btn-reactivate {
+      padding:6px 14px; border-radius:8px; border:0; cursor:pointer;
+      font-size:.85rem; white-space:nowrap; transition:.2s;
+    }
+    .btn-edit { background:var(--accent-2); color:#fff; }
+    .btn-suspend { background:var(--danger); color:#fff; }
+    .btn-reactivate { background:#22c55e; color:#fff; }
+    .btn-edit:hover, .btn-suspend:hover, .btn-reactivate:hover { opacity:.85; }
+
+    td.actions .btn-row {
+      display:flex; justify-content:center; align-items:center; gap:10px;
+    }
+
+    /* --- Protected Roles --- */
+    .btn-suspend[disabled] {
+      cursor: not-allowed;
+      opacity:.55;
     }
 
     /* ===== Footer ===== */
     .footer {
-      padding: 12px 20px;
-      border-top: 1px solid #e2e8f0;
-      color: var(--muted);
-      font-size: .9rem;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-
-    /* ===== Actions ===== */
-    td.actions .btn-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    .actions button,
-    .btn-edit,
-    .btn-suspend {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: 0;
-      cursor: pointer;
-      font-size: .85rem;
-      white-space: nowrap;
-    }
-
-    .btn-edit {
-      background: var(--accent-2);
-      color: #fff;
-    }
-
-    .btn-suspend {
-      background: var(--danger);
-      color: #fff;
-    }
-
-    .btn-edit:hover,
-    .btn-suspend:hover {
-      opacity: .85;
-    }
-
-    .btn-suspend[disabled] {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-
-    .btn-reactivate{
-      background:#22c55e; /* green */
-      color:#fff;
-      border:0;
-      border-radius:8px;
-      padding:6px 14px;
-      cursor:pointer;
-      font-size:.85rem;
-      white-space:nowrap;
-      transition:opacity .2s;
-    }
-
-    .btn-reactivate:hover{ opacity:.85; }
-
-    .no-results {
-      text-align: center;
-      color: var(--muted);
-      padding: 24px !important;
+      padding:12px 20px; border-top:1px solid #e2e8f0;
+      color:var(--muted); font-size:.9rem;
+      display:flex; justify-content:space-between; flex-wrap:wrap;
     }
 
     /* ===== Modals ===== */
     .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .45);
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-      backdrop-filter: blur(2px);
+      display:none; position:fixed; inset:0; z-index:2000;
+      background:rgba(0,0,0,.45); backdrop-filter:blur(2px);
+      justify-content:center; align-items:center;
     }
-
     .modal-content {
-      background: #fff;
-      padding: 24px;
-      width: min(560px, 92vw);
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
-      animation: fadeIn .2s ease-in-out;
+      width:min(640px,92vw); background:#fff;
+      border-radius:20px; padding:32px 36px;
+      box-shadow:0 8px 36px rgba(0,0,0,.25);
+      animation:fadeIn .25s ease-in-out;
     }
-
     .modal-content h2 {
-      margin: 0 0 18px 0;
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--text);
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 8px;
+      margin:0 0 24px; font-size:1.4rem; font-weight:700; color:var(--text);
+      border-bottom:1px solid #e2e8f0; padding-bottom:12px;
     }
-
-    .modal-body {
-      display: grid;
-      gap: 14px;
-      margin-top: 6px;
-    }
+    .modal-body { display:grid; gap:18px; margin-top:6px; }
 
     .form-row label {
-      display: block;
-      font-size: .9rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 6px;
+      display:block; font-size:.9rem; font-weight:600; color:var(--text);
+      margin-bottom:8px;
     }
-
-    .modal-input,
-    .modal-textarea {
-      width: 100%;
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-size: .95rem;
-      font-family: inherit;
-      transition: border-color .15s, box-shadow .15s;
+    .modal-input, .modal-textarea {
+      width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px;
+      padding:14px 16px; font-size:.95rem; font-family:inherit;
+      transition:border-color .15s, box-shadow .15s;
     }
-
-    .modal-input:focus,
-    .modal-textarea:focus {
-      outline: none;
-      border-color: var(--accent-2);
-      box-shadow: 0 0 0 3px var(--ring);
+    .modal-input:focus, .modal-textarea:focus {
+      outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
     }
+    .modal-textarea { min-height:110px; resize:vertical; }
 
-    .modal-textarea {
-      min-height: 96px;
-      resize: vertical;
-    }
-
-    /* Modal footer buttons */
     .modal-actions {
-      margin-top: 10px;
-      padding-top: 12px;
-      border-top: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
+      margin-top:24px; padding-top:16px; border-top:1px solid #e2e8f0;
+      display:flex; justify-content:flex-end; gap:12px;
     }
-
     .btn-cancel {
-      background: #f1f5f9;
-      color: #0f172a;
-      border: 1px solid #cbd5e1;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
+      background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1;
+      padding:10px 18px; border-radius:8px; font-weight:600; cursor:pointer;
     }
-
-    .btn-cancel:hover {
-      background: #e2e8f0;
-    }
-
+    .btn-cancel:hover { background:#e2e8f0; }
     .btn-primary {
-      background: var(--accent-2);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
+      background:var(--accent-2); color:#fff; padding:10px 18px; border-radius:8px;
+      font-weight:600; cursor:pointer;
     }
-
-    .btn-primary:hover {
-      opacity: .9;
-      transform: translateY(-1px);
-    }
-
+    .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
     .btn-danger {
-      background: var(--danger);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
+      background:var(--danger); color:#fff; padding:10px 18px;
+      border-radius:8px; font-weight:600; cursor:pointer;
+    }
+    .btn-danger:hover { opacity:.9; transform:translateY(-1px); }
+
+    .error {
+      margin-top: 6px; color: var(--danger);
+      font-size: .9rem; display: none;
     }
 
-    .btn-danger:hover {
-      opacity: .9;
-      transform: translateY(-1px);
-    }
-
-    /* Fade animation */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
+    @keyframes fadeIn { from{opacity:0; transform:scale(.95);} to{opacity:1; transform:scale(1);} }
   </style>
 </head>
 <body>
@@ -404,13 +216,17 @@
         <colgroup>
           <col style="width: 20%"> <!-- Name -->
           <col>                    <!-- Description -->
-          <col style="width: 12%"> <!-- Other -->
-          <col style="width: 11%"> <!-- Status -->
+          <col style="width: 10%"> <!-- Other -->
+          <col style="width: 15%"> <!-- Status -->
           <col style="width: 20%"> <!-- Actions -->
         </colgroup>
         <thead>
           <tr>
-            <th>Name</th><th>Description</th><th>Other</th><th>Status</th><th>Actions</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Other</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -436,16 +252,22 @@
         <div class="form-row">
           <label for="editName">Name</label>
           <input type="text" id="editName" class="modal-input" placeholder="Profile name"/>
+          <small class="hint">Required. 1–64 characters.</small>
+          <div id="editErr-name" class="error" style="display:none;">Please enter a valid name (1–64 characters).</div>
         </div>
 
         <div class="form-row">
           <label for="editDesc">Description</label>
           <textarea id="editDesc" class="modal-textarea" placeholder="Short description"></textarea>
+          <small class="hint">Optional. Up to 255 characters.</small>
+          <div id="editErr-desc" class="error" style="display:none;">Description must be 255 characters or fewer.</div>
         </div>
 
         <div class="form-row">
           <label for="editOther">Other Info</label>
           <textarea id="editOther" class="modal-textarea" placeholder="Additional notes or info"></textarea>
+          <small class="hint">Optional. Up to 128 characters.</small>
+          <div id="editErr-other" class="error" style="display:none;">Other info must be 128 characters or fewer.</div>
         </div>
 
         <div class="modal-actions">
@@ -481,7 +303,7 @@
   </div>
 
   <script>
-    /* === Config & small helpers === */
+    /* === Config & Helpers === */
     const API_URL = "http://127.0.0.1:80/api";
     const $ = (id) => document.getElementById(id);
 
@@ -496,23 +318,59 @@
     const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
 
     /* === Status helpers === */
-    const isSuspended = (p) => String(p.status || "").toUpperCase() === STATUS.SUSPENDED;
+    const isSuspended = (p) => (p?.status ?? STATUS.ACTIVE) === STATUS.SUSPENDED;
 
-    // Accepts a STATUS string
-    function renderStatusBadgeFromStatus(statusStr) {
-      const s = String(statusStr).toUpperCase();
-      return s === STATUS.SUSPENDED
+    function renderStatusBadgeFromStatus(name, statusStr) {
+      if (isProtectedSuspend(name)) {
+        return `
+          <span class="badge badge-protected" title="Protected role — cannot be suspended">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="12" height="12">
+              <path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 116 0v3H9z"/>
+            </svg>
+            Protected
+          </span>`;
+      }
+      return statusStr === STATUS.SUSPENDED
         ? '<span class="badge badge-suspended">Suspended</span>'
         : '<span class="badge badge-active">Active</span>';
     }
 
-    // Accepts a STATUS string
-    function actionButtonHTMLFromStatus(statusStr) {
-      const s = String(statusStr).toUpperCase();
-      return s === STATUS.SUSPENDED
-        ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reactivate</button>'
+    function actionButtonHTMLFromStatus(name, statusStr) {
+      if (isProtectedSuspend(name)) {
+        return '<button class="btn-suspend" disabled title="Protected role — cannot be suspended">Suspend</button>';
+      }
+      return statusStr === STATUS.SUSPENDED
+        ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>'
         : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
     }
+
+    /* ===== Helper Functions ===== */
+    function isDuplicateName(newName, allProfiles, currentName = null) {
+      const target = norm(newName);
+      return allProfiles.some(p => {
+        const existing = norm(p.name);
+        // Skip current record being edited
+        return existing === target && existing !== norm(currentName);
+      });
+    }
+
+    /* ===== Policy Toggler ===== */
+
+    const RESERVED_NAMES = new Set([
+      'user admin',
+      // 'csr representative',
+      // 'person-in-need',
+      // 'platform management'
+    ]);
+
+    const PROTECTED_SUSPEND_NAMES = RESERVED_NAMES;
+    const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES;
+
+    const norm = s => String(s ?? '').trim().toLowerCase();
+
+    const isProtectedSuspend = (name) => PROTECTED_SUSPEND_NAMES.has(norm(name));
+    const isNameLocked       = (name) => LOCK_NAME_EDIT_NAMES.has(norm(name));
+    const isReservedName     = (name) => RESERVED_NAMES.has(norm(name));
 
     /* === Table rendering === */
     function populateTable(profiles) {
@@ -523,17 +381,18 @@
       profiles
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
         .forEach((p) => {
-          const status = String(p.status || STATUS.ACTIVE).toUpperCase();
+          const status = p.status || STATUS.ACTIVE;
+
           const html = `
             <tr data-user-profile="${escapeHTML(p.name)}" data-status="${status}">
               <td class="name">${escapeHTML(p.name)}</td>
               <td class="description">${escapeHTML(p.description)}</td>
               <td class="other">${p.other ? escapeHTML(p.other) : ""}</td>
-              <td class="status">${renderStatusBadgeFromStatus(status)}</td>
+              <td class="status">${renderStatusBadgeFromStatus(p.name, status)}</td>
               <td class="actions">
                 <div class="btn-row">
                   <button class="btn-edit" onclick="openEditModal(this)">Edit</button>
-                  ${actionButtonHTMLFromStatus(status)}
+                  ${actionButtonHTMLFromStatus(p.name, status)}
                 </div>
               </td>
             </tr>`;
@@ -581,20 +440,82 @@
 
     function openEditModal(button) {
       currentRow = button.closest("tr");
+      const currentName = currentRow.dataset.userProfile;
+
       $("editName").value = currentRow.querySelector(".name").textContent.trim();
       $("editDesc").value = currentRow.querySelector(".description").textContent.trim();
       $("editOther").value = currentRow.querySelector(".other").textContent.trim();
+
+      // Control this via LOCK_NAME_EDIT_NAMES
+      $("editName").disabled = isNameLocked(currentName);
+
       $("editModal").style.display = "flex";
+    }
+
+    function validateEditModal() {
+      const nameEl  = $("editName");
+      const descEl  = $("editDesc");
+      const otherEl = $("editOther");
+
+      let ok = true;
+
+      // Reset UI
+      [nameEl, descEl, otherEl].forEach(el => el.removeAttribute("aria-invalid"));
+      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => $(id).style.display = "none");
+
+      if (!nameEl.disabled) {
+        const v = nameEl.value.trim();
+        if (v.length < 1 || v.length > 64) {
+          $("editErr-name").textContent = "Please enter a valid name (1–64 characters).";
+          $("editErr-name").style.display = "block";
+          ok = false;
+        } else if (isReservedName(v)) {
+          $("editErr-name").textContent = "This name is reserved and cannot be used.";
+          $("editErr-name").style.display = "block";
+          ok = false;
+        }
+      }
+
+      if (descEl.value.trim().length > 255) { $("editErr-desc").style.display = "block"; ok = false; }
+      if (otherEl.value.trim().length > 128) { $("editErr-other").style.display = "block"; ok = false; }
+
+      if (!ok) {
+        // focus first field with a visible error (no red styles)
+        if (!nameEl.disabled && $("editErr-name").style.display === "block") nameEl.focus({ preventScroll: true });
+        else if ($("editErr-desc").style.display === "block") descEl.focus({ preventScroll: true });
+        else if ($("editErr-other").style.display === "block") otherEl.focus({ preventScroll: true });
+      }
+      return ok;
     }
 
     function closeEditModal() {
       $("editModal").style.display = "none";
+      $("editName").disabled = false;
+
+      // reset validation messages and styles
+      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => {
+        $(id).style.display = "none";
+      });
+
+      ["editName", "editDesc", "editOther"].forEach(id => {
+        const el = $(id);
+        el.removeAttribute("aria-invalid");
+      });
     }
 
     async function saveEdit() {
+
+      if (!validateEditModal()) return;
+
       const name = $("editName").value.trim();
       const description = $("editDesc").value.trim();
       const other = $("editOther").value.trim();
+
+      if (isDuplicateName(name, allProfiles, currentRow.dataset.userProfile)) {
+        alert("A profile with that name already exists (case-insensitive).");
+        $("editName").focus();
+        return;
+      }
 
       try {
         const res = await fetch(
@@ -626,26 +547,33 @@
     /* === Suspend / Reactivate === */
     // Helper to flip a row’s status + button consistently
     function applyStatusToRow(row, statusStr) {
-      const status = String(statusStr).toUpperCase();
+      const status = statusStr || STATUS.ACTIVE;
+      const name = row.dataset.userProfile;
+
       row.dataset.status = status;
-      row.querySelector(".status").innerHTML = renderStatusBadgeFromStatus(status);
+      row.querySelector(".status").innerHTML = renderStatusBadgeFromStatus(name, status);
 
       const btnRow = row.querySelector(".actions .btn-row");
       const old = btnRow.querySelector(".btn-suspend, .btn-reactivate");
 
       const container = document.createElement("div");
-      container.innerHTML = actionButtonHTMLFromStatus(status);
+      container.innerHTML = actionButtonHTMLFromStatus(name, status);
       const fresh = container.firstElementChild;
 
-      if (old) old.replaceWith(fresh);
-      else btnRow.appendChild(fresh);
+      old ? old.replaceWith(fresh) : btnRow.appendChild(fresh);
     }
 
-    // ----- Suspend (calls backend) -----
+    // ----- Suspend -----
     let pendingSuspendRow = null;
 
     function openSuspendModal(button) {
-      pendingSuspendRow = button.closest("tr");
+      const row = button.closest("tr");
+      const name = row.dataset.userProfile;
+
+      if (isProtectedSuspend(name)) {
+        return;
+      }
+      pendingSuspendRow = row;
       $("suspendModal").style.display = "flex";
     }
 
@@ -677,7 +605,7 @@
       }
     }
 
-    // ----- Reactivate (UI-only for now) -----
+    // ----- Reactivate -----
     let pendingReactivateRow = null;
 
     function openReactivateModal(button) {
@@ -693,15 +621,33 @@
     async function confirmReactivateUI() {
       if (!pendingReactivateRow) return;
 
-      // UI-only: flip to ACTIVE locally
-      applyStatusToRow(pendingReactivateRow, STATUS.ACTIVE);
+      const key = pendingReactivateRow.dataset.userProfile;
+      const modalBtn = document.querySelector('#reactivateModal .btn-primary');
+      modalBtn.disabled = true;
+      modalBtn.textContent = 'Reactivating...';
 
-      // If/when you add a backend route, do that call here and
-      // then apply whatever status the server returns.
-      closeReactivateModal();
+      try {
+        const res = await fetch(`${API_URL}/user-profiles/${encodeURIComponent(key)}/reinstate`, {
+          method : "POST",
+          mode : "cors",
+          credentials : "include",
+        });
+
+        if (!res.ok) throw new Error(`Reinstate failed (${res.status}).`);
+        applyStatusToRow(pendingReactivateRow, STATUS.ACTIVE);
+      }
+      catch (e) {
+        console.error(e);
+        alert("Could not reactivate. Please try again.");
+      }
+      finally {
+        modalBtn.disabled = false;
+        modalBtn.textContent = "Reactivate";
+        closeReactivateModal();
+      }
     }
 
-    /* === Optional: Return to dashboard === */
+    /* === Return to dashboard === */
     function returnToDashboard() {
       window.location.href = "admin_dashboard.html";
     }
