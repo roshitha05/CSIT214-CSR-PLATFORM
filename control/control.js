@@ -24,11 +24,19 @@ export default class Control {
             if (!req.app.locals.config.requireAuth) return next();
             
             if (req.session.user_id === undefined) 
-                return next(new ServerError(403, 'Not authenticated'));
+                return next(new ServerError(401, 'Not authenticated'));
 
-            const { user_profile } = (await this.usersEntity.getUsers({
+            const { user_profile, status } = (await this.usersEntity.getUsers({
                 user_id: req.session.user_id,
             }))[0];
+            if (status.toLowerCase() !== 'active') 
+                return next(new ServerError(401, 'User is not active'));
+
+            const user_profile_status = (await this.userProfileEntity.getUserProfiles({
+                name: user_profile
+            }))[0].status;
+            if (user_profile_status.toLowerCase() !== 'active') 
+                return next(new ServerError(401, 'User profile is not active'));
 
             const checkRole = (user_profile, allowed) => 
                 user_profile.toLowerCase() === allowed.toLowerCase();
@@ -44,7 +52,7 @@ export default class Control {
             }
             if (allowedProfiles === undefined) return next();
 
-            next(new ServerError(403, 'Not authenticated'));
+            next(new ServerError(401, 'Not authenticated'));
         };
     }
 
