@@ -9,6 +9,7 @@ import * as http from 'http';
 import {
     CreateUserProfiles,
     GetUserProfiles,
+    ReinstateUserProfile,
     SuspendUserProfile,
     UpdateUserProfile,
 } from './control/user-profiles.js';
@@ -110,6 +111,7 @@ export default class App {
         apiRouter.use('/user-profiles', new GetUserProfiles().getRouter());
         apiRouter.use('/user-profiles', new UpdateUserProfile().getRouter());
         apiRouter.use('/user-profiles', new SuspendUserProfile().getRouter());
+        apiRouter.use('/user-profiles', new ReinstateUserProfile().getRouter());
 
         apiRouter.use('/users', new CreateUser().getRouter());
         apiRouter.use('/users', new GetUsers().getRouter());
