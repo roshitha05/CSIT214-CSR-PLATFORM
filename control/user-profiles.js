@@ -102,6 +102,10 @@ export class SuspendUserProfile extends Control {
     createController() {
         this.router.post('/:name/suspend', this.requireAuth('User Admin'), async (req, res, next) => {    
             const name = req.params.name
+
+            if (name.toLowerCase() === 'user admin') 
+                return next(new ServerError(400, 'Cannot suspend user admin'));
+
             const userProfile = (await this.userProfileEntity.getUserProfiles({ name }))[0];
 
             if (userProfile === undefined) 
