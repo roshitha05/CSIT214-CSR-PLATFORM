@@ -13,7 +13,7 @@ import {
     UpdateUserProfile,
 } from './control/user-profiles.js';
 import ServerError from './exception/Error.js';
-import { CreateUser, GetUsers, SuspendUser, UpdateUser } from './control/users.js';
+import { CreateUser, GetUsers, ReinstateUser, SuspendUser, UpdateUser } from './control/users.js';
 import { Login, Logout } from './control/auth.js';
 import morgan from 'morgan';
 import z from 'zod';
@@ -115,6 +115,7 @@ export default class App {
         apiRouter.use('/users', new GetUsers().getRouter());
         apiRouter.use('/users', new UpdateUser().getRouter());
         apiRouter.use('/users', new SuspendUser().getRouter());
+        apiRouter.use('/users', new ReinstateUser().getRouter());
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('frontend'));
