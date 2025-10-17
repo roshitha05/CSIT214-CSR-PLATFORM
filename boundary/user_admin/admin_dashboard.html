@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+
+    <!-- Font Awesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
+    />
+
+    <style>
+      :root {
+        --bg-light: #f7f9fc;
+        --primary: #34495e;
+        --secondary: #2c3e50;
+        --accent: #3498db;
+        --accent-2: #2980b9;
+        --text-dark: #2c3e50;
+        --text-light: #fff;
+        --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+      * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        display: flex;
+        min-height: 100vh;
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+      }
+      /* Sidebar */
+      .sidebar {
+        width: 240px;
+        background: var(--primary);
+        color: var(--text-light);
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem 1rem;
+        box-shadow: var(--shadow);
+      }
+      .sidebar h2 {
+        font-size: 1.4rem;
+        margin-bottom: 2rem;
+        text-align: center;
+      }
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0.75rem 1rem;
+        color: var(--text-light);
+        text-decoration: none;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: background 0.3s;
+      }
+      .sidebar a:hover {
+        background: var(--accent);
+      }
+      .sidebar a.active {
+        background: var(--accent-2);
+      }
+
+      /* Main content */
+      .main {
+        flex: 1;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+      .topbar h1 {
+        font-size: 1.6rem;
+        font-weight: 600;
+      }
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-info img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+      }
+
+      /* Cards grid */
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+      }
+      .card {
+        cursor: pointer;
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+      }
+      .card i {
+        font-size: 2rem;
+        color: var(--accent);
+        margin-bottom: 1rem;
+      }
+      .card h3 {
+        margin-bottom: 0.5rem;
+        font-size: 1.2rem;
+      }
+      .card p {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .logout-btn {
+        margin-top: auto;
+        background: var(--accent-2);
+        color: white;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .logout-btn:hover {
+        background: #1f5f8b;
+      }
+
+      /* Logout Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .modal-content {
+        background: #fff;
+        padding: 28px;
+        width: 420px;
+        max-width: 90vw;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,.2);
+      }
+      .modal-content h2 {
+        margin: 0 0 8px 0;
+        font-size: 1.2rem;
+      }
+      .modal-content p {
+        margin: 0 0 16px 0;
+        color: #475569;
+        line-height: 1.4;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .modal-actions button {
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn-cancel { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
+      .btn-cancel:hover { background: #e2e8f0; }
+      .btn-confirm { background: #ef4444; color: #fff; }
+      .btn-confirm[disabled] { opacity: .7; cursor: not-allowed; }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 70px;
+          padding: 1rem 0.5rem;
+        }
+        .sidebar h2 {
+          display: none;
+        }
+        .sidebar a span {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>Administrator</h2>
+      <a href="#" class="active"><i class="fa-solid fa-house"></i><span>Home</span></a>
+      <a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a>
+      <a href="#"><i class="fa-solid fa-list"></i><span>Reports</span></a>
+      <a href="#"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+
+      <button class="logout-btn" id="logoutBtn">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+      <div class="topbar">
+        <h1>Welcome back, Aziz 👋</h1>
+        <div class="user-info">
+          <img src="https://i.pravatar.cc/100?img=68" alt="User" />
+          <span>Abdul Aziz</span>
+        </div>
+      </div>
+
+      <div class="cards">
+        <div class="card" id="createProfilesCard">
+          <i class="fa-solid fa-book"></i>
+          <h3>Create User Profiles</h3>
+          <p>Set up new user roles.</p>
+        </div>
+
+        <div class="card" id="createAccountsCard">
+          <i class="fa-solid fa-chevron-circle-right"></i>
+          <h3>Create User Accounts</h3>
+          <p>Set up new user accounts.</p>
+        </div>
+
+        <div class="card" id="profileManagementCard">
+          <i class="fa-solid fa-users"></i>
+          <h3>Profile management</h3>
+          <p>Manage user profiles.</p>
+        </div>
+        
+        <div class="card" id="accountManagementCard">
+          <i class="fa-solid fa-contact-book"></i>
+          <h3>Account Management</h3>
+          <p>Manage and review account details.</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Logout Confirm Modal -->
+    <div class="modal" id="logoutModal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+      <div class="modal-content">
+        <h2 id="logoutTitle">Confirm Logout</h2>
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="cancelLogoutBtn">Cancel</button>
+          <button class="btn-confirm" id="confirmLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+
+  </body>
+  <script>
+    const API_URL = "http://127.0.0.1:80/api/logout";
+
+    const $ = (id) => document.getElementById(id);
+    const ui = {
+      logoutBtn: $("logoutBtn") || document.querySelector(".logout-btn"),
+      modal: $("logoutModal"),
+      confirm: $("confirmLogoutBtn"),
+      cancel: $("cancelLogoutBtn"),
+      cards: {
+        createProfiles: $("createProfilesCard"),
+        createAccounts: $("createAccountsCard"),
+        profileManagement: $("profileManagementCard"),
+        accountManagement: $("accountManagementCard"),
+      }
+    };
+
+    // Modal controls
+    function openLogoutModal() {
+      ui.modal.style.display = "flex";
+      ui.confirm.focus();
+    }
+
+    function closeLogoutModal() {
+      ui.modal.style.display = "none";
+    }
+
+    // wire up
+    ui.logoutBtn.addEventListener("click", openLogoutModal);
+
+    // cancel
+    ui.cancel.addEventListener("click", closeLogoutModal);
+
+    // Confirm Logout
+    ui.confirm.addEventListener("click", async () => {
+    ui.confirm.disabled = true;
+    const original = ui.confirm.textContent;
+    ui.confirm.textContent = "Logging out...";
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (res.ok || res.status === 401) {
+        window.location.href = "../user_login.html";
+      } else {
+        alert(`Logout failed (${res.status}). Please try again.`);
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Network error. Please ensure the server is running.");
+    } finally {
+      ui.confirm.disabled = false;
+      ui.confirm.textContent = original;
+      closeLogoutModal();
+    }
+  });
+
+    // Link to create_profile.html
+    document.getElementById("createProfilesCard").addEventListener("click", () => {
+      window.location.href = "/user_admin/create_profile.html";
+    });
+
+    // Link to create_account.html
+    document.getElementById("createAccountsCard").addEventListener("click", () => {
+      window.location.href = "/user_admin/create_account.html";
+    });
+
+    // Link to profile_management.html
+    document.getElementById("profileManagementCard").addEventListener("click", () => {
+      window.location.href = "/user_admin/profile_management.html";
+    });
+
+    // Link to account_management.html
+    document.getElementById("accountManagementCard").addEventListener("click", () => {
+      window.location.href = "/user_admin/account_management.html";
+    });
+  </script>
+</html>

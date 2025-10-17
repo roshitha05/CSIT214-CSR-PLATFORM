@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Management</title>
+  <style>
+    :root{
+      --bg:#f0f9ff; 
+      --card:#ffffff; 
+      --text:#1e293b; 
+      --muted:#64748b;
+      --accent:#38bdf8; 
+      --accent-2:#0ea5e9; 
+      --danger:#ef4444;
+      --ring:rgba(14,165,233,.3); 
+      --radius:16px;
+      --actions-w:170px;
+    }
+
+    /* ===== Base / Layout ===== */
+    *{ box-sizing:border-box; }
+    html,body{ min-height:100%; margin:0; }
+    body{
+      font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background:linear-gradient(180deg,#e0f2fe,var(--bg));
+      color:var(--text);
+      display:flex; justify-content:center; align-items:flex-start;
+      padding:24px; min-height:100svh; overflow:hidden;
+    }
+    .card{
+      width:100%; max-width:1000px; height:calc(100svh - 48px);
+      background:var(--card); border:1px solid #e2e8f0; border-radius:var(--radius);
+      box-shadow:0 8px 24px rgba(0,0,0,.1);
+      overflow:hidden; display:flex; flex-direction:column;
+    }
+
+    /* ===== Page Header ===== */
+    .header{
+      padding:18px 24px; background:linear-gradient(180deg,#e0f2fe,#f8fafc);
+      border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;
+    }
+    .header h1{ margin:0; font-size:1.5rem; color:var(--accent-2); }
+    .header-controls{ display:flex; align-items:center; gap:12px; }
+    .btn-dashboard{
+      background:linear-gradient(180deg,var(--accent),var(--accent-2));
+      color:#fff; border:0; border-radius:10px; padding:10px 18px; font-size:.9rem; font-weight:600;
+      cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,.1); transition:.2s;
+    }
+    .btn-dashboard:hover{ transform:scale(1.05); opacity:.9; }
+    .search-box input{
+      width:240px; padding:10px 14px; border-radius:12px; border:1px solid #cbd5e1; font-size:.95rem;
+    }
+    .search-box input:focus{ border-color:var(--accent-2); outline:none; box-shadow:0 0 0 3px var(--ring); }
+
+    /* ===== Table Wrapper ===== */
+    .table-wrap{
+      flex:1; min-height:0; overflow-y:auto; overflow-x:auto; scrollbar-gutter:stable; position:relative;
+    }
+
+    /* ===== Table ===== */
+    table{
+      width:100%; min-width:2000px; border-collapse:collapse; table-layout:fixed;
+    }
+
+    /* Sticky header */
+    thead th{
+      position:sticky; top:0; z-index:15;
+      background:#f8fafc; box-shadow:0 1px 0 #e2e8f0;
+    }
+
+    /* Base cells */
+    th,td{
+      padding:14px 16px; min-width:0; text-align:left; vertical-align:middle;
+      border-bottom:1px solid #e2e8f0; overflow:hidden; text-overflow:ellipsis;
+      background:var(--card);
+    }
+
+    /* Row backgrounds (opaque) */
+    tbody tr:nth-child(odd) td{ background:#fcfdff; }
+    tbody tr:hover td{ background:#f9fafb; }
+
+    /* Content tweaks */
+    td.address{ white-space:normal; line-height:1.35; }
+    td.status{ text-align:center; padding-right:20px; white-space:nowrap; }
+
+    /* ===== Sticky Actions Column ===== */
+    th.actions,
+    td.actions{
+      width:var(--actions-w); min-width:var(--actions-w); max-width:var(--actions-w);
+      padding:0;
+    }
+
+    /* Header cell */
+    thead th.actions{
+      position:sticky; right:0; z-index:60;                      
+      text-align:center;
+      background:#f8fafc;
+      border-left:1px solid #e2e8f0;
+      box-shadow:-8px 0 12px rgba(0,0,0,.06);
+    }
+
+    th.status { text-align: center;}
+
+    /* Body cells (sticky) */
+    tbody td.actions{
+      position:sticky; right:0; z-index:40;
+      background:var(--card);
+      border-left:1px solid #e2e8f0;
+      box-shadow:-8px 0 12px rgba(0,0,0,.06);
+      padding:12px 16px;
+    }
+
+    tbody td.actions::before{
+      content:"";
+      position:absolute;
+      left:-8px; top:0; bottom:0; width:8px;
+      background:var(--card); pointer-events:none;
+    }
+    tbody tr:nth-child(odd) td.actions::before{ background:#fcfdff; }
+    tbody tr:hover td.actions::before{ background:#f9fafb; }
+
+    /* Buttons layout inside Actions */
+    td.actions .btn-row{
+      display:flex; justify-content:center; align-items:center; gap:10px;
+    }
+
+    /* ===== Buttons & Badges ===== */
+    .btn-edit, .btn-suspend, .btn-reactivate{
+      padding:6px 14px; border-radius:8px; border:0; cursor:pointer; font-size:.85rem; white-space:nowrap;
+    }
+    .btn-edit{ background:var(--accent-2); color:#fff; }
+    .btn-suspend{ background:var(--danger); color:#fff; }
+    .btn-reactivate{ background:#22c55e; color:#fff; }
+    .btn-edit:hover, .btn-suspend:hover, .btn-reactivate:hover{ opacity:.85; }
+    .btn-suspend[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    .badge{
+      display:inline-block; padding:4px 10px; border-radius:9999px;
+      font-size:.78rem; font-weight:600; line-height:1; white-space:nowrap;
+    }
+    .badge-active{ background:#dcfce7; color:#166534; border:1px solid #86efac; }
+    .badge-suspended{ background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+
+    .no-results{ text-align:center; color:var(--muted); padding:24px !important; }
+
+    /* ===== Modals ===== */
+    .modal{
+      display:none; position:fixed; inset:0; z-index:2000;
+      background:rgba(0,0,0,.45); backdrop-filter:blur(2px);
+      justify-content:center; align-items:center;
+    }
+    .modal-content{
+      width:min(640px, 92vw); background:#fff; border-radius:16px; padding:32px 36px;
+      box-shadow:0 8px 30px rgba(0,0,0,.25); animation:fadeIn .2s ease-in-out;
+    }
+    .modal-content h2{
+      margin:0 0 18px; font-size:1.25rem; font-weight:700; color:var(--text);
+      border-bottom:1px solid #e2e8f0; padding-bottom:8px;
+    }
+    .modal-body{ display:grid; gap:14px; margin-top:6px; }
+    .form-row label{ display:block; font-size:.9rem; font-weight:600; color:var(--text); margin-bottom:6px; }
+
+    .modal-input, .modal-textarea, .modal-select{
+      width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; margin-top: 6px;
+      padding:14px 16px; font-size:.96rem; font-family:inherit; transition:border-color .15s, box-shadow .15s;
+    }
+    .modal-input:focus, .modal-textarea:focus{ outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring); }
+    .modal-textarea{ min-height:96px; resize:vertical; }
+    .modal-input:disabled{ background:#f1f5f9; color:#94a3b8; cursor:not-allowed; }
+
+    .modal-actions{
+      margin-top:24px; padding-top:12px; border-top:1px solid #e2e8f0;
+      display:flex; justify-content:flex-end; gap:10px;
+    }
+
+    #editFullName:disabled {
+      cursor: not-allowed;
+    }
+
+    /* modal buttons */
+    .btn-cancel{
+      background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1;
+      padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer;
+    }
+    .btn-cancel:hover{ background:#e2e8f0; }
+    .btn-primary{
+      background:var(--accent-2); color:#fff; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer;
+    }
+    .btn-primary:hover{ opacity:.9; transform:translateY(-1px); }
+    .btn-danger{
+      background:var(--danger); color:#fff; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer;
+    }
+    .btn-danger:hover{ opacity:.9; transform:translateY(-1px); }
+
+    @keyframes fadeIn{ from{opacity:0; transform:scale(.95);} to{opacity:1; transform:scale(1);} }
+
+    /* ===== Edit Modal Grid ===== */
+    .modal-content .grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px 20px; }
+    .modal-content .row{ display:flex; flex-direction:column; }
+    .modal-content .hint{ margin-top:6px; font-size:.85rem; color:var(--muted); }
+    .modal-content .error{ margin-top:6px; color:var(--danger); font-size:.9rem; display:none; }
+    @media (max-width:640px){ .modal-content .grid{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>Account Management</h1>
+      <div class="header-controls">
+        <button class="btn-dashboard" onclick="returnToDashboard()">Return to Dashboard</button>
+        <div class="search-box">
+          <input type="text" id="search" placeholder="Search by keyword...">
+        </div>
+      </div>
+    </div>
+
+  <div class="table-wrap">
+    <table id="profileTable">
+      <colgroup>
+        <col style="width: 14%">   <!-- Full Name -->
+        <col style="width: 16%">   <!-- Email -->
+        <col style="width: 12%">   <!-- Username -->
+        <col style="width: 10%">   <!-- Phone -->
+        <col style="width: 18%">   <!-- Address (allows wrapping) -->
+        <col style="width: 8%">   <!-- Date of Birth -->
+        <col style="width: 10%">   <!-- Profile -->
+        <col style="width: 10%">   <!-- Created At -->
+        <col style="width: 8%">    <!-- Status -->
+        <col style="width: 170px"> <!-- Actions -->
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="full_name">Full Name</th>
+          <th class="email">Email</th>
+          <th class="username">Username</th>
+          <th class="phone_number">Phone Number</th>
+          <th class="address">Address</th>
+          <th class="dob">Date of Birth</th>
+          <th class="profile">Profile</th>
+          <th class="created_at">Created At</th>
+          <th class="status">Status</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr id="noResultsRow" style="display:none;">
+          <td colspan="10" class="no-results">No results found.</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="modal-content">
+      <h2 id="editTitle">Edit User</h2>
+
+      <div class="modal-body">
+        <form id="editForm" novalidate>
+          <div class="grid">
+            <!-- Full name -->
+            <div class="row">
+              <label for="editFullname">Full Name <span style="color:var(--muted)">*</span></label>
+              <input id="editFullname" type="text" class="modal-input" maxlength="64" placeholder="e.g., Jane Doe"/>
+              <small class="hint">Required. Up to 64 characters.</small>
+              <div id="editErr-fullname" class="error">Please enter a name (max 64 chars).</div>
+            </div>
+
+            <!-- Username -->
+            <div class="row">
+              <label for="editUsername">Login ID <span style="color:var(--muted)">*</span></label>
+              <input id="editUsername" type="text" class="modal-input" maxlength="32"
+                    placeholder="e.g., janedoe123" pattern="^[A-Za-z0-9._-]{3,32}$"/>
+              <small class="hint">Required. 3–32 chars: letters, numbers, dot, underscore, hyphen.</small>
+              <div id="editErr-username" class="error">Please enter a valid Login ID (3–32 allowed chars).</div>
+            </div>
+
+            <!-- Email -->
+            <div class="row">
+              <label for="editEmail">Email <span style="color:var(--muted)">*</span></label>
+              <input id="editEmail" type="email" class="modal-input" maxlength="254" placeholder="you@example.com"/>
+              <small class="hint">Required.</small>
+              <div id="editErr-email" class="error">Please enter a valid email.</div>
+            </div>
+
+            <!-- Phone -->
+            <div class="row">
+              <label for="editPhone">Phone Number <span style="color:var(--muted)">*</span></label>
+              <input id="editPhone" type="tel" class="modal-input" minlength="8" maxlength="8"
+                    placeholder="8123 4567" pattern="^[+0-9()\-.\s]{6,20}$"/>
+              <small class="hint">Required. 8 digits.</small>
+              <div id="editErr-phone" class="error">Please enter a valid phone number.</div>
+            </div>
+
+            <!-- Address -->
+            <div class="row" style="grid-column:1 / -1">
+              <label for="editAddress">Address <span style="color:var(--muted)">*</span></label>
+              <textarea id="editAddress" class="modal-textarea" maxlength="255"
+                        placeholder="Block/Street, Unit, Postal Code"></textarea>
+              <small class="hint">Required. Up to 255 characters.</small>
+              <div id="editErr-address" class="error">Address is too long (max 255).</div>
+            </div>
+
+            <!-- DOB -->
+            <div class="row">
+              <label for="editDob">Date of Birth <span style="color:var(--muted)">*</span></label>
+              <input id="editDob" type="date" class="modal-input" />
+              <small class="hint">Required. Must be in the past.</small>
+              <div id="editErr-dob" class="error">Please choose a valid date in the past.</div>
+            </div>
+
+            <!-- Profile -->
+            <div class="row">
+              <label for="editProfile">User Profile <span style="color:var(--muted)">*</span></label>
+              <select id="editProfile" class="modal-input" required aria-describedby="hint-edit-profile">
+                <option value="">Loading profiles…</option>
+              </select>
+              <small id="hint-edit-profile" class="hint">Required. Select a role.</small>
+              <div id="editErr-profile" class="error">Please select a profile.</div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+            <button type="submit" class="btn-primary" id="editSaveBtn">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suspend Modal -->
+  <div class="modal" id="suspendModal" role="dialog" aria-modal="true" aria-labelledby="suspendTitle">
+    <div class="modal-content">
+      <h2 id="suspendTitle">Suspend User</h2>
+      <p id="suspendPrompt">Are you sure you want to suspend this user?</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeSuspendModal()">Cancel</button>
+        <button class="btn-danger" onclick="confirmSuspendUI()">Suspend</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reactivate Modal -->
+  <div class="modal" id="reactivateModal" role="dialog" aria-modal="true" aria-labelledby="reactivateTitle">
+    <div class="modal-content">
+      <h2 id="reactivateTitle">Confirm Reactivation</h2>
+      <p>Are you sure you want to reactivate this account?</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeReactivateModal()">Cancel</button>
+        <button class="btn-primary" onclick="confirmReactivateUI()">Reactivate</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // Constants & Endpoints
+    // =========================
+    const API_URL      = "http://127.0.0.1:80/api";
+    const PROFILES_API = "http://127.0.0.1:80/api/user-profiles";
+
+    // =========================
+    // Helpers (match create_account.html style)
+    // =========================
+    const $   = (id) => document.getElementById(id);
+    const qs  = (sel, root = document) => root.querySelector(sel);
+    const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
+    const show = (el, on) => { if (el) el.style.display = on ? "block" : "none"; };
+
+    function debounce(fn, ms = 200) {
+      let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    }
+
+    function pastDateOnly(value){
+      if (!value) return true; // optional in Edit
+      const d = new Date(value), today = new Date();
+      d.setHours(0,0,0,0); today.setHours(0,0,0,0);
+      return d instanceof Date && !isNaN(d) && d < today;
+    }
+
+    const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
+
+    const statusBadgeHTML = (status) =>
+      String(status || "").toUpperCase() === STATUS.SUSPENDED
+        ? '<span class="badge badge-suspended">Suspended</span>'
+        : '<span class="badge badge-active">Active</span>';
+
+    const formatDateTime = (iso) => {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      return new Intl.DateTimeFormat(undefined, {
+        year: "numeric", month: "short", day: "2-digit",
+        hour: "2-digit", minute: "2-digit"
+      }).format(d);
+    };
+
+    // =========================
+    // State
+    // =========================
+    let cachedUsers = [];
+    let hasSubmittedEdit = false;
+    window.__currentEditRow = null;     // active row in Edit modal
+    window.__pendingSuspendRow = null;  // active row in Suspend modal
+    window.__pendingReinstateRow = null;// active row in Reactivate modal
+
+    // =========================
+    // Table Rendering
+    // =========================
+    function buildRow(u) {
+      const tr = document.createElement("tr");
+      tr.dataset.userId = u.user_id;
+      tr.dataset.status = (u.status || STATUS.ACTIVE).toUpperCase();
+
+      const cells = [
+        { cls: "fullname",   text: u.fullname },
+        { cls: "email",      text: u.email },
+        { cls: "username",   text: u.username },
+        { cls: "phone",      text: u.phone_number },
+        { cls: "address",    text: u.address },
+        { cls: "dob",        text: u.date_of_birth },
+        { cls: "profile",    text: u.user_profile },
+        { cls: "created_at", text: formatDateTime(u.created_at) }
+      ];
+
+      for (const { cls, text } of cells) {
+        const td = document.createElement("td");
+        td.className = cls;
+        td.textContent = text ?? "—";
+        tr.appendChild(td);
+      }
+
+      // === STATUS cell ===
+      const tdStatus = document.createElement("td");
+      tdStatus.className = "status";
+      tdStatus.innerHTML = statusBadgeHTML(tr.dataset.status);
+      tr.appendChild(tdStatus);
+
+      // === ACTIONS cell (with sticky wrapper) ===
+      const tdActions = document.createElement("td");
+      tdActions.className = "actions";
+
+      // Sticky inner wrapper (prevents floating gaps)
+      const stick = document.createElement("div");
+      stick.className = "actions-stick";
+
+      // Button row
+      const btnRow = document.createElement("div");
+      btnRow.className = "btn-row";
+
+      // Edit button
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn-edit";
+      editBtn.textContent = "Edit";
+      editBtn.dataset.action = "edit";
+
+      // Suspend / Reinstate button
+      const stateBtn = document.createElement("button");
+      if (tr.dataset.status === STATUS.SUSPENDED) {
+        stateBtn.className = "btn-reactivate";
+        stateBtn.textContent = "Reinstate";
+        stateBtn.dataset.action = "reinstate";
+      } else {
+        stateBtn.className = "btn-suspend";
+        stateBtn.textContent = "Suspend";
+        stateBtn.dataset.action = "suspend";
+      }
+
+      // Assemble DOM hierarchy
+      btnRow.append(editBtn, stateBtn);
+      stick.appendChild(btnRow);
+      tdActions.appendChild(stick);
+      tr.appendChild(tdActions);
+
+      return tr;
+    }
+
+    function showNoResults(showIt) {
+      const row = qs("#noResultsRow");
+      if (row) row.style.display = showIt ? "" : "none";
+    }
+
+    function populateTable(users) {
+      const tbody = qs("#profileTable tbody");
+      tbody.innerHTML = "";
+      showNoResults(false);
+
+      if (!users || users.length === 0) {
+        showNoResults(true);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      users.forEach(u => frag.appendChild(buildRow(u)));
+      tbody.appendChild(frag);
+    }
+
+    async function fetchUsers() {
+      const tbody = qs("#profileTable tbody");
+      tbody.innerHTML = `<tr><td colspan="9" class="no-results">Loading users…</td></tr>`;
+      try {
+        const res = await fetch(`${API_URL}/users`, {
+          method: "GET",
+          mode: "cors",
+          credentials: "include"
+        });
+        if (!res.ok) throw new Error(`Server responded ${res.status}`);
+        const json = await res.json();
+        cachedUsers = json.data || [];
+        populateTable(cachedUsers);
+        applyFilter();
+      } catch (e) {
+        console.error(e);
+        tbody.innerHTML = `<tr><td colspan="10" class="no-results">Failed to load users.</td></tr>`;
+      }
+    }
+
+    // =========================
+    // Search
+    // =========================
+    function applyFilter() {
+      const q = qs("#search")?.value.toLowerCase().trim() || "";
+      const rows = qsa("#profileTable tbody tr");
+      let visible = 0;
+      for (const r of rows) {
+        const showRow = r.innerText.toLowerCase().includes(q);
+        r.style.display = showRow ? "" : "none";
+        if (showRow) visible++;
+      }
+      showNoResults(visible === 0);
+    }
+    qs("#search")?.addEventListener("keyup", debounce(applyFilter, 180));
+
+    // =========================
+    // Edit Modal — Profiles
+    // =========================
+    async function loadProfilesForEdit(preselectValue) {
+      const select = $("editProfile");
+      select.innerHTML = '<option value="">Loading profiles...</option>';
+      select.disabled = true;
+
+      try {
+        const response = await fetch(PROFILES_API, {
+          method: "GET",
+          mode: "cors",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+
+        const result = await response.json();
+        const profiles = result.data || [];
+
+        select.innerHTML = "";
+        select.appendChild(new Option("Select a profile...", ""));
+
+        if (profiles.length === 0) {
+          select.appendChild(new Option("No profiles available", ""));
+          select.disabled = true;
+          return;
+        }
+
+        profiles.forEach(p => { if (p && p.name) select.appendChild(new Option(p.name, p.name)); });
+        if (preselectValue) select.value = preselectValue;
+        select.disabled = false;
+      } catch (error) {
+        console.error("Failed to load profiles (edit): ", error);
+        select.innerHTML = "";
+        select.appendChild(new Option("Error loading profiles", ""));
+        select.disabled = true;
+      }
+    }
+
+    // =========================
+    // Edit Modal — Open/Close
+    // =========================
+    function setDobMaxTodayForEdit() {
+      const el = $("editDob");
+      if (!el) return;
+      const today = new Date().toISOString().split("T")[0];
+      el.setAttribute("max", today);
+    }
+
+    async function openEditModalWithRow(row) {
+      window.__currentEditRow = row;
+
+      $("editFullname").value = qs(".fullname", row)?.textContent.trim()  || "";
+      $("editUsername").value = qs(".username", row)?.textContent.trim()  || "";
+      $("editEmail").value    = qs(".email", row)?.textContent.trim()     || "";
+      $("editPhone").value    = qs(".phone", row)?.textContent.trim()     || "";
+      $("editAddress").value  = qs(".address", row)?.textContent.trim()   || "";
+      const rawDob            = qs(".dob", row)?.textContent.trim()       || "";
+      $("editDob").value      = /^\d{4}-\d{2}-\d{2}$/.test(rawDob) ? rawDob : "";
+      const currentProfile    = qs(".profile", row)?.textContent.trim()   || "";
+
+      setDobMaxTodayForEdit();
+
+      // Open first (snappy), then populate dropdown
+      $("editModal").style.display = "flex";
+      await loadProfilesForEdit(currentProfile);
+
+      // reset inline errors
+      ["fullname","username","email","phone","address","dob","profile"]
+        .forEach(k => show($(`editErr-${k}`), false));
+      hasSubmittedEdit = false;
+    }
+
+    function closeEditModal() {
+      $("editModal").style.display = "none";
+      window.__currentEditRow = null;
+      hasSubmittedEdit = false;
+    }
+
+    // =========================
+    // Edit Modal — Validation & Submit
+    // =========================
+    function validateEdit(){
+      let ok = true;
+
+      const vName  = $("editFullname").value.trim();
+      const vUser  = $("editUsername").value.trim();
+      const vEmail = $("editEmail").value.trim();
+      const vPhone = $("editPhone").value.trim();
+      const vAddr  = $("editAddress").value.trim();
+      const vDob   = $("editDob").value;
+      const vProf  = $("editProfile").value.trim();
+
+      const okName  = vName && vName.length <= 64;
+      show($("editErr-fullname"), !okName); ok &&= okName;
+
+      const okUser  = /^[A-Za-z0-9._-]{3,32}$/.test(vUser);
+      show($("editErr-username"), !okUser); ok &&= okUser;
+
+      const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
+      show($("editErr-email"), !okEmail); ok &&= okEmail;
+
+      const okPhone = !vPhone || /^[+0-9()\-.\s]{6,20}$/.test(vPhone);
+      show($("editErr-phone"), !okPhone); ok &&= okPhone;
+
+      const okAddr  = vAddr.length <= 255;
+      show($("editErr-address"), !okAddr); ok &&= okAddr;
+
+      const okDob   = pastDateOnly(vDob);
+      show($("editErr-dob"), !okDob); ok &&= okDob;
+
+      const okProf  = vProf.length > 0;
+      show($("editErr-profile"), !okProf); ok &&= okProf;
+
+      return ok;
+    }
+
+    const EDIT_FORM     = $("editForm");
+    const EDIT_SAVE_BTN = $("editSaveBtn");
+
+    EDIT_FORM?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hasSubmittedEdit = true;
+      if (!validateEdit()) return;
+
+      const row = window.__currentEditRow;
+      if (!row) return;
+      const id = row.dataset.userId;
+
+      const payload = {
+        fullname:      $("editFullname").value.trim(),
+        username:      $("editUsername").value.trim(),
+        email:         $("editEmail").value.trim(),
+        phone_number:  $("editPhone").value.trim(),
+        address:       $("editAddress").value.trim(),
+        date_of_birth: $("editDob").value || null,
+        user_profile:  $("editProfile").value.trim(),
+      };
+
+      EDIT_SAVE_BTN.disabled = true;
+
+      try {
+        const res = await fetch(`${API_URL}/users/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          mode: "cors",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`Update failed (${res.status})`);
+
+        // Update row in place
+        qs(".fullname", row).textContent = payload.fullname;
+        qs(".username", row).textContent = payload.username;
+        qs(".email", row).textContent    = payload.email;
+        qs(".phone", row).textContent    = payload.phone_number || "—";
+        qs(".address", row).textContent  = payload.address || "—";
+        qs(".dob", row).textContent      = payload.date_of_birth || "—";
+        qs(".profile", row).textContent  = payload.user_profile || "—";
+
+        closeEditModal();
+      } catch (err) {
+        console.error(err);
+        alert("Could not save changes. Please try again.");
+      } finally {
+        setTimeout(() => { EDIT_SAVE_BTN.disabled = false; }, 600);
+      }
+    });
+
+    ["editFullname","editUsername","editEmail","editPhone","editAddress"].forEach(id=>{
+      $(id)?.addEventListener("input", ()=>{ if (hasSubmittedEdit) validateEdit(); });
+    });
+    ["editDob","editProfile"].forEach(id=>{
+      $(id)?.addEventListener("change", ()=>{ if (hasSubmittedEdit) validateEdit(); });
+    });
+
+    // still allow inline onclick="saveEdit()"
+    window.saveEdit = () => { EDIT_FORM?.requestSubmit(); };
+
+    // =========================
+    // Suspend / Reinstate
+    // =========================
+    function applyStatusToRow(row, statusStr) {
+      const status = (statusStr || STATUS.ACTIVE).toUpperCase();
+      row.dataset.status = status;
+      qs(".status", row).innerHTML = statusBadgeHTML(status);
+
+      const btnRow = qs(".actions .btn-row", row);
+      const oldBtn = qs(".btn-suspend, .btn-reactivate", btnRow);
+
+      const fresh = document.createElement("button");
+      if (status === STATUS.SUSPENDED) {
+        fresh.className = "btn-reactivate";
+        fresh.dataset.action = "reinstate";
+        fresh.textContent = "Reinstate";
+      } else {
+        fresh.className = "btn-suspend";
+        fresh.dataset.action = "suspend";
+        fresh.textContent = "Suspend";
+      }
+      oldBtn ? oldBtn.replaceWith(fresh) : btnRow.appendChild(fresh);
+    }
+
+    function openSuspendModalWithRow(row) {
+      window.__pendingSuspendRow = row;
+      $("suspendModal").style.display = "flex";
+    }
+    function closeSuspendModal() {
+      $("suspendModal").style.display = "none";
+      window.__pendingSuspendRow = null;
+    }
+    async function confirmSuspendUI() {
+      const row = window.__pendingSuspendRow;
+      if (!row) return;
+      const id = row.dataset.userId;
+
+      try {
+        const res = await fetch(`${API_URL}/users/${encodeURIComponent(id)}/suspend`, {
+          method: "POST",
+          mode: "cors",
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(`Suspend failed (${res.status})`);
+        applyStatusToRow(row, STATUS.SUSPENDED);
+      } catch (e) {
+        console.error(e);
+        alert("Could not suspend. Please try again.");
+      } finally {
+        closeSuspendModal();
+      }
+    }
+
+    function openReactivateModalWithRow(row) {
+      window.__pendingReinstateRow = row;
+      $("reactivateModal").style.display = "flex";
+    }
+    function closeReactivateModal() {
+      $("reactivateModal").style.display = "none";
+      window.__pendingReinstateRow = null;
+    }
+    async function confirmReactivateUI() {
+      const row = window.__pendingReinstateRow;
+      if (!row) return;
+      const id = row.dataset.userId;
+
+      const btn = qs("#reactivateModal .btn-primary");
+      if (btn) { btn.disabled = true; btn.textContent = "Reactivating..."; }
+
+      try {
+        const res = await fetch(`${API_URL}/users/${encodeURIComponent(id)}/reinstate`, {
+          method: "POST",
+          mode: "cors",
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(`Reinstate failed (${res.status})`);
+        applyStatusToRow(row, STATUS.ACTIVE);
+      } catch (e) {
+        console.error(e);
+        alert("Could not reactivate. Please try again.");
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Reactivate"; }
+        closeReactivateModal();
+      }
+    }
+
+    // expose for inline onclicks
+    window.closeSuspendModal   = closeSuspendModal;
+    window.confirmSuspendUI    = confirmSuspendUI;
+    window.closeReactivateModal= closeReactivateModal;
+    window.confirmReactivateUI = confirmReactivateUI;
+
+    // =========================
+    // Table click delegation
+    // =========================
+    qs("#profileTable")?.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const row = e.target.closest("tr");
+      if (!row) return;
+
+      if (btn.dataset.action === "edit")       { openEditModalWithRow(row); return; }
+      if (btn.dataset.action === "suspend")    { openSuspendModalWithRow(row); return; }
+      if (btn.dataset.action === "reinstate")  { openReactivateModalWithRow(row); return; }
+    });
+
+    // =========================
+    // Dashboard nav
+    // =========================
+    function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
+    window.returnToDashboard = returnToDashboard;
+
+    // expose closers
+    window.closeEditModal = closeEditModal;
+
+    // =========================
+    // Initial load
+    // =========================
+    fetchUsers();
+  </script>
+</body>
+</html>

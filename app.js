@@ -124,7 +124,7 @@ export default class App {
         apiRouter.use('/users', new ReinstateUser().getRouter());
 
         this.app.use('/api', apiRouter);
-        this.app.use(express.static('frontend'));
+        this.app.use(express.static('boundary'));
 
         this.app.use((err, req, res, next) => {
             let statusCode = err.statusCode ?? 500;

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create User Profile</title>
+  <style>
+    :root {
+      --bg: #f0f9ff;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #38bdf8;
+      --accent-2: #0ea5e9;
+      --danger: #ef4444;
+      --success-bg: #dcfce7;
+      --success-text: #166534;
+      --radius: 16px;
+      --ring: rgba(14,165,233,0.3);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(180deg, #e0f2fe, var(--bg));
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card);
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .header {
+      padding: 12px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      background: linear-gradient(180deg, #e0f2fe, #f8fafc);
+    }
+    .header h1 {
+      margin: 0 0 4px;
+      font-size: 1.4rem;
+      color: var(--accent-2);
+    }
+    .header p { margin: 0; color: var(--muted); font-size: .95rem; }
+    form { padding: 12px 20px; }
+    .row { margin-bottom: 18px; }
+    label { display: inline-block; margin-bottom: 6px; font-weight: 600; }
+    select, input[type="text"], textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: var(--text);
+      transition: border-color .2s, box-shadow .2s;
+      font-size: .98rem;
+    }
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 3px var(--ring);
+      outline: none;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    .hint { margin-top: 6px; font-size: .85rem; color: var(--muted); display: block; }
+    .actions { display: flex; gap: 12px; margin-top: 8px; }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+    .btn-primary { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: white; }
+    .btn-primary:hover { transform: scale(1.02); }
+    .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid #cbd5e1; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .error { margin-top: 6px; color: var(--danger); font-size: .9rem; display: none; }
+    .success {
+      display: none;
+      padding: 12px 14px;
+      margin-top: 10px;
+      border-radius: 12px;
+      background: var(--success-bg);
+      border: 1px solid #bbf7d0;
+      color: var(--success-text);
+      font-size: .95rem;
+    }
+    .footer {
+      padding: 12px 20px;
+      border-top: 1px solid #e2e8f0;
+      color: var(--muted);
+      font-size: .9rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .noscript-warning {
+      margin: 8px 0 0;
+      padding: 12px 16px;
+      background: #fef9c3;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      color: #854d0e;
+      font-size: .95rem;
+    }
+    @media (max-width: 420px) { .header, form, .footer { padding: 12px 20px; } }
+  </style>
+</head>
+<body>
+
+  <div class="card" role="region" aria-labelledby="title">
+    <div class="header">
+      <h1 id="title">Create User Profile</h1>
+      <p>Fill in the details below to add a new profile or role.</p>
+    </div>
+
+    <form id="profileForm">
+      <div class="row">
+      <label for="name">Name <span style="color:var(--muted)">*</span></label>
+      <input
+        id="name"
+        name="name"
+        type="text"
+        placeholder="e.g., User Admin, CSR Representative, Person In Need, Platform Management"
+        required
+        maxlength="64"
+        pattern=".*\S.*"
+        aria-describedby="name-hint name-error"
+      />
+      <small id="name-hint" class="hint">Required. 1–64 characters.</small>
+      <div id="name-error" class="error">Please enter a profile name.</div>
+    </div>
+
+      <div class="row">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" placeholder="Optional. Short description of this role's responsibilities." maxlength="255"></textarea>
+        <small id="desc-hint" class="hint">Optional. Up to 255 characters.</small>
+      </div>
+
+      <div class="row">
+        <label for="other">Other</label>
+        <input id="other" name="other" type="text" placeholder="Optional. Notes or additional details." maxlength="128" />
+        <small class="hint">Examples: “Emergency Contact”, “Case Manager”, “Senior Volunteer”.</small>
+      </div>
+
+      <!-- Display a fallback message / alternative content when JavaScript is disabled or not supported in the user's browser -->
+      <noscript>
+        <div class="noscript-warning" role="status" aria-live="polite">
+        JavaScript is disabled. You can still submit this form and your browser will validate required fields, but interactive messages and previews will not appear.
+        </div>
+      </noscript>
+
+      <div class="actions">
+        <button class="btn-primary" type="submit" id="submitBtn">Submit</button>
+        <button class="btn-secondary" type="reset">Clear</button>
+        <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
+      </div>
+
+      <div id="success" class="success" role="status" aria-live="polite"></div>
+    </form>
+
+    <div class="footer">
+      <span>© 2025 Community Support Platform</span>
+    </div>
+  </div>
+
+  <script>
+    
+    const $ = (id) => document.getElementById(id);
+    const form =    $("profileForm"),
+          success = $("success");
+
+    const input = {
+      name :        $("name"),
+      description : $("description"),
+      other:        $("other"),
+    };
+
+    const err = {
+      name : $("name-error"),
+    }
+    
+    const API_URL = "http://127.0.0.1:80/api/user-profiles";
+
+    // Use custom messages (disable native)
+    form.setAttribute('novalidate', '');
+
+    // Helper functions
+    function showOk(message) {
+      success.style.display = "block";
+      success.style.background = "#dcfce7";
+      success.style.border = "1px solid #bbf7d0";
+      success.style.color = "#166534";
+      success.textContent = message;
+    }
+    function showErr(message) {
+      success.style.display = "block";
+      success.style.background = "#fee2e2";
+      success.style.border = "1px solid #fecaca";
+      success.style.color = "#991b1b";
+      success.textContent = message;
+    }
+    function clearStatus() {
+      success.style.display = "none";
+      success.textContent = "";
+    }
+
+    // Validation for Name
+    function validateName() {
+      const val = input.name.value.trim();
+      const ok = val.length >= 1 && val.length <= 64;
+      err.name.style.display = ok ? "none" : "block";
+      input.name.toggleAttribute("aria-invalid", !ok);
+      return ok;
+    }
+
+    // Validation for Description
+    
+    // Validation for Other
+
+    function validateForm() {
+      const okName = validateName();
+      return okName;
+    }
+
+    // Live feedback
+    input.name.addEventListener("input", validateName);
+
+    // Submit Handler
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearStatus();
+
+      if (!validateName()) {
+        input.name.focus({preventScroll: true});
+        return;
+      }
+
+      // Build payload
+      const payload = {
+        name: input.name.value.trim(),
+        description: (input.description.value || '').trim(),
+        other: (input.other.value || '').trim()
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method : "POST",
+          mode : "cors",
+          headers : { "Content-Type" : "application/json", },
+          credentials: "include", // if your API uses cookies / sessions
+          body : JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+
+          showOk("Profile created successfully!");
+
+          // Optional: redirect after short delay
+          // setTimeout(() => { window.location.href = "admin_dashboard.html"; }, 1000);
+          
+          // Optionally clear the form
+          // form.reset()
+        }
+        else if (response.status === 400) { // refer to /control/user-profiles.js
+          showErr("Failed to create new User Profile. Name already exists.");
+        }
+        else if (response.status === 401) {
+          showErr("Unauthorized. Please log in and try again.");
+        }
+        else {
+          showErr(`Unexpected error: ${response.status}`);
+        }
+      }
+      catch (error) {
+        console.error("Network Error: ", error);
+        showErr("Network error. Please ensure the server is running.");
+      }
+    });
+
+    // ===== Reset =====
+    form.addEventListener('reset', () => {
+      // Hide all error messages
+      Object.values(err).forEach(el => el.style.display = 'none');
+
+      // Remove aria-invalid from all input fields
+      Object.values(input).forEach(field => field.removeAttribute('aria-invalid'));
+
+      // Clear success/error banners
+      clearStatus();
+    });
+
+    $("returnDashboard").addEventListener("click", () => {
+      window.location.href = "admin_dashboard.html";
+    });
+  </script>
+</body>
+</html>

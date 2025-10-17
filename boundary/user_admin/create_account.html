@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
+    />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>User Registration</title>
+    <style>
+      /* === Theme === */
+      :root{
+        --bg:#f0f9ff; 
+        --card:#fff; 
+        --text:#1e293b; 
+        --muted:#64748b;
+        --accent:#38bdf8; 
+        --accent-2:#0ea5e9; 
+        --danger:#ef4444;
+        --success-bg:#dcfce7; 
+        --success-text:#166534;
+        --ring:rgba(14,165,233,.3); 
+        --radius:16px;
+      }
+
+      /* === Base / Layout === */
+      *{box-sizing:border-box}
+      html,body{min-height:100svh}
+      body{
+        margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+        background:linear-gradient(180deg,#e0f2fe,var(--bg)); color:var(--text);
+        display:grid; place-items:start center; padding:24px; overflow:auto;
+      }
+      .card{
+        width:100%; max-width:720px; background:var(--card);
+        border:1px solid #e2e8f0; border-radius:var(--radius);
+        box-shadow:0 8px 24px rgba(0,0,0,.08); overflow:visible;
+      }
+
+      /* === Header === */
+      .header{
+        padding:24px 28px; border-bottom:1px solid #e2e8f0;
+        background:linear-gradient(180deg,#e0f2fe,#f8fafc);
+      }
+      .header h1{margin:0 0 4px; font-size:1.4rem; color:var(--accent-2)}
+      .header p{margin:0; color:var(--muted); font-size:.95rem}
+
+      /* === Form === */
+      form{padding:16px 20px 8px}
+      .grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 16px}
+      .row{display:flex; flex-direction:column}
+      label{margin-bottom:8px; font-weight:600; color:var(--text)}
+
+      input,select,textarea{
+        width:100%; padding:12px 14px; border-radius:12px; background:#f8fafc;
+        border:1px solid #cbd5e1; color:var(--text); font-size:.98rem;
+        transition:border-color .2s, box-shadow .2s;
+      }
+      input:focus,select:focus,textarea:focus{
+        outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
+      }
+      textarea{min-height:100px; resize:vertical}
+
+      .hint{margin-top:6px; font-size:.85rem; color:var(--muted)}
+      .error{margin-top:6px; color:var(--danger); font-size:.9rem; display:none}
+
+      /* Password toggle */
+      .password-wrapper{position:relative}
+      .password-wrapper input{padding-right:2.5rem}
+      .password-wrapper i{
+        position:absolute; right:10px; top:50%; transform:translateY(-50%);
+        color:var(--accent-2); cursor:pointer; background:none; border:0; padding:0;
+      }
+      .password-wrapper i:hover{transform:translateY(-50%) scale(1.05)}
+
+      /* Actions */
+      .actions{display:flex; gap:12px; margin-top:16px; align-items:center; flex-wrap:wrap}
+      button{border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer; transition:transform .1s}
+      .btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent-2)); color:#fff}
+      .btn-primary:hover{transform:scale(1.02)}
+      .btn-secondary{background:#f1f5f9; color:var(--text); border:1px solid #cbd5e1}
+      .btn-secondary:hover{background:#e2e8f0}
+
+      /* Status banner */
+      .success{
+        display:none; padding:12px 14px; margin-top:12px; border-radius:12px;
+        background:var(--success-bg); border:1px solid #bbf7d0; color:var(--success-text);
+        font-size:.95rem;
+      }
+
+      /* Footer */
+      .footer{
+        padding:18px 28px; border-top:1px solid #e2e8f0; color:var(--muted);
+        font-size:.9rem; display:flex; justify-content:space-between; flex-wrap:wrap;
+      }
+
+      /* NoScript */
+      .noscript-warning{
+        margin:8px 0 0; padding:12px 16px; border-radius:12px;
+        background:#fef9c3; border:1px solid #fde68a; color:#854d0e; font-size:.95rem;
+      }
+
+      /* === Responsive === */
+      @media (max-width:640px){
+        .grid{grid-template-columns:1fr}
+        .header,form,.footer{padding:18px}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" role="region" aria-labelledby="title">
+      <div class="header">
+        <h1 id="title">User Registration</h1>
+        <p>Create an account to request help, represent users, or volunteer.</p>
+      </div>
+
+      <form id="registerForm" autocomplete="off">
+        <div class="grid">
+          <!-- 1. Name (required) -->
+          <div class="row">
+            <label for="fullName">Full Name <span style="color: var(--muted)">*</span></label>
+            <input
+              id="fullName"
+              name="fullName"
+              type="text"
+              required
+              maxlength="64"
+              placeholder="e.g., Jane Doe"
+              autocomplete="name"
+            />
+            <small class="hint">Required. Up to 64 characters.</small>
+            <div id="err-fullName" class="error">
+              Please enter your name (max 64 chars).
+            </div>
+          </div>
+
+          <!-- 2. Login ID (required) -->
+          <div class="row">
+            <label for="loginId">Login ID <span style="color: var(--muted)">*</span></label>
+            <input
+              id="loginId"
+              name="loginId"
+              type="text"
+              required
+              maxlength="32"
+              placeholder="e.g., janedoe123"
+              autocomplete="username"
+              pattern="^[A-Za-z0-9._-]{3,32}$"
+            />
+            <small class="hint"
+              >Required. 3–32 chars: letters, numbers, dot, underscore,
+              hyphen.</small
+            >
+            <div id="err-loginId" class="error">
+              Please enter a valid Login ID (3–32 allowed chars).
+            </div>
+          </div>
+
+          <!-- 3. Email (required) -->
+          <div class="row">
+            <label for="email">Email <span style="color: var(--muted)">*</span></label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              maxlength="254"
+              placeholder="you@example.com"
+              autocomplete="email"
+            />
+            <small class="hint">Required.</small>
+            <div id="err-email" class="error">
+              Please enter a valid email address.
+            </div>
+          </div>
+
+          <!-- 4. Password (required) -->
+          <div class="row">
+            <label for="password">Password <span style="color: var(--muted)">*</span></label>
+            <div class="password-wrapper">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                minlength="8"
+                maxlength="128"
+                autocomplete="new-password"
+                placeholder="At least 8 characters"
+              />
+              <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
+            </div>
+            <small class="hint">Required. Password should be at least 8 characters.</small>
+            <div id="err-password" class="error">Please enter a password (6–128 chars).</div>
+          </div>
+
+          <!-- 5. Phone Number (required) -->
+          <div class="row">
+            <label for="phone">Phone Number <span style="color: var(--muted)">*</span></label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              required
+              minlength = "8"
+              maxlength="8"
+              inputmode="tel"
+              placeholder="8123 4567"
+              autocomplete="tel"
+              pattern="^[+0-9()\-.\s]{6,20}$"
+            />
+            <small class="hint"
+              >Required. 8 digits</small
+            >
+            <div id="err-phone" class="error">
+              Please enter a valid phone number.
+            </div>
+          </div>
+
+          <!-- 6. Address (required) -->
+          <div class="row" style="grid-column: 1 / -1">
+            <label for="address">Address <span style="color: var(--muted)">*</span></label>
+            <textarea
+              id="address"
+              name="address"
+              required
+              maxlength="255"
+              placeholder="Block/Street, Unit, Postal Code"
+              autocomplete="street-address"
+              spellcheck="false"
+            ></textarea>
+            <small class="hint">Required. Up to 255 characters.</small>
+            <div id="err-address" class="error">
+              Please enter your address (max 255 chars).
+            </div>
+          </div>
+
+          <!-- 7. DOB (required) -->
+          <div class="row">
+            <label for="dob">Date of Birth <span style="color: var(--muted)">*</span></label>
+            <input id="dob" name="dob" type="date" required max="" />
+            <small class="hint">Required.</small>
+            <div id="err-dob" class="error">
+              Please choose a valid date in the past.
+            </div>
+          </div>
+
+          <!-- 8. User Profile (role) required -->
+          <div class="row">
+            <label for="profile">User Profile <span style="color: var(--muted)">*</span></label>
+            <select
+              id="profile"
+              name="profile"
+              required
+              aria-describedby="hint-profile err-profile"
+            >
+              <option value="">Loading profiles…</option>
+            </select>
+            <small id="hint-profile" class="hint"
+              >Required. Select a role.</small
+            >
+            <div id="err-profile" class="error">Please select a profile.</div>
+          </div>
+        </div>
+
+        <noscript>
+          <div class="noscript-warning" role="status" aria-live="polite">
+            JavaScript is disabled. You can still submit this form and your
+            browser will validate required fields, but interactive messages and
+            previews will not appear.
+          </div>
+        </noscript>
+
+        <div class="actions">
+          <button class="btn-primary" type="submit" id="submitBtn">
+            Create Account
+          </button>
+          <button class="btn-secondary" type="reset">Clear</button>
+          <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
+        </div>
+
+        <div
+          id="success"
+          class="success"
+          role="status"
+          aria-live="polite"
+        ></div>
+      </form>
+
+      <div class="footer">
+        <span>© 2025 Community Support Platform</span>
+      </div>
+    </div>
+  <script>
+    const form = document.getElementById("registerForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const success = document.getElementById("success");
+    form.setAttribute("novalidate", "");
+
+    let hasSubmitted = false;
+
+    const PROFILES_API = "http://127.0.0.1:80/api/user-profiles";
+    const REGISTER_API = "http://127.0.0.1:80/api/users";
+
+    // Disable native bubbles to use custom messages (JS on)
+    form.setAttribute("novalidate", "");
+
+    // ===== Elements =====
+    const $ = (id) => document.getElementById(id);
+    const fullName = $("fullName"),
+          loginId =  $("loginId"),
+          email =    $("email"),
+          password = $("password"),
+          phone =    $("phone"),
+          address =  $("address"),
+          dob =      $("dob"),
+          profile =  $("profile");
+
+    const err = {
+      fullName:   $("err-fullName"),
+      loginId:    $("err-loginId"),
+      email:      $("err-email"),
+      password:   $("err-password"),
+      phone:      $("err-phone"),
+      address:    $("err-address"),
+      dob:        $("err-dob"),
+      profile:    $("err-profile"),
+    };
+
+    // ===== Status helpers =====
+    function showOk(message) {
+      success.style.display = "block";
+      success.style.background = "#dcfce7";
+      success.style.border = "1px solid #bbf7d0";
+      success.style.color = "#166534";
+      success.textContent = message;
+    }
+    function showErr(message) {
+      success.style.display = "block";
+      success.style.background = "#fee2e2";
+      success.style.border = "1px solid #fecaca";
+      success.style.color = "#991b1b";
+      success.textContent = message;
+    }
+    function clearStatus() {
+      success.style.display = "none";
+      success.textContent = "";
+    }
+
+    // ===== Utilities =====
+    const show = (el, on) => { el.style.display = on ? "block" : "none"; };
+    const nonEmpty = (s) => s.trim().length > 0;
+
+    function pastDateOnly(value) {
+      const d = new Date(value);
+      const today = new Date();
+      d.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return d instanceof Date && !isNaN(d) && d < today;
+    }
+
+    // Keep DOB max to current date
+    (function setDobMaxToday() {
+      const today = new Date().toISOString().split("T")[0];
+      dob.setAttribute("max", today);
+    })();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadProfiles();
+    });
+
+    // Toggle Password Show / Hide
+    const togglePassword = document.getElementById("togglePassword");
+    if (togglePassword) {
+      togglePassword.addEventListener("click", function () {
+        const type = password.type === "password" ? "text" : "password";
+        password.type = type;
+        this.classList.toggle("fa-eye");
+        this.classList.toggle("fa-eye-slash");
+      });
+    }
+
+    // ===== Populate User Profiles (dropdown list) =====
+    async function loadProfiles() {
+      const select = document.getElementById("profile");
+      select.innerHTML = '<option value="">Loading profiles...</option>';
+
+      try {
+        const response = await fetch(PROFILES_API, {
+          method : "GET",
+          mode : "cors",
+          headers : { "Content-Type" : "application/json" },
+          credentials : "include",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
+        const result = await response.json();
+        const profiles = result.data || [];
+
+        // Clear and repopulate
+        select.innerHTML = "";
+        select.appendChild(new Option("Select a profile...", ""));
+
+        if (profiles.length === 0) {
+          select.appendChild(new Option("No profiles available", ""));
+          select.disabled = true;
+          return;
+        }
+
+        profiles.forEach((p) => {
+          if (p && p.name) {
+            select.appendChild(new Option(p.name, p.name));
+          }
+        })
+      } catch (error) {
+        console.error("Failed to load profiles: ", error);
+        select.innerHTML = "";
+        select.appendChild(new Option("Error loading profiles", ""));
+        select.disabled = true;
+        showErr("Unable to load profiles. Please try again later.");
+      }
+    }
+
+    // ===== Field Validation =====
+    function validate() {
+      let ok = true;
+
+      const vName = fullName.value.trim();
+      const vLogin = loginId.value.trim();
+      const vEmail = email.value.trim();
+      const vPw = password.value;
+      const vPhone = phone.value.trim();
+      const vAddr = address.value.trim();
+      const vDob = dob.value;
+      const vProf = profile.value.trim();
+
+      const okName = nonEmpty(vName) && vName.length <= 64;
+      show(err.fullName, !okName);
+      ok &&= okName;
+
+      const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
+      show(err.loginId, !okLogin);
+      ok &&= okLogin;
+
+      const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
+      show(err.email, !okEmail);
+      ok &&= okEmail;
+
+      const okPw = vPw.length >= 8 && vPw.length <= 128;
+      show(err.password, !okPw);
+      ok &&= okPw;
+
+      const okPhone = /^[+0-9()\-. \s]{6,20}$/.test(vPhone);
+      show(err.phone, !okPhone);
+      ok &&= okPhone;
+
+      const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
+      show(err.address, !okAddr);
+      ok &&= okAddr;
+
+      const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
+      show(err.dob, !okDob);
+      ok &&= okDob;
+
+      const okProf = nonEmpty(vProf);
+      show(err.profile, !okProf);
+      ok &&= okProf;
+
+      return ok;
+    }
+
+    // ===== Submit =====
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault(); 
+      hasSubmitted = true;
+      clearStatus();
+
+      if (!validate()) return;
+
+      submitBtn.disabled = true;
+
+      const payload = {
+        fullname:       fullName.value.trim(),
+        username:       loginId.value.trim(),
+        email:          email.value.trim(),
+        password:       password.value,
+        phone_number:   phone.value.trim(),
+        address:        address.value.trim(),
+        date_of_birth:  dob.value,
+        user_profile:   profile.value,
+      };
+
+      try {
+        const response = await fetch(REGISTER_API, {
+          method : "POST",
+          mode : "cors",
+          headers : { "Content-Type" : "application/json" },
+          credentials : "include",
+          body : JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          showOk("Account created successfully!");
+
+          // Optionally clear the form:
+          // form.reset();
+      } else if (response.status === 400) {
+
+        // Show server-provided details if any
+        let msg = "";
+        try {
+          const ct = response.headers.get("content-type") || "";
+
+          if (ct.includes("application/json")) {
+
+            const j = await response.json();
+            msg = j.message || j.error || JSON.stringify(j);
+
+          } else { msg = await response.text(); }
+        } catch {}
+        showErr(msg ? `Registration failed: ${msg}` : "Registration failed. Please check your inputs.");
+        } 
+        else if (response.status === 401) {
+          showErr("Unauthorized. Please log in and try again.");
+        } 
+        else if (response.status === 409) {
+          showErr("This login ID or email already exists.");
+        } 
+        else {
+          showErr(`Unexpected error: ${response.status}`);
+        }
+        } catch (error) {
+        console.error("Network Error:", error);
+        showErr("Network error. Please ensure the server is running.");
+      } 
+      finally {
+        setTimeout(() => { submitBtn.disabled = false; }, 800);
+      }
+    });
+    
+    // Live validation
+    // Triggers only after 'Submit' button is clicked
+    [fullName, loginId, email, password, phone, address].forEach((i) => {
+      i.addEventListener("input", () => {
+        if (hasSubmitted) validate();
+      });
+    });
+    [dob, profile].forEach((i) =>
+      i.addEventListener("change", () => {
+        if (hasSubmitted) validate();
+      })
+    );
+
+    form.addEventListener('reset', () => {
+      // Hide all error messages
+      Object.values(err).forEach(el => el.style.display = 'none');
+
+      // Remove aria-invalid from all input fields
+      Object.values(input).forEach(field => field.removeAttribute('aria-invalid'));
+
+      // Clear success/error banners
+      clearStatus();
+    });
+
+
+    document.getElementById("returnDashboard").addEventListener("click", () => {
+      window.location.href = "admin_dashboard.html"; // ← replace with dashboard link
+    });
+  </script>
+</body>
+</html>
