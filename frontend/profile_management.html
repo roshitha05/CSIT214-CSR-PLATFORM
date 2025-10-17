@@ -514,7 +514,16 @@
       const description = $("editDesc").value.trim();
       const other = $("editOther").value.trim();
 
-      if (isDuplicateName(name, allProfiles, currentRow.dataset.userProfile)) {
+      const curName = currentRow.dataset.userProfile;
+      const curDesc = currentRow.querySelector(".description").textContent;
+      const curOther = currentRow.querySelector(".other").textContent;
+
+      if (name === curName && description === curDesc && other === curOther) {
+        closeEditModal();
+        return;
+      }
+
+      if (name !== curName && isDuplicateName(name, allProfiles, curName)) {
         alert("A profile with that name already exists (case-insensitive).");
         $("editName").focus();
         return;
@@ -533,17 +542,16 @@
         );
         if (!res.ok) throw new Error("Update failed");
 
-        const oldKey = currentRow.dataset.userProfile;
-        const i = allProfiles.findIndex(p => p.norm(p.name) === norm(oldKey));
-        if (i !== -1) {
-          allProfiles[i] = { ...allProfiles[i], name, description, other };
-        }
-
         // Update row in place (no re-render)
         currentRow.querySelector(".name").textContent = name;
         currentRow.querySelector(".description").textContent = description;
         currentRow.querySelector(".other").textContent = other;
         currentRow.dataset.userProfile = name;
+
+        const i = allProfiles.findIndex(p => p.norm(p.name) === norm(curName));
+        if (i !== -1) {
+          allProfiles[i] = { ...allProfiles[i], name, description, other };
+        }
 
         closeEditModal();
       } catch (e) {
