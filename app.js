@@ -5,21 +5,25 @@ import 'dotenv/config';
 import * as configs from './config.js';
 import * as https from 'https';
 import * as http from 'http';
-
-import {
-    CreateUserProfiles,
-    GetUserProfiles,
-    ReinstateUserProfile,
-    SuspendUserProfile,
-    UpdateUserProfile,
-} from './control/user-profiles.js';
 import ServerError from './exception/Error.js';
-import { CreateUser, GetUsers, ReinstateUser, SuspendUser, UpdateUser } from './control/users.js';
-import { Login, Logout } from './control/auth.js';
 import morgan from 'morgan';
 import z from 'zod';
 import connectPgSimple from 'connect-pg-simple';'connect-pg-simple'
 import DB from './database/db.js'
+
+import CreateUserProfiles from './control/user-profiles/create-user-profiles.js';
+import GetUserProfiles from './control/user-profiles/get-user-profiles.js';
+import UpdateUserProfile from './control/user-profiles/update-user-profile.js';
+import SuspendUserProfile from './control/user-profiles/suspend-user-profile.js';
+import ReinstateUserProfile from './control/user-profiles/reinstate-user-profile.js';
+
+import CreateUser from './control/users/create-user.js';
+import GetUsers from './control/users/get-users.js';
+import UpdateUser from './control/users/update-user.js';
+import SuspendUser from './control/users/suspend-user.js';
+import ReinstateUser from './control/users/reinstate-user.js';
+
+import { Login, Logout } from './control/auth.js';
 
 export default class App {
     constructor() {
