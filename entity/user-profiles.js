@@ -29,10 +29,19 @@ export default class UserProfilesEntity extends Entity {
     }
 
     async insertUserProfile(userProfile) {
+        if (await this.nameExists(userProfile.name)) return false;
+
         await this.db.insert(userProfilesTable).values(userProfile);
+        return true;
     }
 
     async updateUserProfile(name, update) {
+        if (!await this.nameExists(name)) return false;
+        if (
+            update.name !== undefined
+            && !await this.nameExists(update.name)
+        ) return false;
+
         const setQuery = {};
         Object.keys(update).forEach((key) => {
             if (update[key] !== undefined && userProfilesTable[key]) {
@@ -40,11 +49,18 @@ export default class UserProfilesEntity extends Entity {
             }
         });
 
-        const query = this.db
+        await this.db
             .update(userProfilesTable)
             .set(setQuery)
             .where(ilike(userProfilesTable.name, name))
 
-        return await query;
+        return true;
+    }
+
+    async nameExists(name) {
+        const nameExists = await this.getUserProfiles({ name });
+
+        if (nameExists.length > 0) return true;
+        return false;
     }
 }

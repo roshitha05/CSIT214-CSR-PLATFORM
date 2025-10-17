@@ -1,5 +1,4 @@
 import express from 'express';
-import ServerError from '../exception/Error.js';
 import UsersEntity from '../entity/users.js';
 import UserProfilesEntity from '../entity/user-profiles.js';
 
