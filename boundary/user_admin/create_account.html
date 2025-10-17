@@ -9,102 +9,165 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>User Registration</title>
     <style>
-      /* === Theme === */
-      :root{
-        --bg:#f0f9ff; 
-        --card:#fff; 
-        --text:#1e293b; 
-        --muted:#64748b;
-        --accent:#38bdf8; 
-        --accent-2:#0ea5e9; 
-        --danger:#ef4444;
-        --success-bg:#dcfce7; 
-        --success-text:#166534;
-        --ring:rgba(14,165,233,.3); 
-        --radius:16px;
+      /* =========================
+        Theme Tokens
+      ========================== */
+      :root {
+        --bg: #f0f9ff;
+        --card: #fff;
+        --text: #1e293b;
+        --muted: #64748b;
+        --accent: #38bdf8;
+        --accent-2: #0ea5e9;
+        --danger: #ef4444;
+        --success-bg: #dcfce7;
+        --success-text: #166534;
+        --ring: rgba(14,165,233,.3);
+        --radius: 16px;
       }
 
-      /* === Base / Layout === */
-      *{box-sizing:border-box}
-      html,body{min-height:100svh}
-      body{
-        margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-        background:linear-gradient(180deg,#e0f2fe,var(--bg)); color:var(--text);
-        display:grid; place-items:start center; padding:24px; overflow:auto;
+      /* =========================
+        Base / Layout
+      ========================== */
+      * { box-sizing: border-box; }
+      html, body { min-height: 100svh; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(180deg, #e0f2fe, var(--bg));
+        color: var(--text);
+        display: grid;
+        place-items: start center;
+        padding: 24px;
+        overflow: auto;
       }
-      .card{
-        width:100%; max-width:720px; background:var(--card);
-        border:1px solid #e2e8f0; border-radius:var(--radius);
-        box-shadow:0 8px 24px rgba(0,0,0,.08); overflow:visible;
-      }
-
-      /* === Header === */
-      .header{
-        padding:24px 28px; border-bottom:1px solid #e2e8f0;
-        background:linear-gradient(180deg,#e0f2fe,#f8fafc);
-      }
-      .header h1{margin:0 0 4px; font-size:1.4rem; color:var(--accent-2)}
-      .header p{margin:0; color:var(--muted); font-size:.95rem}
-
-      /* === Form === */
-      form{padding:16px 20px 8px}
-      .grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 16px}
-      .row{display:flex; flex-direction:column}
-      label{margin-bottom:8px; font-weight:600; color:var(--text)}
-
-      input,select,textarea{
-        width:100%; padding:12px 14px; border-radius:12px; background:#f8fafc;
-        border:1px solid #cbd5e1; color:var(--text); font-size:.98rem;
-        transition:border-color .2s, box-shadow .2s;
-      }
-      input:focus,select:focus,textarea:focus{
-        outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
-      }
-      textarea{min-height:100px; resize:vertical}
-
-      .hint{margin-top:6px; font-size:.85rem; color:var(--muted)}
-      .error{margin-top:6px; color:var(--danger); font-size:.9rem; display:none}
-
-      /* Password toggle */
-      .password-wrapper{position:relative}
-      .password-wrapper input{padding-right:2.5rem}
-      .password-wrapper i{
-        position:absolute; right:10px; top:50%; transform:translateY(-50%);
-        color:var(--accent-2); cursor:pointer; background:none; border:0; padding:0;
-      }
-      .password-wrapper i:hover{transform:translateY(-50%) scale(1.05)}
-
-      /* Actions */
-      .actions{display:flex; gap:12px; margin-top:16px; align-items:center; flex-wrap:wrap}
-      button{border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer; transition:transform .1s}
-      .btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent-2)); color:#fff}
-      .btn-primary:hover{transform:scale(1.02)}
-      .btn-secondary{background:#f1f5f9; color:var(--text); border:1px solid #cbd5e1}
-      .btn-secondary:hover{background:#e2e8f0}
-
-      /* Status banner */
-      .success{
-        display:none; padding:12px 14px; margin-top:12px; border-radius:12px;
-        background:var(--success-bg); border:1px solid #bbf7d0; color:var(--success-text);
-        font-size:.95rem;
+      .card {
+        width: 100%;
+        max-width: 720px;
+        background: var(--card);
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 24px rgba(0,0,0,.08);
+        overflow: visible;
       }
 
-      /* Footer */
-      .footer{
-        padding:18px 28px; border-top:1px solid #e2e8f0; color:var(--muted);
-        font-size:.9rem; display:flex; justify-content:space-between; flex-wrap:wrap;
+      /* =========================
+        Header
+      ========================== */
+      .header {
+        padding: 24px 28px;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #e0f2fe, #f8fafc);
+      }
+      .header h1 { margin: 0 0 4px; font-size: 1.4rem; color: var(--accent-2); }
+      .header p  { margin: 0; color: var(--muted); font-size: .95rem; }
+
+      /* =========================
+        Form & Fields
+      ========================== */
+      form { padding: 16px 20px 8px; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 16px;
+      }
+      .row { display: flex; flex-direction: column; }
+      label { margin-bottom: 8px; font-weight: 600; color: var(--text); }
+
+      input, select, textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        color: var(--text);
+        font-size: .98rem;
+        transition: border-color .2s, box-shadow .2s;
+      }
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+      textarea { min-height: 100px; resize: vertical; }
+
+      .hint  { margin-top: 6px; font-size: .85rem; color: var(--muted); }
+      .error { margin-top: 6px; color: var(--danger); font-size: .9rem; display: none; }
+
+      /* =========================
+        Password Toggle
+      ========================== */
+      .password-wrapper { position: relative; }
+      .password-wrapper input { padding-right: 2.5rem; }
+      .password-wrapper i {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent-2);
+        cursor: pointer;
+        background: none;
+        border: 0;
+        padding: 0;
+      }
+      .password-wrapper i:hover { transform: translateY(-50%) scale(1.05); }
+
+      /* =========================
+        Actions / Buttons
+      ========================== */
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform .1s;
+      }
+      .btn-primary   { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #fff; }
+      .btn-primary:hover { transform: scale(1.02); }
+      .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid #cbd5e1; }
+      .btn-secondary:hover { background: #e2e8f0; }
+
+      /* =========================
+        Status Banner
+      ========================== */
+      .success {
+        display: none;
+        padding: 12px 14px;
+        margin-top: 12px;
+        border-radius: 12px;
+        background: var(--success-bg);
+        border: 1px solid #bbf7d0;
+        color: var(--success-text);
+        font-size: .95rem;
       }
 
-      /* NoScript */
-      .noscript-warning{
-        margin:8px 0 0; padding:12px 16px; border-radius:12px;
-        background:#fef9c3; border:1px solid #fde68a; color:#854d0e; font-size:.95rem;
+      /* =========================
+        Footer
+      ========================== */
+      .footer {
+        padding: 18px 28px;
+        border-top: 1px solid #e2e8f0;
+        color: var(--muted);
+        font-size: .9rem;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
       }
 
-      /* === Responsive === */
-      @media (max-width:640px){
-        .grid{grid-template-columns:1fr}
-        .header,form,.footer{padding:18px}
+      /* =========================
+        Responsive
+      ========================== */
+      @media (max-width: 640px) {
+        .grid { grid-template-columns: 1fr; }
+        .header, form, .footer { padding: 18px; }
       }
     </style>
   </head>
@@ -263,14 +326,6 @@
             <div id="err-profile" class="error">Please select a profile.</div>
           </div>
         </div>
-
-        <noscript>
-          <div class="noscript-warning" role="status" aria-live="polite">
-            JavaScript is disabled. You can still submit this form and your
-            browser will validate required fields, but interactive messages and
-            previews will not appear.
-          </div>
-        </noscript>
 
         <div class="actions">
           <button class="btn-primary" type="submit" id="submitBtn">

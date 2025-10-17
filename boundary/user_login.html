@@ -9,6 +9,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Login</title>
     <style>
+      /* =========================
+        Design Tokens
+      ========================== */
       :root {
         --bg: #f0f9ff;
         --card: #ffffff;
@@ -21,6 +24,9 @@
         --ring: rgba(14, 165, 233, 0.3);
       }
 
+      /* =========================
+        Base / Resets
+      ========================== */
       * {
         box-sizing: border-box;
       }
@@ -38,6 +44,9 @@
         padding: 24px;
       }
 
+      /* =========================
+        Layout: Card Shell
+      ========================== */
       .card {
         width: 100%;
         max-width: 420px;
@@ -49,12 +58,14 @@
         text-align: center;
       }
 
+      /* =========================
+        Header
+      ========================== */
       .header {
         padding: 24px 28px;
         border-bottom: 1px solid #e2e8f0;
         background: linear-gradient(180deg, #e0f2fe, #f8fafc);
       }
-
       .header h1 {
         margin: 0;
         font-size: 1.5rem;
@@ -66,21 +77,23 @@
         font-size: 0.95rem;
       }
 
+      /* =========================
+        Form & Fields
+      ========================== */
       form {
         padding: 28px;
         text-align: left;
       }
-
       .row {
         margin-bottom: 18px;
       }
-
       label {
         display: inline-block;
         margin-bottom: 6px;
         font-weight: 600;
       }
 
+      /* Text / Password Inputs */
       input[type="text"],
       input[type="password"] {
         width: 100%;
@@ -93,15 +106,14 @@
         transition: border-color 0.2s, box-shadow 0.2s;
       }
 
+      /* Password Visibility Toggle */
       .password-wrapper {
         position: relative;
       }
-
       .password-wrapper input {
         width: 100%;
-        padding-right: 2.5rem; /* space for the icon */
+        padding-right: 2.5rem;
       }
-
       .password-wrapper i {
         position: absolute;
         right: 10px;
@@ -110,31 +122,34 @@
         cursor: pointer;
         color: var(--accent, #3498db);
       }
-
       .password-wrapper i:hover {
         color: var(--accent-2);
         transform: translateY(-50%) scale(1.1);
       }
 
+      /* Focus States */
       input:focus {
         border-color: var(--accent-2);
         box-shadow: 0 0 0 3px var(--ring);
         outline: none;
       }
 
+      /* Helper Text */
       .hint {
         margin-top: 6px;
         font-size: 0.85rem;
         color: var(--muted);
       }
 
+      /* =========================
+        Actions & Buttons
+      ========================== */
       .actions {
         margin-top: 16px;
         display: flex;
         flex-direction: column;
         gap: 10px;
       }
-
       button {
         border: 0;
         border-radius: 12px;
@@ -144,7 +159,6 @@
         transition: background 0.2s, transform 0.1s;
         font-size: 1rem;
       }
-
       .btn-primary {
         background: linear-gradient(180deg, var(--accent), var(--accent-2));
         color: white;
@@ -152,7 +166,6 @@
       .btn-primary:hover {
         transform: scale(1.02);
       }
-
       .btn-secondary {
         background: #f1f5f9;
         color: var(--text);
@@ -162,13 +175,15 @@
         background: #e2e8f0;
       }
 
+      /* =========================
+        Status Messages
+      ========================== */
       .error {
         display: none;
         color: var(--danger);
         font-size: 0.9rem;
         margin-top: 6px;
       }
-
       .success {
         display: none;
         margin-top: 10px;
@@ -181,6 +196,9 @@
         text-align: center;
       }
 
+      /* =========================
+        Footer
+      ========================== */
       .footer {
         padding: 18px 28px;
         border-top: 1px solid #e2e8f0;
@@ -189,6 +207,9 @@
         text-align: center;
       }
 
+      /* =========================
+        Responsive
+      ========================== */
       @media (max-width: 420px) {
         form,
         .header,
@@ -208,28 +229,19 @@
       <form id="loginForm">
         <div class="row">
           <label for="username"
-            >Username / Email<span style="color: var(--muted)">*</span></label
-          >
-          <input
-            type="text"
-            id="username"
-            name="username"
-            required
-            aria-describedby="user-error"
-            placeholder="Enter your username or email"
-          />
+            >Username / Email <span style="color: var(--muted)">*</span>
+          </label>
+          <input type="text" id="username" name="username" required 
+            aria-describedby="user-error" placeholder="Enter your username or email" />
           <div id="user-error" class="error">Please enter your username.</div>
         </div>
 
         <div class="form-group">
-          <label for="password">Password *</label>
+          <label for="password"
+            >Password <span style="color: var(--muted)">*</span>
+          </label>
           <div class="password-wrapper">
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter your password"
-              required
-            />
+            <input type="password" id="password" placeholder="Enter your password" required />
             <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
           </div>
           <div id="pass-error" class="error">Please enter your password.</div>
@@ -247,6 +259,15 @@
     </div>
 
     <script>
+      // ===== Config / Selectors =====
+      const API_URL = "http://127.0.0.1:80/api"
+      const ROLE_REDIRECT = {
+        "User Admin"          : "/user_admin/admin_dashboard.html",
+        "CSR Representative"  : "/csr_representative/csr_dashboard.html",
+        "Person-In-Need"      : "pin_dashboard.html",
+        "Platform Management" : "platform_dashboard.html"
+      }
+
       const form = document.getElementById("loginForm");
       form.setAttribute("novalidate", "");
 
@@ -258,14 +279,6 @@
       const togglePassword = document.querySelector("#togglePassword");
 
       let hasSubmitted = false;
-
-      const API_URL = "http://127.0.0.1:80/api/login"
-      const ROLE_REDIRECT = {
-        "User Admin"          : "/user_admin/admin_dashboard.html",
-        "CSR Representative"  : "/csr_representative/csr_dashboard.html",
-        "Person-In-Need"      : "pin_dashboard.html",
-        "Platform Management" : "platform_dashboard.html"
-      }
 
       // ===== Helper Functions =====
       function showOk(message) {
@@ -287,6 +300,15 @@
         success.textContent = "";
       }
 
+      // ===== Toggle Password (Show / Hide) =====
+      togglePassword.addEventListener("click", function () {
+        const type =
+          password.getAttribute("type") === "password" ? "text" : "password";
+        password.setAttribute("type", type);
+        this.classList.toggle("fa-eye");
+        this.classList.toggle("fa-eye-slash");
+      });
+
       // ===== Validation =====
       function validateFields() {
         let valid = true;
@@ -307,18 +329,8 @@
           passError.style.display = "none";
           password.removeAttribute("aria-invalid");
         }
-
         return valid;
       }
-
-      // ===== Show / Hide Password =====
-      togglePassword.addEventListener("click", function () {
-        const type =
-          password.getAttribute("type") === "password" ? "text" : "password";
-        password.setAttribute("type", type);
-        this.classList.toggle("fa-eye");
-        this.classList.toggle("fa-eye-slash");
-      });
 
       // ===== Submit =====
       form.addEventListener("submit", async (e) => {
@@ -334,11 +346,11 @@
         };
 
         try {
-          const response = await fetch(API_URL, {
+          const response = await fetch(`${API_URL}/login`, {
             method : "POST",
             mode : "cors",
+            credentials : "include",
             headers : { "Content-Type": "application/json" },
-            credentials : "include", // include cookies / sessions
             body : JSON.stringify(payload),
           });
 
