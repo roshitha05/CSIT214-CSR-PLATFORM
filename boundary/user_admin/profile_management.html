@@ -430,7 +430,7 @@
         });
         if (!res.ok) throw new Error("Failed to load profiles");
         const data = await res.json();
-        allProfiles = data.data || [];
+        allProfiles = data.userProfiles || [];
         populateTable(allProfiles);
       } catch (e) {
         console.error(e);
@@ -548,7 +548,7 @@
         currentRow.querySelector(".other").textContent = other;
         currentRow.dataset.userProfile = name;
 
-        const i = allProfiles.findIndex(p => p.norm(p.name) === norm(curName));
+        const i = allProfiles.findIndex(p => norm(p.name) === norm(curName));
         if (i !== -1) {
           allProfiles[i] = { ...allProfiles[i], name, description, other };
         }

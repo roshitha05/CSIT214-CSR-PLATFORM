@@ -356,8 +356,10 @@
 
           if (response.ok) {                                  // refer to /control/auth.js
             const data = await response.json();               // { message, data: {...} }
-            const user = data.data || {};                     // get the actual user object
+            const user = data.user || {};                     // get the actual user object
             const role = (user.user_profile || "").trim();    // get the role of the user object
+            
+            localStorage.setItem('username', user.username);
 
             // Pick target from map ROLE_REDIRECT
             const target = ROLE_REDIRECT[role];

@@ -321,7 +321,7 @@
       };
 
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(`${API_URL}/user-profiles`, {
           method : "POST",
           mode : "cors",
           headers : { "Content-Type" : "application/json", },

@@ -222,10 +222,10 @@
     <!-- Main content -->
     <main class="main">
       <div class="topbar">
-        <h1>Welcome back, Aziz 👋</h1>
+        <h1>Welcome back, <span class="show-username"></span>👋</h1>
         <div class="user-info">
           <img src="https://i.pravatar.cc/100?img=68" alt="User" />
-          <span>Abdul Aziz</span>
+          <span class="show-username"></span>
         </div>
       </div>
 
@@ -276,6 +276,11 @@
     </main>
 
     <script>
+      const showUsernames = document.getElementsByClassName('show-username');
+      for (const element of showUsernames) {
+        element.innerHTML = (localStorage.getItem('username')) || 'Not logged in';
+      };
+
       const API_URL = "http://127.0.0.1:80/api/logout";
 
       const $ = (id) => document.getElementById(id);
@@ -324,6 +329,7 @@
         });
 
         if (res.ok || res.status === 401) {
+          localStorage.removeItem('username');
           window.location.href = "../user_login.html";
         } else {
           alert(`Logout failed (${res.status}). Please try again.`);

@@ -509,7 +509,7 @@
         });
         if (!res.ok) throw new Error(`Server responded ${res.status}`);
         const json = await res.json();
-        cachedUsers = json.data || [];
+        cachedUsers = json.users || [];
         populateTable(cachedUsers);
         applyFilter();
       } catch (e) {
@@ -552,7 +552,7 @@
         if (!response.ok) throw new Error(`Server responded with ${response.status}`);
 
         const result = await response.json();
-        const profiles = result.data || [];
+        const profiles = result.userProfiles || [];
 
         select.innerHTML = "";
         select.appendChild(new Option("Select a profile...", ""));
@@ -631,7 +631,7 @@
       const okName  = vName && vName.length <= 64;
       show($("editErr-fullname"), !okName); ok &&= okName;
 
-      const okUser  = /^[A-Za-z0-9._-]{3,32}$/.test(vUser);
+      const okUser  = /^[A-Za-z0-9._ -]{3,32}$/.test(vUser);
       show($("editErr-username"), !okUser); ok &&= okUser;
 
       const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
@@ -674,6 +674,14 @@
         user_profile:  $("editProfile").value.trim(),
       };
 
+      if (qs(".fullname", row).textContent == payload.fullname) delete payload.fullname;
+      if (qs(".username", row).textContent == payload.username) delete payload.username;
+      if (qs(".email", row).textContent == payload.email) delete payload.email;
+      if (qs(".phone", row).textContent == payload.phone_number) delete payload.phone_number;
+      if (qs(".address", row).textContent == payload.address) delete payload.address;
+      if (qs(".dob", row).textContent == payload.date_of_birth) delete payload.date_of_birth;
+      if (qs(".profile", row).textContent == payload.user_profile) delete payload.user_profile;
+
       EDIT_SAVE_BTN.disabled = true;
 
       try {
@@ -687,13 +695,13 @@
         if (!res.ok) throw new Error(`Update failed (${res.status})`);
 
         // Update row in place
-        qs(".fullname", row).textContent = payload.fullname;
-        qs(".username", row).textContent = payload.username;
-        qs(".email", row).textContent    = payload.email;
-        qs(".phone", row).textContent    = payload.phone_number || "—";
-        qs(".address", row).textContent  = payload.address || "—";
-        qs(".dob", row).textContent      = payload.date_of_birth || "—";
-        qs(".profile", row).textContent  = payload.user_profile || "—";
+        qs(".fullname", row).textContent = payload.fullname || qs(".fullname", row).textContent;
+        qs(".username", row).textContent = payload.username || qs(".username", row).textContent;
+        qs(".email", row).textContent    = payload.email || qs(".email", row).textContent;
+        qs(".phone", row).textContent    = payload.phone_number || qs(".phone", row).textContent || "—";
+        qs(".address", row).textContent  = payload.address || qs(".address", row).textContent || "—";
+        qs(".dob", row).textContent      = payload.date_of_birth || qs(".dob", row).textContent || "—";
+        qs(".profile", row).textContent  = payload.user_profile || qs(".profile", row).textContent || "—";
 
         closeEditModal();
       } catch (err) {
