@@ -15,7 +15,7 @@ export const usersTable = pgTable('users', {
     password: text().notNull(),
     phone_number: varchar({ length: 256 }).notNull(),
     address: text().notNull(),
-    date_of_birth: date(),
+    date_of_birth: date().notNull(),
     status: varchar({ length: 256 }).notNull(),
     user_profile: varchar({ length: 256 })
         .references(() => userProfilesTable.name, {
@@ -31,4 +31,54 @@ export const userProfilesTable = pgTable('user_profiles', {
     description: text().notNull(),
     status: varchar({ length: 256 }).notNull(),
     other: text(),
+});
+
+export const categoriesTable = pgTable('categories', {
+    name: varchar({ length: 256 }).primaryKey(),
+    description: text().notNull(),
+    status: varchar({ length: 256 }).notNull()
+});
+
+export const matchesTable = pgTable('matches', {
+    service_request: integer()
+        .references(() => serviceRequestsTable.service_request_id, {
+            onDelete: 'cascade'
+        })
+        .notNull(),
+    matched_by: integer()
+        .references(() => usersTable.user_id, {
+            onDelete: 'cascade'
+        })
+        .notNull(),
+    status: varchar({ length: 256 }).notNull(),
+});
+
+export const serviceRequestsTable = pgTable('service_requests', {
+    service_request_id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    title: text().notNull(),
+    description: text().notNull(),
+    category: varchar({ length: 256 })
+        .references(() => categoriesTable.name)
+        .notNull(),
+    status: varchar({ length: 256 }).notNull(),
+    created_by: integer()
+        .references(() => usersTable.user_id, {
+            onDelete: 'cascade'
+        })
+        .notNull(),
+    view_count: integer().default(0).notNull()
+});
+
+export const shortlistsTable = pgTable('shortlists', {
+    shortlist_id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    service_request: integer()
+        .references(() => serviceRequestsTable.service_request_id, {
+            onDelete: 'cascade'
+        })
+        .notNull(),
+    shortlisted_by: integer()
+        .references(() => usersTable.user_id, {
+            onDelete: 'cascade'
+        })
+        .notNull()
 });

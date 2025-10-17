@@ -36,6 +36,13 @@
       "when": 1760327839965,
       "tag": "0004_user_profiles_update_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1760713185214,
+      "tag": "0005_1.0",
+      "breakpoints": true
     }
   ]
 }

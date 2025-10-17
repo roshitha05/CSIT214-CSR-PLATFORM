@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
-import { usersTable, userProfilesTable } from '../database/tables.js';
-import { users } from './seeds.js';
+import { usersTable, userProfilesTable, categoriesTable, serviceRequestsTable, shortlistsTable, matchesTable } from '../database/tables.js';
+import { users, categories, serviceRequests } from './seeds.js';
 import DB from '../database/db.js';
 
 const getEmail = (name) => `${name.replace(' ', '_')}@CSR.com`;
@@ -73,6 +73,13 @@ async function main(tx) {
     // seed users
     console.log('Seeding users...');
 
+    const allUsers = {
+        'User Admin': [],
+        'Person-In-Need': [],
+        'CSR Representative': [],
+        'Platform Management': []
+    };
+
     for (const user of users) {
         const random = Math.random() * 100;
 
@@ -81,7 +88,7 @@ async function main(tx) {
         else if (random < 10) profile = platform_management;
         else if (random < 30) profile = csr;
 
-        await tx.insert(usersTable).values({
+        const { user_id } = (await tx.insert(usersTable).values({
             fullname: user,
             email: getEmail(user),
             username: user,
@@ -91,8 +98,65 @@ async function main(tx) {
             date_of_birth: getDOB(),
             status: 'ACTIVE',
             user_profile: profile.name,
-        });
+        }).returning())[0];
+        
+        allUsers[profile.name].push(user_id);
     }
+
+    console.log('Seeding categories...');
+
+    for (const category of categories) {
+        await tx.insert(categoriesTable).values({
+            name: category[0],
+            description: category[1],
+            status: 'ACTIVE'
+        });
+    };
+
+    console.log('Seeding service requests...');
+
+    const requests = [];
+    for (const request of serviceRequests) {
+        const { service_request_id } = (await tx.insert(serviceRequestsTable).values({
+            title: request[0],
+            description: request[1],
+            category: request[2],
+            status: 'ACTIVE',
+            created_by: allUsers
+                ['Person-In-Need']
+                [Math.floor(Math.random() * allUsers['Person-In-Need'].length)],
+            view_count: Math.floor(Math.random() * 10) + 1
+        }).returning())[0];
+        requests.push(service_request_id);
+    };
+
+    console.log('Seeding shortlists...');
+
+    for (const request of requests) {
+        await tx.insert(shortlistsTable).values({
+            service_request: request,
+            shortlisted_by: allUsers
+                ['CSR Representative']
+                [Math.floor(Math.random() * allUsers['CSR Representative'].length)]
+        })
+    };
+
+    console.log('Seeding matches...');
+
+    for (const request of requests) {
+        if (Math.random < 0.3) continue;
+
+        let status = 'ACTIVE';
+        if (Math.random < 0.4) status = 'COMPLETED';
+
+        await tx.insert(matchesTable).values({
+            service_request: request,
+            matched_by: allUsers
+                ['CSR Representative']
+                [Math.floor(Math.random() * allUsers['CSR Representative'].length)],
+            status: status
+        });
+    };
 
     console.log('Committing changes...');
 }
