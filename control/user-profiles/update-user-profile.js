@@ -10,7 +10,7 @@ export default class UpdateUserProfile extends Control {
             const success = await this.userProfileEntity
                 .updateUserProfile(req.params.name, req.body);
 
-            if (success) res.status(200).send(true);
+            if (success) return res.status(200).send(true);
             res.status(400).send(false);
         })
     }

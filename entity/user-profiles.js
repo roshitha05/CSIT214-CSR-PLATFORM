@@ -36,6 +36,7 @@ export default class UserProfilesEntity extends Entity {
     }
 
     async updateUserProfile(name, update) {
+        if (Object.keys(update).length == 0) return true;
         if (!await this.nameExists(name)) return false;
         if (
             update.name !== undefined

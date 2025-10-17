@@ -10,7 +10,7 @@ export default class CreateUserProfile extends Control {
             const success = await this.userProfileEntity
                 .insertUserProfile({...req.body, status: 'ACTIVE' });
 
-            if (success) res.status(200).send(true);
+            if (success) return res.status(200).send(true);
             res.status(400).send(false)
         });
     }

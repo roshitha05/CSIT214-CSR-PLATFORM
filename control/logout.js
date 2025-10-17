@@ -8,7 +8,7 @@ export default class Logout extends Control {
     createController() {
         this.router.post('/logout', (req, res, next) => {
             req.session.destroy((err) => {
-                if (err) res.status(500).send(false);
+                if (err) return res.status(500).send(false);
                 res.status(200).json(true);
             });
         });

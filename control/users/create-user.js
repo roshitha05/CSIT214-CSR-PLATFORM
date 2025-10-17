@@ -9,8 +9,8 @@ export default class CreateUser extends Control {
         this.router.post('/', this.requireAuth("User Admin"), async (req, res, next) => {
             const success = await this.usersEntity
                 .insertUser({ ...req.body, status: 'ACTIVE' });
-            
-            if (success) res.status(200).send(true)
+                
+            if (success) return res.status(200).send(true)
             res.status(400).send(false)
         });
     }

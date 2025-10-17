@@ -10,7 +10,7 @@ export default class ReinstateUser extends Control {
             const success = await this.usersEntity
                 .updateUser(req.params.user_id, { status: 'ACTIVE'});
             
-            if (success) res.status(200).send(true);
+            if (success) return res.status(200).send(true);
             res.status(400).send(false);
         });
     };

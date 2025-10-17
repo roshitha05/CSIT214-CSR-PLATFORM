@@ -35,6 +35,7 @@ export default class UsersEntity extends Entity {
     }
 
     async updateUser(user_id, update) {
+        if (Object.keys(update).length == 0) return true;
         if (!await this.userIdExists(user_id)) return false;
         if (
             update.email !== undefined
