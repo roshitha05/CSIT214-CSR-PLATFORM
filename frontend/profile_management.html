@@ -317,6 +317,8 @@
 
     const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
 
+    let allProfiles = [];
+
     /* === Status helpers === */
     const isSuspended = (p) => (p?.status ?? STATUS.ACTIVE) === STATUS.SUSPENDED;
 
@@ -428,7 +430,8 @@
         });
         if (!res.ok) throw new Error("Failed to load profiles");
         const data = await res.json();
-        populateTable(data.data || []);
+        allProfiles = data.data || [];
+        populateTable(allProfiles);
       } catch (e) {
         console.error(e);
         populateTable([]); // still render "No results" upon error
@@ -529,6 +532,12 @@
           }
         );
         if (!res.ok) throw new Error("Update failed");
+
+        const oldKey = currentRow.dataset.userProfile;
+        const i = allProfiles.findIndex(p => p.norm(p.name) === norm(oldKey));
+        if (i !== -1) {
+          allProfiles[i] = { ...allProfiles[i], name, description, other };
+        }
 
         // Update row in place (no re-render)
         currentRow.querySelector(".name").textContent = name;

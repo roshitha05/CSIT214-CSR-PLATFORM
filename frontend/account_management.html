@@ -500,7 +500,7 @@
 
     async function fetchUsers() {
       const tbody = qs("#profileTable tbody");
-      tbody.innerHTML = `<tr><td colspan="10" class="no-results">Loading users…</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="no-results">Loading users…</td></tr>`;
       try {
         const res = await fetch(`${API_URL}/users`, {
           method: "GET",
