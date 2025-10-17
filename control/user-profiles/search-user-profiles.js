@@ -1,14 +1,14 @@
 import Control from '../control.js';
 
-export default class GetUserProfiles extends Control {
+export default class SearchUserProfiles extends Control {
     constructor() {
         super();
     }
 
     createController() {
-        this.router.get('/', this.requireAuth('User Admin'), async (req, res) => {
-            let userProfiles = await this.userProfileEntity
-                .getUserProfiles();
+        this.router.get('/search', this.requireAuth('User Admin'), async (req, res) => {
+            const userProfiles = await this.userProfileEntity
+                .getUserProfiles(req.query);
 
             userProfiles.map(userProfile => 
                 delete userProfile.password

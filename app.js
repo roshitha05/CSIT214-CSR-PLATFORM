@@ -1,29 +1,29 @@
-import express, { Router } from 'express';
+import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import 'dotenv/config';
 import * as configs from './config.js';
-import * as https from 'https';
 import * as http from 'http';
-import ServerError from './exception/Error.js';
 import morgan from 'morgan';
-import z from 'zod';
 import connectPgSimple from 'connect-pg-simple';'connect-pg-simple'
 import DB from './database/db.js'
 
 import CreateUserProfiles from './control/user-profiles/create-user-profiles.js';
 import GetUserProfiles from './control/user-profiles/get-user-profiles.js';
+import SearchUserProfiles from './control/user-profiles/search-user-profiles.js';
 import UpdateUserProfile from './control/user-profiles/update-user-profile.js';
 import SuspendUserProfile from './control/user-profiles/suspend-user-profile.js';
 import ReinstateUserProfile from './control/user-profiles/reinstate-user-profile.js';
 
 import CreateUser from './control/users/create-user.js';
 import GetUsers from './control/users/get-users.js';
+import SearchUsers from './control/users/search-users.js';
 import UpdateUser from './control/users/update-user.js';
 import SuspendUser from './control/users/suspend-user.js';
 import ReinstateUser from './control/users/reinstate-user.js';
 
-import { Login, Logout } from './control/auth.js';
+import Login from './control/login.js';
+import Logout from './control/logout.js';
 
 export default class App {
     constructor() {
@@ -50,24 +50,6 @@ export default class App {
 
     init() {
         // configurations
-        z.config({
-            customError: (iss, ctx) => {
-                if (iss.code === 'invalid_type') {
-                    if (iss.input === undefined) {
-                        const field = iss.path.join('.');
-                        const uField =
-                            field.charAt(0).toUpperCase() + field.slice(1);
-                        return { message: `${uField} is required` };
-                    }
-                    return {
-                        message: `${iss.path.join('.')} must be a ${
-                            iss.expected
-                        }`,
-                    };
-                }
-                return { message: ctx.defaultError };
-            },
-        });
         morgan.token('body', (req, res) => {
             return JSON.stringify(req.body) || {};
         });
@@ -75,9 +57,7 @@ export default class App {
             return JSON.stringify(res.responseBody) || {}
         })
 
-        if (process.env.ENV !== 'production') {
-            this.app.use(cors({ origin: true, credentials: true }));
-        }
+        this.app.use(cors({ origin: true, credentials: true }));
         this.app.use(express.json(this.config.expressJson));
         this.app.use((req, res, next) => {
             const originalJson = res.json;
@@ -108,61 +88,44 @@ export default class App {
             caseSensitive: true,
             strict: true,
         });
+        const userProfilesRouter = express.Router({
+            caseSensitive: true,
+            strict: true
+        });
+        const usersRouter = express.Router({
+            caseSensitive: true,
+            strict: true
+        });
+
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
 
-        apiRouter.use('/user-profiles', new CreateUserProfiles().getRouter());
-        apiRouter.use('/user-profiles', new GetUserProfiles().getRouter());
-        apiRouter.use('/user-profiles', new UpdateUserProfile().getRouter());
-        apiRouter.use('/user-profiles', new SuspendUserProfile().getRouter());
-        apiRouter.use('/user-profiles', new ReinstateUserProfile().getRouter());
+        userProfilesRouter.use('/', new CreateUserProfiles().getRouter());
+        userProfilesRouter.use('/', new GetUserProfiles().getRouter());
+        userProfilesRouter.use('/', new SearchUserProfiles().getRouter());
+        userProfilesRouter.use('/', new UpdateUserProfile().getRouter());
+        userProfilesRouter.use('/', new SuspendUserProfile().getRouter());
+        userProfilesRouter.use('/', new ReinstateUserProfile().getRouter());
 
-        apiRouter.use('/users', new CreateUser().getRouter());
-        apiRouter.use('/users', new GetUsers().getRouter());
-        apiRouter.use('/users', new UpdateUser().getRouter());
-        apiRouter.use('/users', new SuspendUser().getRouter());
-        apiRouter.use('/users', new ReinstateUser().getRouter());
+        usersRouter.use('/', new CreateUser().getRouter());
+        usersRouter.use('/', new GetUsers().getRouter());
+        usersRouter.use('/', new SearchUsers().getRouter());
+        usersRouter.use('/', new UpdateUser().getRouter());
+        usersRouter.use('/', new SuspendUser().getRouter());
+        usersRouter.use('/', new ReinstateUser().getRouter());
+
+        apiRouter.use('/user-profiles', userProfilesRouter);
+        apiRouter.use('/users', usersRouter);
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('boundary'));
-
-        this.app.use((err, req, res, next) => {
-            let statusCode = err.statusCode ?? 500;
-            let message = err.message ?? 'Internal Server Error';
-
-            if (
-                process.env.ENV === 'production' &&
-                !(err instanceof ServerError)
-            ) {
-                statusCode = 500;
-                message = 'Internal Server Error';
-            }
-
-            res.status(statusCode).json({
-                error: {
-                    statusCode,
-                    message,
-                },
-            });
-        });
     }
 
     listen() {
-        if (this.config.useHTTP) {
-            http.createServer(this.app).listen(this.httpPort, this.host, () => {
-                console.log(
-                    `HTTP server is running on http://${this.host}:${this.httpPort}`
-                );
-            });
-        }
-        if (this.config.useHTTPS) {
-            https
-                .createServer(this.app)
-                .listen(this.httpsPort, this.host, () => {
-                    console.log(
-                        `HTTPS server is running on https://${this.host}:${this.httpsPort}`
-                    );
-                });
-        }
+        http.createServer(this.app).listen(this.httpPort, this.host, () => {
+            console.log(
+                `HTTP server is running on http://${this.host}:${this.httpPort}`
+            );
+        });
     }
 }
