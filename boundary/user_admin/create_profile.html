@@ -23,7 +23,7 @@
     }
 
     /* =========================
-      Base / Reset
+      Base / Layout
     ========================== */
     * { box-sizing: border-box; }
     html, body { height: 100%; }
@@ -38,7 +38,7 @@
     }
 
     /* =========================
-      Card Shell
+      Card 
     ========================== */
     .card {
       width: 100%;
@@ -191,47 +191,73 @@
 </head>
 <body>
 
+  <!-- Header -->
   <div class="card" role="region" aria-labelledby="title">
     <div class="header">
       <h1 id="title">Create User Profile</h1>
       <p>Fill in the details below to add a new profile or role.</p>
     </div>
 
+    <!-- Form -->
     <form id="profileForm">
+
+      <!-- Name (Required) -->
       <div class="row">
-      <label for="name">Name <span style="color:var(--muted)">*</span></label>
-      <input
-        id="name"
-        name="name"
-        type="text"
-        placeholder="e.g., User Admin, CSR Representative, Person In Need, Platform Management"
-        required
-        maxlength="64"
-        pattern=".*\S.*"
-        aria-describedby="name-hint name-error"
-      />
-      <small id="name-hint" class="hint">Required. 1–64 characters.</small>
-      <div id="name-error" class="error">Please enter a profile name.</div>
+        <label for="name">Name <span style="color:var(--muted)">*</span></label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          placeholder="e.g., User Admin, CSR Representative, Person In Need, Platform Management"
+          required
+          maxlength="64"
+          aria-describedby="name-hint name-error"
+          autofocus
+        />
+        <small id="name-hint" class="hint">Required. 1–64 characters.</small>
+        <div id="err-name" class="error">
+          Please enter a profile name.
+        </div>
     </div>
 
+      <!-- Description (optional) -->
       <div class="row">
         <label for="description">Description</label>
-        <textarea id="description" name="description" placeholder="Optional. Short description of this role's responsibilities." maxlength="255"></textarea>
+        <textarea 
+          id="description" 
+          name="description" 
+          placeholder="Optional. Short description of this role's responsibilities." 
+          maxlength="255"
+        ></textarea>
         <small id="desc-hint" class="hint">Optional. Up to 255 characters.</small>
+        <div id="err-desc" class="error">
+          Please enter a valid description (max 255 characters).
+        </div>
       </div>
 
+      <!-- Other (optional) -->
       <div class="row">
         <label for="other">Other</label>
-        <input id="other" name="other" type="text" placeholder="Optional. Notes or additional details." maxlength="128" />
+        <input id="other" 
+          name="other" 
+          type="text" 
+          placeholder="Optional. Notes or additional details." 
+          maxlength="128" 
+        />
         <small class="hint">Examples: “Emergency Contact”, “Case Manager”, “Senior Volunteer”.</small>
+        <div id="err-other" class="error">
+          Please enter a valid information (max 128 characters).
+        </div>
       </div>
 
+      <!-- Buttons -->
       <div class="actions">
         <button class="btn-primary" type="submit" id="submitBtn">Submit</button>
         <button class="btn-secondary" type="reset">Clear</button>
         <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
       </div>
 
+      <!-- Status Bar (success / failed) -->
       <div id="success" class="success" role="status" aria-live="polite"></div>
     </form>
 
@@ -243,11 +269,15 @@
   <script>
 
     // ===== Config / Selectors =====
+    const DEBUG = true;  // turn on / off whenever
+
     const API_URL = "http://127.0.0.1:80/api";
+    const PROFILES_API = `${API_URL}/user-profiles`;
     const $ = (id) => document.getElementById(id);
 
-    const form = $("profileForm");
-    const success = $("success");
+    const form =      $("profileForm");
+    const success =   $("success");
+    const submitBtn = $("submitBtn");
 
     const input = {
       name:        $("name"),
@@ -256,13 +286,17 @@
     }
 
     const err = {
-      name: $("name-error"),
-      // description: $("description-error"),
-      // other:       $("other-error"),
+      name: $("err-name"),
+      description: $("err-desc"),
+      other:       $("err-other"),
     }
 
     // Use custom messages (disable native validation)
     form.setAttribute("novalidate", "");
+
+    let hasSubmitted = false;   // used for live validation after submit
+    let submitting = false;     // used for safeguard to prevent double submission
+    let formCompleted = false;  // enables post-success click to clear
 
     // ===== Helper Functions =====
     function showOk(message) {
@@ -272,6 +306,7 @@
       success.style.color = "#166534";
       success.textContent = message;
     }
+
     function showErr(message) {
       success.style.display = "block";
       success.style.background = "#fee2e2";
@@ -279,59 +314,153 @@
       success.style.color = "#991b1b";
       success.textContent = message;
     }
+
     function clearStatus() {
       success.style.display = "none";
       success.textContent = "";
     }
 
+    // Debug Helper
+    function showDebug(payload) {
+      success.style.display = "block";
+      success.style.background = "#fef9c3";   
+      success.style.border = "1px solid #fde047";
+      success.style.color = "#854d0e";
+      success.style.whiteSpace = "pre-wrap";
+      success.textContent =
+        `[DEBUG]:\n\n` +
+        `This would POST to:\n${PROFILES_API}\n\n` +
+        `With values:\n${JSON.stringify(payload, null, 2)}`;
+    }
+
+    function focusFirstInvalid() {
+      const order = [ input.name, input.description, input.other ];
+
+      for (const el of order) {
+        if (el.hasAttribute("aria-invalid")) {
+          el.focus({preventScroll: true});
+          return;
+        }
+      }
+    }
+
+    // ===== Utilities =====
+    const show = (el, on)        => { el.style.display = on ? "block" : "none"; };
+    const nonEmpty = (s)         => s.trim().length > 0;
+
+    // Normalize
+    const collapseSpaces = (s) => String(s).replace(/\s+/g, " ").trim();
+
+    // Live feedback (after submit)
+    [input.name, input.description, input.other].forEach((el) => {
+      el.addEventListener("input", () => {
+        if (!hasSubmitted) return;
+        clearStatus();
+        validateFields();
+      })
+    })
+
+    // Post-Submit (success) click to clear
+    Object.values(input).forEach((field) => {
+      field.addEventListener("focus", () => {
+        if (formCompleted) {
+          form.reset();
+          clearStatus();
+          Object.values(input).forEach(f => f.removeAttribute("aria-invalid"));
+          formCompleted = false;
+        }
+      })
+    })
+
     // ===== Validation =====
-    function validateName() {
-      const val = input.name.value.trim();
-      const ok = val.length >= 1 && val.length <= 64;
+    function validateFields() {
+      let valid = true;
 
-      err.name.style.display = ok ? "none" : "block";
-      input.name.toggleAttribute("aria-invalid", !ok);
+      // Normalize field values
+      const vName =  collapseSpaces(input.name.value);
+      const vDesc =  collapseSpaces(input.description.value);
+      const vOther = collapseSpaces(input.other.value);
 
-      return ok;
+      // --- Name (Required) ---
+      const okName = nonEmpty(vName) && vName.length <= 64;
+      show(err.name, !okName);
+      input.name.toggleAttribute("aria-invalid", !okName);
+      valid &&= okName;
+
+      // --- Description (Optional, but check max length if provided) ---
+      if (vDesc.length > 255) {
+        showErr("Description must be 255 characters or less.");
+        input.description.setAttribute("aria-invalid", "true");
+        valid = false;
+      }
+      else {
+        input.description.removeAttribute("aria-invalid");
+      }
+
+      // --- Other (Optional, but check max length if provided) ---
+      if (vOther.length > 128) {
+        showErr("Other field must be 128 characters or less.");
+        input.other.setAttribute("aria-invalid", "true");
+        valid = false;
+      }
+      else {
+        input.other.removeAttribute("aria-invalid");
+      }
+
+      input.name.value        = vName;
+      input.description.value = vDesc;
+      input.other.value       = vOther;
+
+      return valid
     }
-
-    function validateForm() {
-      const okName = validateName();
-      return okName;
-    }
-
-    // Live feedback
-    input.name.addEventListener("input", validateName);
 
     // ===== Submit Handler =====
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      if (submitting) return; // safeguard to prevent double submit
+      submitting = true;
+      hasSubmitted = true;
       clearStatus();
 
-      if (!validateName()) {
-        input.name.focus({preventScroll: true});
+      if (!validateFields()) {
+        focusFirstInvalid();
+        submitting = false;
         return;
       }
 
-      // Build payload
+      submitBtn.disabled = true;
+
+      // Build payload (normalized)
       const payload = {
-        name:        input.name.value.trim(),
-        description: (input.description.value || '').trim(),
-        other:       (input.other.value || '').trim()
+        name:        collapseSpaces(input.name.value),
+        description: collapseSpaces(input.description.value),
+        other:       collapseSpaces(input.other.value),
       };
 
+      if (DEBUG) {
+        showDebug(payload);
+
+        submitBtn.disabled = false;
+        submitting = false;
+        hasSubmitted = false;
+
+        return; // break early (don't go into fetch block)
+      }
+
       try {
-        const response = await fetch(`${API_URL}/user-profiles`, {
+        const response = await fetch(PROFILES_API, {
           method : "POST",
           mode : "cors",
+          credentials: "include",
           headers : { "Content-Type" : "application/json", },
-          credentials: "include", // if your API uses cookies / sessions
           body : JSON.stringify(payload)
         });
 
         if (response.ok) {
 
           showOk("Profile created successfully!");
+          formCompleted = true; // enable post-success click-to-clear
 
           // Optional: redirect after short delay
           // setTimeout(() => { window.location.href = "admin_dashboard.html"; }, 1000);
@@ -353,6 +482,9 @@
         console.error("Network Error: ", error);
         showErr("Network error. Please ensure the server is running.");
       }
+      finally {
+        setTimeout(() => { submitBtn.disabled = false; submitting = false; }, 800);
+      }
     });
 
     // ===== Reset Handler =====
@@ -365,11 +497,12 @@
 
       // Clear success/error banners
       clearStatus();
+      hasSubmitted = false;
     });
 
     // ===== Navigation =====
     $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "admin_dashboard.html";
+      window.location.href = "/user_admin/admin_dashboard.html";
     });
   </script>
 </body>

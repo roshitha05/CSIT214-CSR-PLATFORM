@@ -232,7 +232,7 @@
             >Username / Email <span style="color: var(--muted)">*</span>
           </label>
           <input type="text" id="username" name="username" required 
-            aria-describedby="user-error" placeholder="Enter your username or email" />
+            aria-describedby="user-error" placeholder="Enter your username or email" autofocus/>
           <div id="user-error" class="error">Please enter your username.</div>
         </div>
 
@@ -345,7 +345,7 @@
           password: password.value.trim(),
         };
 
-        try {
+        try { // refer to /control/auth.js
           const response = await fetch(`${API_URL}/login`, {
             method : "POST",
             mode : "cors",
@@ -354,10 +354,10 @@
             body : JSON.stringify(payload),
           });
 
-          if (response.ok) {                                  // refer to /control/auth.js
-            const data = await response.json();               // { message, data: {...} }
-            const user = data.user || {};                     // get the actual user object
-            const role = (user.user_profile || "").trim();    // get the role of the user object
+          if (response.ok) {                                  
+            const data = await response.json();               
+            const user = data.user || {};                     
+            const role = (user.user_profile || "").trim();    
             
             localStorage.setItem('username', user.username);
 
@@ -369,7 +369,7 @@
               window.location.href = target;
             }, 1000);
           }
-          else if (response.status === 400) { // Refer to /control/auth.js
+          else if (response.status === 400) { 
             // Missing username or password
             showErr("Missing username or password.");
           }

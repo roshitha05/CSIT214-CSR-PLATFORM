@@ -83,6 +83,12 @@
     }
     td { font-size:.93rem; color:#334155; }
 
+    /* Hint */
+    .hint {
+      margin-top: 6px; font-size: .85rem;
+      color: var(--muted); display: block;
+    }
+
     /* Hover and zebra */
     tbody tr:nth-child(odd) td { background:#fcfdff; }
     tbody tr:hover td { background:#f9fafb; }
@@ -250,7 +256,7 @@
 
       <div class="modal-body">
         <div class="form-row">
-          <label for="editName">Name</label>
+          <label for="editName">Name <span style="color:var(--muted)">*</span></label>
           <input type="text" id="editName" class="modal-input" placeholder="Profile name"/>
           <small class="hint">Required. 1–64 characters.</small>
           <div id="editErr-name" class="error" style="display:none;">Please enter a valid name (1–64 characters).</div>
@@ -269,6 +275,8 @@
           <small class="hint">Optional. Up to 128 characters.</small>
           <div id="editErr-other" class="error" style="display:none;">Other info must be 128 characters or fewer.</div>
         </div>
+
+        <div id="success" class="success" role="status" aria-live="polite"></div>
 
         <div class="modal-actions">
           <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
@@ -303,9 +311,33 @@
   </div>
 
   <script>
-    /* === Config & Helpers === */
-    const API_URL = "http://127.0.0.1:80/api";
-    const $ = (id) => document.getElementById(id);
+    // =========================
+    // Config & Constants
+    // =========================
+    const DEBUG = false; // flip to true for console logs
+
+    const API_URL       = "http://127.0.0.1:80/api";
+    const PROFILES_API  = `${API_URL}/user-profiles`;
+
+    const $  = (id) => document.getElementById(id);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+    const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
+
+    // Policy toggles (case-insensitive names)
+    const RESERVED_NAMES = new Set([
+      "user admin",
+      // "csr representative",
+      // "person-in-need",
+      // "platform management",
+    ]);
+    const PROTECTED_SUSPEND_NAMES = RESERVED_NAMES; // cannot suspend
+    const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES; // cannot edit name
+
+    // =========================
+    // Utilities / Normalizers
+    // =========================
+    const log = (...args) => { if (DEBUG) console.log("[profiles]", ...args); };
 
     const escapeHTML = (s) =>
       String(s ?? "")
@@ -315,13 +347,41 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
-    const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
+    const norm            = (s) => String(s ?? "").trim().toLowerCase();
+    const collapseSpaces  = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
+    const nonEmpty        = (s) => collapseSpaces(s).length > 0;
 
-    let allProfiles = [];
+    const isSuspended         = (p) => (p?.status ?? STATUS.ACTIVE) === STATUS.SUSPENDED;
+    const isProtectedSuspend  = (name) => PROTECTED_SUSPEND_NAMES.has(norm(name));
+    const isNameLocked        = (name) => LOCK_NAME_EDIT_NAMES.has(norm(name));
+    const isReservedName      = (name) => RESERVED_NAMES.has(norm(name));
 
-    /* === Status helpers === */
-    const isSuspended = (p) => (p?.status ?? STATUS.ACTIVE) === STATUS.SUSPENDED;
+    // Duplicate name check (case-insensitive). Ignores the current record if provided.
+    function isDuplicateName(newName, profiles, currentName = null) {
+      const target = norm(newName);
+      const cur    = norm(currentName);
+      return profiles.some(p => {
+        const existing = norm(p?.name);
+        return existing === target && existing !== cur;
+      });
+    }
 
+    // =========================
+    // State
+    // =========================
+    let allProfiles          = [];
+    let currentRow           = null; // row being edited
+    let pendingSuspendRow    = null;
+    let pendingReactivateRow = null;
+
+    // Request guards to prevent double-submission
+    let editing        = false;
+    let suspending     = false;
+    let reactivating   = false;
+
+    // =========================
+    // Rendering
+    // =========================
     function renderStatusBadgeFromStatus(name, statusStr) {
       if (isProtectedSuspend(name)) {
         return `
@@ -332,7 +392,7 @@
             Protected
           </span>`;
       }
-      return statusStr === STATUS.SUSPENDED
+      return String(statusStr).toUpperCase() === STATUS.SUSPENDED
         ? '<span class="badge badge-suspended">Suspended</span>'
         : '<span class="badge badge-active">Active</span>';
     }
@@ -341,50 +401,20 @@
       if (isProtectedSuspend(name)) {
         return '<button class="btn-suspend" disabled title="Protected role — cannot be suspended">Suspend</button>';
       }
-      return statusStr === STATUS.SUSPENDED
+      return String(statusStr).toUpperCase() === STATUS.SUSPENDED
         ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>'
         : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
     }
 
-    /* ===== Helper Functions ===== */
-    function isDuplicateName(newName, allProfiles, currentName = null) {
-      const target = norm(newName);
-      return allProfiles.some(p => {
-        const existing = norm(p.name);
-        // Skip current record being edited
-        return existing === target && existing !== norm(currentName);
-      });
-    }
-
-    /* ===== Policy Toggler ===== */
-
-    const RESERVED_NAMES = new Set([
-      'user admin',
-      // 'csr representative',
-      // 'person-in-need',
-      // 'platform management'
-    ]);
-
-    const PROTECTED_SUSPEND_NAMES = RESERVED_NAMES;
-    const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES;
-
-    const norm = s => String(s ?? '').trim().toLowerCase();
-
-    const isProtectedSuspend = (name) => PROTECTED_SUSPEND_NAMES.has(norm(name));
-    const isNameLocked       = (name) => LOCK_NAME_EDIT_NAMES.has(norm(name));
-    const isReservedName     = (name) => RESERVED_NAMES.has(norm(name));
-
-    /* === Table rendering === */
     function populateTable(profiles) {
       const tbody = $("profileTable").querySelector("tbody");
       tbody.innerHTML = "";
 
-      // Sort A->Z by name (case-insensitive)
       profiles
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+        .slice()
+        .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
         .forEach((p) => {
-          const status = p.status || STATUS.ACTIVE;
-
+          const status = (p.status || STATUS.ACTIVE).toUpperCase();
           const html = `
             <tr data-user-profile="${escapeHTML(p.name)}" data-status="${status}">
               <td class="name">${escapeHTML(p.name)}</td>
@@ -405,269 +435,301 @@
     }
 
     function updateNoResults() {
-      const rows = document.querySelectorAll("#profileTable tbody tr");
-      const visible = Array.from(rows).some((r) => r.style.display !== "none");
+      const rows    = $$("#profileTable tbody tr");
+      const visible = rows.some((r) => r.style.display !== "none");
       $("noResultsRow").style.display = visible ? "none" : "";
     }
 
-    /* === Search === */
-    $("search").addEventListener("keyup", function () {
+    // =========================
+    // Search
+    // =========================
+    $("search").addEventListener("input", function () {
       const filter = this.value.toLowerCase();
-      const rows = document.querySelectorAll("#profileTable tbody tr");
+      const rows = $$("#profileTable tbody tr");
       rows.forEach((row) => {
         row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
       });
       updateNoResults();
     });
 
-    /* === Initial load === */
-    (async () => {
+    // =========================
+    // Initial Load
+    // =========================
+    (async function loadProfiles() {
       try {
-        const res = await fetch(`${API_URL}/user-profiles`, {
+        const res = await fetch(PROFILES_API, {
           method: "GET",
           mode: "cors",
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Failed to load profiles");
+        if (!res.ok) throw new Error(`Failed to load profiles (${res.status})`);
         const data = await res.json();
-        allProfiles = data.userProfiles || [];
+        allProfiles = Array.isArray(data.userProfiles) ? data.userProfiles : [];
         populateTable(allProfiles);
+        log("Loaded profiles:", allProfiles.length);
       } catch (e) {
         console.error(e);
-        populateTable([]); // still render "No results" upon error
+        allProfiles = [];
+        populateTable(allProfiles); // will show "No results"
       }
     })();
 
-    /* === Edit modal === */
-    let currentRow = null;
-
-    function openEditModal(button) {
+    // =========================
+    // Edit Modal
+    // =========================
+    window.openEditModal = function (button) {
       currentRow = button.closest("tr");
-      const currentName = currentRow.dataset.userProfile;
+      const currentName = currentRow?.dataset?.userProfile || "";
 
       $("editName").value = currentRow.querySelector(".name").textContent.trim();
       $("editDesc").value = currentRow.querySelector(".description").textContent.trim();
       $("editOther").value = currentRow.querySelector(".other").textContent.trim();
 
-      // Control this via LOCK_NAME_EDIT_NAMES
       $("editName").disabled = isNameLocked(currentName);
 
+      // clear any prior messages
+      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => $(id).style.display = "none");
+      ["editName", "editDesc", "editOther"].forEach(id => $(id).removeAttribute("aria-invalid"));
+      $("success")?.style && ( $("success").style.display = "none", $("success").textContent = "" );
+
       $("editModal").style.display = "flex";
-    }
+    };
+
+    window.closeEditModal = function () {
+      $("editModal").style.display = "none";
+      $("editName").disabled = false;
+      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => $(id).style.display = "none");
+      ["editName", "editDesc", "editOther"].forEach(id => $(id).removeAttribute("aria-invalid"));
+    };
 
     function validateEditModal() {
       const nameEl  = $("editName");
       const descEl  = $("editDesc");
       const otherEl = $("editOther");
 
+      // normalize (so what you see is what you submit)
+      const vName  = collapseSpaces(nameEl.value);
+      const vDesc  = collapseSpaces(descEl.value);
+      const vOther = collapseSpaces(otherEl.value);
+
+      nameEl.value  = vName;
+      descEl.value  = vDesc;
+      otherEl.value = vOther;
+
       let ok = true;
 
-      // Reset UI
-      [nameEl, descEl, otherEl].forEach(el => el.removeAttribute("aria-invalid"));
+      // reset UI
       ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => $(id).style.display = "none");
+      [nameEl, descEl, otherEl].forEach(el => el.removeAttribute("aria-invalid"));
 
+      // name
       if (!nameEl.disabled) {
-        const v = nameEl.value.trim();
-        if (v.length < 1 || v.length > 64) {
+        if (!nonEmpty(vName) || vName.length > 64) {
           $("editErr-name").textContent = "Please enter a valid name (1–64 characters).";
           $("editErr-name").style.display = "block";
+          nameEl.setAttribute("aria-invalid", "true");
           ok = false;
-        } else if (isReservedName(v)) {
+        } else if (isReservedName(vName)) {
           $("editErr-name").textContent = "This name is reserved and cannot be used.";
           $("editErr-name").style.display = "block";
+          nameEl.setAttribute("aria-invalid", "true");
+          ok = false;
+        } else if (isDuplicateName(vName, allProfiles, currentRow?.dataset?.userProfile)) {
+          $("editErr-name").textContent = "A profile with that name already exists.";
+          $("editErr-name").style.display = "block";
+          nameEl.setAttribute("aria-invalid", "true");
           ok = false;
         }
       }
 
-      if (descEl.value.trim().length > 255) { $("editErr-desc").style.display = "block"; ok = false; }
-      if (otherEl.value.trim().length > 128) { $("editErr-other").style.display = "block"; ok = false; }
-
-      if (!ok) {
-        // focus first field with a visible error (no red styles)
-        if (!nameEl.disabled && $("editErr-name").style.display === "block") nameEl.focus({ preventScroll: true });
-        else if ($("editErr-desc").style.display === "block") descEl.focus({ preventScroll: true });
-        else if ($("editErr-other").style.display === "block") otherEl.focus({ preventScroll: true });
+      // description
+      if (vDesc.length > 255) {
+        $("editErr-desc").style.display = "block";
+        descEl.setAttribute("aria-invalid", "true");
+        ok = false;
       }
+
+      // other
+      if (vOther.length > 128) {
+        $("editErr-other").style.display = "block";
+        otherEl.setAttribute("aria-invalid", "true");
+        ok = false;
+      }
+
+      // focus first invalid
+      if (!ok) {
+        if (!nameEl.disabled && nameEl.hasAttribute("aria-invalid")) nameEl.focus({ preventScroll: true });
+        else if (descEl.hasAttribute("aria-invalid")) descEl.focus({ preventScroll: true });
+        else if (otherEl.hasAttribute("aria-invalid")) otherEl.focus({ preventScroll: true });
+      }
+
       return ok;
     }
 
-    function closeEditModal() {
-      $("editModal").style.display = "none";
-      $("editName").disabled = false;
-
-      // reset validation messages and styles
-      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => {
-        $(id).style.display = "none";
-      });
-
-      ["editName", "editDesc", "editOther"].forEach(id => {
-        const el = $(id);
-        el.removeAttribute("aria-invalid");
-      });
-    }
-
-    async function saveEdit() {
-
+    window.saveEdit = async function () {
+      if (editing) return;
       if (!validateEditModal()) return;
+
+      editing = true;
 
       const name = $("editName").value.trim();
       const description = $("editDesc").value.trim();
       const other = $("editOther").value.trim();
 
-      const curName = currentRow.dataset.userProfile;
-      const curDesc = currentRow.querySelector(".description").textContent;
-      const curOther = currentRow.querySelector(".other").textContent;
+      const curName  = currentRow.dataset.userProfile;
+      const curDesc  = currentRow.querySelector(".description").textContent.trim();
+      const curOther = currentRow.querySelector(".other").textContent.trim();
 
+      // nothing changed
       if (name === curName && description === curDesc && other === curOther) {
+        editing = false;
         closeEditModal();
         return;
       }
 
-      if (name !== curName && isDuplicateName(name, allProfiles, curName)) {
-        alert("A profile with that name already exists (case-insensitive).");
-        $("editName").focus();
-        return;
-      }
-
+      // PUT update
       try {
-        const res = await fetch(
-          `${API_URL}/user-profiles/${encodeURIComponent(currentRow.dataset.userProfile)}`,
-          {
-            method: "PUT",
-            mode: "cors",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, description, other }),
-          }
-        );
-        if (!res.ok) throw new Error("Update failed");
+        const res = await fetch(`${PROFILES_API}/${encodeURIComponent(curName)}`, {
+          method: "PUT",
+          mode: "cors",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, description, other }),
+        });
+        if (!res.ok) throw new Error(`Update failed (${res.status})`);
 
-        // Update row in place (no re-render)
-        currentRow.querySelector(".name").textContent = name;
+        // Update row in place
+        currentRow.querySelector(".name").textContent        = name;
         currentRow.querySelector(".description").textContent = description;
-        currentRow.querySelector(".other").textContent = other;
+        currentRow.querySelector(".other").textContent       = other;
         currentRow.dataset.userProfile = name;
 
+        // Update in memory
         const i = allProfiles.findIndex(p => norm(p.name) === norm(curName));
-        if (i !== -1) {
-          allProfiles[i] = { ...allProfiles[i], name, description, other };
-        }
+        if (i !== -1) allProfiles[i] = { ...allProfiles[i], name, description, other };
 
         closeEditModal();
       } catch (e) {
         console.error(e);
         alert("Could not save changes. Please try again.");
         closeEditModal();
+      } finally {
+        editing = false;
       }
-    }
+    };
 
-    /* === Suspend / Reactivate === */
-    // Helper to flip a row’s status + button consistently
+    // ===========================
+    // Suspend / Reactivate Modals
+    // ===========================
     function applyStatusToRow(row, statusStr) {
-      const status = statusStr || STATUS.ACTIVE;
-      const name = row.dataset.userProfile;
+      const status = (statusStr || STATUS.ACTIVE).toUpperCase();
+      const name   = row.dataset.userProfile;
 
       row.dataset.status = status;
       row.querySelector(".status").innerHTML = renderStatusBadgeFromStatus(name, status);
 
       const btnRow = row.querySelector(".actions .btn-row");
-      const old = btnRow.querySelector(".btn-suspend, .btn-reactivate");
+      const oldBtn = btnRow.querySelector(".btn-suspend, .btn-reactivate");
 
-      const container = document.createElement("div");
-      container.innerHTML = actionButtonHTMLFromStatus(name, status);
-      const fresh = container.firstElementChild;
+      const tmp = document.createElement("div");
+      tmp.innerHTML = actionButtonHTMLFromStatus(name, status);
+      const fresh = tmp.firstElementChild;
 
-      old ? old.replaceWith(fresh) : btnRow.appendChild(fresh);
+      oldBtn ? oldBtn.replaceWith(fresh) : btnRow.appendChild(fresh);
     }
 
     // ----- Suspend -----
-    let pendingSuspendRow = null;
-
-    function openSuspendModal(button) {
-      const row = button.closest("tr");
+    window.openSuspendModal = function (button) {
+      const row  = button.closest("tr");
       const name = row.dataset.userProfile;
+      if (isProtectedSuspend(name)) return;
 
-      if (isProtectedSuspend(name)) {
-        return;
-      }
       pendingSuspendRow = row;
       $("suspendModal").style.display = "flex";
-    }
+    };
 
-    function closeSuspendModal() {
+    window.closeSuspendModal = function () {
       $("suspendModal").style.display = "none";
       pendingSuspendRow = null;
-    }
+    };
 
-    async function confirmSuspendUI() {
-      if (!pendingSuspendRow) return;
+    window.confirmSuspendUI = async function () {
+      if (!pendingSuspendRow || suspending) return;
+      suspending = true;
 
       const key = pendingSuspendRow.dataset.userProfile;
+
       try {
         const res = await fetch(`${API_URL}/user-profiles/${encodeURIComponent(key)}/suspend`, {
           method: "POST",
           mode: "cors",
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Suspend failed.");
-        const data = await res.json();
+        if (!res.ok) throw new Error(`Suspend failed (${res.status})`);
 
-        const newStatus = String((data.data && data.data.status) || STATUS.SUSPENDED).toUpperCase();
+        // Some backends return updated entity; gracefully handle both
+        let newStatus = STATUS.SUSPENDED;
+        try {
+          const data = await res.json();
+          newStatus = String((data?.data?.status ?? STATUS.SUSPENDED)).toUpperCase();
+        } catch {}
+
         applyStatusToRow(pendingSuspendRow, newStatus);
       } catch (e) {
         console.error(e);
         alert("Could not suspend. Please try again.");
       } finally {
+        suspending = false;
         closeSuspendModal();
       }
-    }
+    };
 
     // ----- Reactivate -----
-    let pendingReactivateRow = null;
-
-    function openReactivateModal(button) {
+    window.openReactivateModal = function (button) {
       pendingReactivateRow = button.closest("tr");
       $("reactivateModal").style.display = "flex";
-    }
+    };
 
-    function closeReactivateModal() {
+    window.closeReactivateModal = function () {
       $("reactivateModal").style.display = "none";
       pendingReactivateRow = null;
-    }
+    };
 
-    async function confirmReactivateUI() {
-      if (!pendingReactivateRow) return;
+    window.confirmReactivateUI = async function () {
+      if (!pendingReactivateRow || reactivating) return;
+      reactivating = true;
 
       const key = pendingReactivateRow.dataset.userProfile;
-      const modalBtn = document.querySelector('#reactivateModal .btn-primary');
+      const modalBtn = document.querySelector("#reactivateModal .btn-primary");
       modalBtn.disabled = true;
-      modalBtn.textContent = 'Reactivating...';
+      modalBtn.textContent = "Reactivating...";
 
       try {
         const res = await fetch(`${API_URL}/user-profiles/${encodeURIComponent(key)}/reinstate`, {
-          method : "POST",
-          mode : "cors",
-          credentials : "include",
+          method: "POST",
+          mode: "cors",
+          credentials: "include",
         });
+        if (!res.ok) throw new Error(`Reinstate failed (${res.status})`);
 
-        if (!res.ok) throw new Error(`Reinstate failed (${res.status}).`);
         applyStatusToRow(pendingReactivateRow, STATUS.ACTIVE);
-      }
-      catch (e) {
+      } catch (e) {
         console.error(e);
         alert("Could not reactivate. Please try again.");
-      }
-      finally {
+      } finally {
+        reactivating = false;
         modalBtn.disabled = false;
         modalBtn.textContent = "Reactivate";
         closeReactivateModal();
       }
-    }
+    };
 
-    /* === Return to dashboard === */
-    function returnToDashboard() {
+    // =========================
+    // Navigation
+    // =========================
+    window.returnToDashboard = function () {
       window.location.href = "admin_dashboard.html";
-    }
+    };
   </script>
 </body>
 </html>

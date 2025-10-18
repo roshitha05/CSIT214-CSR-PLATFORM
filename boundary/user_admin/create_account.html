@@ -10,7 +10,7 @@
     <title>User Registration</title>
     <style>
       /* =========================
-        Theme Tokens
+        Design Tokens
       ========================== */
       :root {
         --bg: #f0f9ff;
@@ -41,6 +41,10 @@
         padding: 24px;
         overflow: auto;
       }
+
+      /* =========================
+        Card
+      ========================== */
       .card {
         width: 100%;
         max-width: 720px;
@@ -84,6 +88,8 @@
         font-size: .98rem;
         transition: border-color .2s, box-shadow .2s;
       }
+
+      /* Focus */
       input:focus, select:focus, textarea:focus {
         outline: none;
         border-color: var(--accent-2);
@@ -91,6 +97,7 @@
       }
       textarea { min-height: 100px; resize: vertical; }
 
+      /* Helper Text */
       .hint  { margin-top: 6px; font-size: .85rem; color: var(--muted); }
       .error { margin-top: 6px; color: var(--danger); font-size: .9rem; display: none; }
 
@@ -113,7 +120,7 @@
       .password-wrapper i:hover { transform: translateY(-50%) scale(1.05); }
 
       /* =========================
-        Actions / Buttons
+        Actions & Buttons
       ========================== */
       .actions {
         display: flex;
@@ -136,7 +143,7 @@
       .btn-secondary:hover { background: #e2e8f0; }
 
       /* =========================
-        Status Banner
+        Status Banners
       ========================== */
       .success {
         display: none;
@@ -191,6 +198,7 @@
               maxlength="64"
               placeholder="e.g., Jane Doe"
               autocomplete="name"
+              autofocus
             />
             <small class="hint">Required. Up to 64 characters.</small>
             <div id="err-fullName" class="error">
@@ -255,7 +263,7 @@
               <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
             <small class="hint">Required. Password should be at least 8 characters.</small>
-            <div id="err-password" class="error">Please enter a password (6–128 chars).</div>
+            <div id="err-password" class="error">Please enter a password (8–128 chars).</div>
           </div>
 
           <!-- 5. Phone Number (required) -->
@@ -335,12 +343,7 @@
           <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
         </div>
 
-        <div
-          id="success"
-          class="success"
-          role="status"
-          aria-live="polite"
-        ></div>
+        <div id="success" class="success" role="status" aria-live="polite"></div>
       </form>
 
       <div class="footer">
@@ -348,42 +351,49 @@
       </div>
     </div>
   <script>
-    const form = document.getElementById("registerForm");
-    const submitBtn = document.getElementById("submitBtn");
-    const success = document.getElementById("success");
-    form.setAttribute("novalidate", "");
+    // ===== Config / Selectors =====
+    const DEBUG = false; // turn on / off whenever
 
-    let hasSubmitted = false;
+    const API_URL = "http://127.0.0.1:80/api";
+    const PROFILES_API = `${API_URL}/user-profiles`;
+    const REGISTER_API = `${API_URL}/users`;
 
-    const PROFILES_API = "http://127.0.0.1:80/api/user-profiles";
-    const REGISTER_API = "http://127.0.0.1:80/api/users";
-
-    // Disable native bubbles to use custom messages (JS on)
-    form.setAttribute("novalidate", "");
-
-    // ===== Elements =====
     const $ = (id) => document.getElementById(id);
-    const fullName = $("fullName"),
-          loginId =  $("loginId"),
-          email =    $("email"),
-          password = $("password"),
-          phone =    $("phone"),
-          address =  $("address"),
-          dob =      $("dob"),
-          profile =  $("profile");
+
+    const form =      $("registerForm");
+    const success =   $("success");
+    const submitBtn = $("submitBtn");
+
+    const input = {
+      fullName: $("fullName"),
+      loginId:  $("loginId"),
+      email:    $("email"),
+      password: $("password"),
+      phone:    $("phone"),
+      address:  $("address"),
+      dob:      $("dob"),
+      profile:  $("profile"),
+    }
 
     const err = {
-      fullName:   $("err-fullName"),
-      loginId:    $("err-loginId"),
-      email:      $("err-email"),
-      password:   $("err-password"),
-      phone:      $("err-phone"),
-      address:    $("err-address"),
-      dob:        $("err-dob"),
-      profile:    $("err-profile"),
-    };
+      fullName: $("err-fullName"),
+      loginId:  $("err-loginId"),
+      email:    $("err-email"),
+      password: $("err-password"),
+      phone:    $("err-phone"),
+      address:  $("err-address"),
+      dob:      $("err-dob"),
+      profile:  $("err-profile"),
+    }
 
-    // ===== Status helpers =====
+    // Use custom messages (disable native validation)
+    form.setAttribute("novalidate", "");
+
+    let hasSubmitted = false;   // used for live validation after submit
+    let submitting = false;     // used for safeguard to prevent double submission
+    let formCompleted = false;  // enables post-success click to clear
+
+    // ===== Helper Functions =====
     function showOk(message) {
       success.style.display = "block";
       success.style.background = "#dcfce7";
@@ -391,6 +401,7 @@
       success.style.color = "#166534";
       success.textContent = message;
     }
+
     function showErr(message) {
       success.style.display = "block";
       success.style.background = "#fee2e2";
@@ -398,15 +409,13 @@
       success.style.color = "#991b1b";
       success.textContent = message;
     }
+
     function clearStatus() {
       success.style.display = "none";
       success.textContent = "";
     }
 
-    // ===== Utilities =====
-    const show = (el, on) => { el.style.display = on ? "block" : "none"; };
-    const nonEmpty = (s) => s.trim().length > 0;
-
+    // Accept past dates only
     function pastDateOnly(value) {
       const d = new Date(value);
       const today = new Date();
@@ -415,64 +424,123 @@
       return d instanceof Date && !isNaN(d) && d < today;
     }
 
+    // Debug Helper
+    function showDebug(payload) {
+      success.style.display = "block";
+      success.style.background = "#fef9c3";   
+      success.style.border = "1px solid #fde047";
+      success.style.color = "#854d0e";
+      success.style.whiteSpace = "pre-wrap";
+      success.textContent =
+        `[DEBUG]:\n\n` +
+        `This would POST to:\n${REGISTER_API}\n\n` +
+        `With values:\n${JSON.stringify(payload, null, 2)}`;
+    }
+
     // Keep DOB max to current date
     (function setDobMaxToday() {
       const today = new Date().toISOString().split("T")[0];
-      dob.setAttribute("max", today);
+      input.dob.setAttribute("max", today);
     })();
 
-    document.addEventListener("DOMContentLoaded", () => {
-      loadProfiles();
-    });
-
     // Toggle Password Show / Hide
-    const togglePassword = document.getElementById("togglePassword");
+    const togglePassword = $("togglePassword");
     if (togglePassword) {
       togglePassword.addEventListener("click", function () {
-        const type = password.type === "password" ? "text" : "password";
-        password.type = type;
+        const type = input.password.type === "password" ? "text" : "password";
+        input.password.type = type;
         this.classList.toggle("fa-eye");
         this.classList.toggle("fa-eye-slash");
       });
     }
 
-    // ===== Populate User Profiles (dropdown list) =====
-    async function loadProfiles() {
-      const select = document.getElementById("profile");
-      select.innerHTML = '<option value="">Loading profiles...</option>';
+    function focusFirstInvalid() {
+      const order = [
+        input.fullName, input.loginId, input.email, input.password,
+        input.phone, input.address, input.dob, input.profile
+      ];
 
-      try {
+      for (const el of order) {
+        if (el.hasAttribute("aria-invalid")) {
+          el.focus({preventScroll: true});
+          return;
+        }
+      }
+    }
+
+    // ===== Utilities =====
+    const show = (el, on)        => { el.style.display = on ? "block" : "none"; };
+    const nonEmpty = (s)         => s.trim().length > 0;
+
+    // Normalize
+    const collapseSpaces = (s)   => String(s).replace(/\s+/g, " ").trim();
+    const toLowerCollapsed = (s) => collapseSpaces(s).toLowerCase();
+    const digitsOnly = (s)       => String(s).replace(/\D/g, "");
+
+    // Live feedback after submit
+    [input.fullName, input.loginId, input.email, input.password, input.phone, input.address]
+      .forEach((el) => el.addEventListener("input", () => { if (hasSubmitted) { clearStatus(); validateFields(); }}));
+
+    [input.dob, input.profile]
+      .forEach((el) => el.addEventListener("change", () => { if (hasSubmitted) { clearStatus(); validateFields(); }}));
+
+    // Post-Submit (success) click to clear
+    Object.values(input).forEach((field) => {
+      field.addEventListener("focus", () => {
+        if (formCompleted) {
+          form.reset();
+          clearStatus();
+          Object.values(input).forEach(f => f.removeAttribute("aria-invalid"));
+          formCompleted = false;
+        }
+      })
+    })
+
+    document.addEventListener("DOMContentLoaded", loadProfiles);
+
+    // ===== Populate User Profiles (dropdown list) =====
+    async function loadProfiles() { // refer to control/user-profiles/get-user-profiles.js
+      const select = input.profile;
+      select.innerHTML = '<option value="">Loading profiles...</option>';
+      select.disabled = true;
+
+      try {   // refer to control/user-profiles/get-user-profiles.js
         const response = await fetch(PROFILES_API, {
           method : "GET",
           mode : "cors",
-          headers : { "Content-Type" : "application/json" },
           credentials : "include",
+          headers : { "Content-Type" : "application/json" },
         });
 
-        if (!response.ok) {
-          throw new Error(`Server responded with ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-        const result = await response.json();
-        const profiles = result.userProfiles || [];
+        const data = await response.json();
+        const profiles = data.userProfiles || data.data || [];
 
         // Clear and repopulate
         select.innerHTML = "";
         select.appendChild(new Option("Select a profile...", ""));
 
-        if (profiles.length === 0) {
+        if (!Array.isArray(profiles) || profiles.length === 0) {
           select.appendChild(new Option("No profiles available", ""));
           select.disabled = true;
           return;
         }
 
-        profiles.forEach((p) => {
-          if (p && p.name) {
-            select.appendChild(new Option(p.name, p.name));
-          }
-        })
-      } catch (error) {
-        console.error("Failed to load profiles: ", error);
+        // Sort profiles alphabetically
+        const names = profiles
+          .map(p => p?.name || p?.profile_name)
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+
+        names.forEach((name) => {
+          select.appendChild(new Option(name, name));
+        });
+
+        select.disabled = false;
+
+      } catch (e) {
+        console.error("Failed to load profiles: ", e);
         select.innerHTML = "";
         select.appendChild(new Option("Error loading profiles", ""));
         select.disabled = true;
@@ -480,106 +548,140 @@
       }
     }
 
-    // ===== Field Validation =====
-    function validate() {
-      let ok = true;
+    // ===== Validation =====
+    function validateFields() {
+      let valid = true;
 
-      const vName =   fullName.value.trim();
-      const vLogin =  loginId.value.trim();
-      const vEmail =  email.value.trim();
-      const vPw =     password.value;
-      const vPhone =  phone.value.trim();
-      const vAddr =   address.value.trim();
-      const vDob =    dob.value;
-      const vProf =   profile.value.trim();
+      // Normalize field values
+      const vName =   collapseSpaces(input.fullName.value);
+      const vLogin =  toLowerCollapsed(input.loginId.value);
+      const vEmail =  toLowerCollapsed(input.email.value);
+      const vPw =     input.password.value;
+      const vPhone =  digitsOnly(input.phone.value);
+      const vAddr =   collapseSpaces(input.address.value);
+      const vDob =    input.dob.value;
+      const vProf =   collapseSpaces(input.profile.value);
 
-      // Name Validatin Check
-      // Ensure `Name` field is not empty and <= 64 chars
+      // Full Name (required, <= 64)
       const okName = nonEmpty(vName) && vName.length <= 64;
       show(err.fullName, !okName);
-      ok &&= okName;
+      input.fullName.toggleAttribute("aria-invalid", !okName);
+      valid &&= okName;
 
-      // Login Validation Check
-      // Login consists of 'Username + Password' or 'Email + Password'
-      const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
+      // Login ID (required, 3-32 allowed chars)
+      const okLogin = /^[a-z0-9._-]{3,32}$/.test(vLogin); 
       show(err.loginId, !okLogin);
-      ok &&= okLogin;
+      input.loginId.toggleAttribute("aria-invalid", !okLogin);
+      valid &&= okLogin;
 
+      // Email (required, basic check - email format, <= 254)
       const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
       show(err.email, !okEmail);
-      ok &&= okEmail;
+      input.email.toggleAttribute("aria-invalid", !okEmail);
+      valid &&= okEmail;
 
+      // Password (required, 8-128)
       const okPw = vPw.length >= 8 && vPw.length <= 128;
       show(err.password, !okPw);
-      ok &&= okPw;
+      input.password.toggleAttribute("aria-invalid", !okPw);
+      valid &&= okPw;
 
-      const okPhone = /^[+0-9()\-. \s]{6,20}$/.test(vPhone);
+      // Phone (required, exactly 8 digits)
+      const okPhone = /^\d{8}$/.test(vPhone);
       show(err.phone, !okPhone);
-      ok &&= okPhone;
+      input.phone.toggleAttribute("aria-invalid", !okPhone);
+      valid &&= okPhone;
 
+      // Address (required, <= 255)
       const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
       show(err.address, !okAddr);
-      ok &&= okAddr;
+      input.address.toggleAttribute("aria-invalid", !okAddr);
+      valid &&= okAddr;
 
+      // DOB (required, past date)
       const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
       show(err.dob, !okDob);
-      ok &&= okDob;
+      input.dob.toggleAttribute("aria-invalid", !okDob);
+      valid &&= okDob;
 
+      // Profile (required)
       const okProf = nonEmpty(vProf);
       show(err.profile, !okProf);
-      ok &&= okProf;
+      input.profile.toggleAttribute("aria-invalid", !okProf);
+      valid &&= okProf;
 
-      return ok;
+      return valid;
     }
 
     // ===== Submit =====
     form.addEventListener("submit", async (e) => {
       e.preventDefault(); 
+
+      if (submitting) return; // safeguard to prevent double submit
+      submitting = true;
       hasSubmitted = true;
       clearStatus();
 
-      if (!validate()) return;
+      if (!validateFields()) {
+        focusFirstInvalid();
+        submitting = false;
+        return;
+      }
 
       submitBtn.disabled = true;
 
+      // Build payload (normalized)
       const payload = {
-        fullname:       fullName.value.trim(),
-        username:       loginId.value.trim(),
-        email:          email.value.trim(),
-        password:       password.value,
-        phone_number:   phone.value.trim(),
-        address:        address.value.trim(),
-        date_of_birth:  dob.value,
-        user_profile:   profile.value,
+        fullname:       collapseSpaces(input.fullName.value),
+        username:       toLowerCollapsed(input.loginId.value),
+        email:          toLowerCollapsed(input.email.value),
+        password:       input.password.value,
+        phone_number:   digitsOnly(input.phone.value),
+        address:        collapseSpaces(input.address.value),
+        date_of_birth:  input.dob.value,
+        user_profile:   collapseSpaces(input.profile.value),
       };
 
-      try {
+      // Toggle for Debug mode
+      if (DEBUG) {
+        showDebug(payload);
+
+        submitBtn.disabled = false;
+        submitting = false;
+        hasSubmitted = false;
+
+        return; // break early (don't go into fetch block)
+      }
+
+      try { // refer to control/users/create-user.js
         const response = await fetch(REGISTER_API, {
           method : "POST",
           mode : "cors",
-          headers : { "Content-Type" : "application/json" },
           credentials : "include",
+          headers : { "Content-Type" : "application/json" },
           body : JSON.stringify(payload),
         });
 
         if (response.ok) {
           showOk("Account created successfully!");
+          formCompleted = true;
 
           // Optionally clear the form:
           // form.reset();
-      } else if (response.status === 400) {
+        } 
+        else if (response.status === 400) {
 
         // Show server-provided details if any
         let msg = "";
+
         try {
           const ct = response.headers.get("content-type") || "";
-
           if (ct.includes("application/json")) {
-
             const j = await response.json();
             msg = j.message || j.error || JSON.stringify(j);
-
-          } else { msg = await response.text(); }
+          } else { 
+            msg = await response.text(); 
+          }
         } catch {}
         showErr(msg ? `Registration failed: ${msg}` : "Registration failed. Please check your inputs.");
         } 
@@ -592,28 +694,17 @@
         else {
           showErr(`Unexpected error: ${response.status}`);
         }
-        } catch (error) {
+      } 
+      catch (error) {
         console.error("Network Error:", error);
         showErr("Network error. Please ensure the server is running.");
       } 
       finally {
-        setTimeout(() => { submitBtn.disabled = false; }, 800);
-      }
+        setTimeout(() => { submitBtn.disabled = false; submitting = false; }, 800);
+      } 
     });
-    
-    // Live validation
-    // Triggers only after 'Submit' button is clicked
-    [fullName, loginId, email, password, phone, address].forEach((i) => {
-      i.addEventListener("input", () => {
-        if (hasSubmitted) validate();
-      });
-    });
-    [dob, profile].forEach((i) =>
-      i.addEventListener("change", () => {
-        if (hasSubmitted) validate();
-      })
-    );
 
+    // ===== Reset Handler =====
     form.addEventListener('reset', () => {
       // Hide all error messages
       Object.values(err).forEach(el => el.style.display = 'none');
@@ -623,9 +714,10 @@
 
       // Clear success/error banners
       clearStatus();
+      hasSubmitted = false;
     });
 
-
+    // ===== Navigation =====
     document.getElementById("returnDashboard").addEventListener("click", () => {
       window.location.href = "admin_dashboard.html"; // ← replace with dashboard link
     });
