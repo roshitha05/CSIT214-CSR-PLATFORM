@@ -484,19 +484,23 @@
     function validate() {
       let ok = true;
 
-      const vName = fullName.value.trim();
-      const vLogin = loginId.value.trim();
-      const vEmail = email.value.trim();
-      const vPw = password.value;
-      const vPhone = phone.value.trim();
-      const vAddr = address.value.trim();
-      const vDob = dob.value;
-      const vProf = profile.value.trim();
+      const vName =   fullName.value.trim();
+      const vLogin =  loginId.value.trim();
+      const vEmail =  email.value.trim();
+      const vPw =     password.value;
+      const vPhone =  phone.value.trim();
+      const vAddr =   address.value.trim();
+      const vDob =    dob.value;
+      const vProf =   profile.value.trim();
 
+      // Name Validatin Check
+      // Ensure `Name` field is not empty and <= 64 chars
       const okName = nonEmpty(vName) && vName.length <= 64;
       show(err.fullName, !okName);
       ok &&= okName;
 
+      // Login Validation Check
+      // Login consists of 'Username + Password' or 'Email + Password'
       const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
       show(err.loginId, !okLogin);
       ok &&= okLogin;
