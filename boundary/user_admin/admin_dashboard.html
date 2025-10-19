@@ -330,92 +330,139 @@
 
   </body>
   <script>
-    const showFullName = document.getElementsByClassName('show-fullname');
-    for (const element of showFullName) {
-      element.innerHTML = (localStorage.getItem('fullname')) || 'Not logged in';
-    };
-
-    const API_URL = "http://127.0.0.1:80/api/logout";
-
-    const $ = (id) => document.getElementById(id);
+    // =========================
+    // Config
+    // =========================
+    const API_URL    = "http://127.0.0.1:80/api";
+    const LOGOUT_API = `${API_URL}/logout`;
     
+    // =========================
+    // DOM Helpers / Elements
+    // =========================
+    const $  = (id) => document.getElementById(id);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
     const ui = {
-      logoutBtn: $("logoutBtn") || document.querySelector(".logout-btn"),
-      modal: $("logoutModal"),
-      confirm: $("confirmLogoutBtn"),
-      cancel: $("cancelLogoutBtn"),
+      logoutBtn : $("logoutBtn"),
+      modal     : $("logoutModal"),
+      confirm   : $("confirmLogoutBtn"),
+      cancel    : $("cancelLogoutBtn"),
+
       cards: {
-        createProfiles: $("createProfilesCard"),
-        createAccounts: $("createAccountsCard"),
+        createProfiles   : $("createProfilesCard"),
+        createAccounts   : $("createAccountsCard"),
         profileManagement: $("profileManagementCard"),
         accountManagement: $("accountManagementCard"),
       }
-    };
+    }
 
-    // Modal controls
+    // =========================
+    // Utility: fetch with timeout
+    // =========================
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    // =========================
+    // Populate Header Name
+    // =========================
+    $$(".show-fullname").forEach((el) => {
+      el.textContent = localStorage.getItem("fullname") || "Not logged in";
+    });
+
+    // =========================
+    // Modal Controls (accessible)
+    // =========================
+    let lastActiveElement = null; 
+
     function openLogoutModal() {
+      if (!ui.modal) return;
+      lastActiveElement = document.activeElement;
       ui.modal.style.display = "flex";
-      ui.confirm.focus();
+      document.body.style.overflow = "hidden";          
+      if (ui.confirm) ui.confirm.focus({ preventScroll: true })
     }
 
     function closeLogoutModal() {
+      if (!ui.modal) return;
       ui.modal.style.display = "none";
-    }
-
-    // wire up
-    ui.logoutBtn.addEventListener("click", openLogoutModal);
-
-    // cancel
-    ui.cancel.addEventListener("click", closeLogoutModal);
-
-    // Confirm Logout
-    ui.confirm.addEventListener("click", async () => {
-    ui.confirm.disabled = true;
-    const original = ui.confirm.textContent;
-    ui.confirm.textContent = "Logging out...";
-
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
-      if (res.ok || res.status === 401) {
-        localStorage.removeItem('username');
-        window.location.href = "../user_login.html";
-      } else {
-        alert(`Logout failed (${res.status}). Please try again.`);
+      document.body.style.overflow = "";                
+      if (lastActiveElement && typeof lastActiveElement.focus === "function") {
+        lastActiveElement.focus(); 
       }
-    } catch (err) {
-      console.error("Network error:", err);
-      alert("Network error. Please ensure the server is running.");
-    } finally {
-      ui.confirm.disabled = false;
-      ui.confirm.textContent = original;
-      closeLogoutModal();
     }
-  });
 
-    // Link to create_profile.html
-    document.getElementById("createProfilesCard").addEventListener("click", () => {
-      window.location.href = "/user_admin/create_profile.html";
+    // =========================
+    // Wire up Modal Buttons
+    // =========================
+    ui.logoutBtn?.addEventListener("click", openLogoutModal);
+    ui.cancel?.addEventListener("click", closeLogoutModal);
+
+    // =========================
+    // Confirm Logout
+    // =========================
+    ui.confirm?.addEventListener("click", async () => {
+      if (!ui.confirm) return;
+
+      ui.confirm.disabled = true;
+      const original = ui.confirm.textContent;
+      ui.confirm.textContent = "Logging out...";
+
+      try {
+        const res = await fetchWithTimeout(LOGOUT_API, {               
+          method: "POST",
+          mode: "cors",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (res.ok || res.status === 401) {                            
+          localStorage.removeItem("username");                          
+          localStorage.removeItem("fullname");                          
+          window.location.href = "../user_login.html";
+        } else {
+          let msg = "";
+          try {
+            const data = await res.clone().json();
+            msg = data?.message || "";
+          } catch {}
+          alert(msg || `Logout failed (${res.status}). Please try again.`); 
+        }
+      } catch (err) {
+        console.error("Network error:", err);
+        alert("Network error. Please ensure the server is running.");
+      } finally {
+        ui.confirm.disabled = false;
+        ui.confirm.textContent = original;
+        closeLogoutModal();
+      }
     });
 
-    // Link to create_account.html
-    document.getElementById("createAccountsCard").addEventListener("click", () => {
-      window.location.href = "/user_admin/create_account.html";
-    });
+    // =========================
+    // Card Navigation
+    // =========================
+    const NAV = {                                                     
+      createProfilesCard:      "/user_admin/create_profile.html",
+      createAccountsCard:      "/user_admin/create_account.html",
+      profileManagementCard:   "/user_admin/profile_management.html",
+      accountManagementCard:   "/user_admin/account_management.html",
+    };
 
-    // Link to profile_management.html
-    document.getElementById("profileManagementCard").addEventListener("click", () => {
-      window.location.href = "/user_admin/profile_management.html";
-    });
+    function wireCardNavigation(mapping) {
+      for (const [id, href] of Object.entries(mapping)) {
+        const el = $(id);
+        if (!el || !href) continue;  // ignore missing element or path
 
-    // Link to account_management.html
-    document.getElementById("accountManagementCard").addEventListener("click", () => {
-      window.location.href = "/user_admin/account_management.html";
-    });
+        el.addEventListener("click", () => (window.location.href = href));
+      }
+    }
+
+    wireCardNavigation(NAV);
   </script>
 </html>

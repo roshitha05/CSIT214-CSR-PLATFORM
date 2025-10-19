@@ -199,7 +199,7 @@
     </div>
 
     <!-- Form -->
-    <form id="profileForm">
+    <form id="profileForm" novalidate>
 
       <!-- Name (Required) -->
       <div class="row">
@@ -267,38 +267,37 @@
   </div>
 
   <script>
-
-    // ===== Config / Selectors =====
-    const DEBUG = true;  // turn on / off whenever
-
-    const API_URL = "http://127.0.0.1:80/api";
+    // =========================
+    // Config
+    // =========================
+    const DEBUG        = false;  // toggle as needed
+    const API_URL      = "http://127.0.0.1:80/api";
     const PROFILES_API = `${API_URL}/user-profiles`;
+
+    // =========================
+    // DOM
+    // =========================
     const $ = (id) => document.getElementById(id);
 
-    const form =      $("profileForm");
-    const success =   $("success");
+    const form      = $("profileForm");
+    const success   = $("success");
     const submitBtn = $("submitBtn");
 
     const input = {
-      name:        $("name"),
-      description: $("description"),
-      other:       $("other"),
+      name        : $("name"),
+      description : $("description"),
+      other       : $("other"),
     }
 
     const err = {
-      name: $("err-name"),
-      description: $("err-desc"),
-      other:       $("err-other"),
+      name        : $("err-name"),
+      description : $("err-desc"),
+      other       : $("err-other"),
     }
 
-    // Use custom messages (disable native validation)
-    form.setAttribute("novalidate", "");
-
-    let hasSubmitted = false;   // used for live validation after submit
-    let submitting = false;     // used for safeguard to prevent double submission
-    let formCompleted = false;  // enables post-success click to clear
-
-    // ===== Helper Functions =====
+    // =========================
+    // UI Status Helpers
+    // =========================
     function showOk(message) {
       success.style.display = "block";
       success.style.background = "#dcfce7";
@@ -333,88 +332,146 @@
         `With values:\n${JSON.stringify(payload, null, 2)}`;
     }
 
+    // =========================
+    // Utils
+    // =========================
+    const show = (el, on)        => { el.style.display = on ? "block" : "none"; };
+    const collapse = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
+
+    let hasSubmitted = false;                   // used for live validation after submit
+    let submitting   = false;                   // used for safeguard to prevent double submission
+    const formCompletedRef = { value: false };  // use as a ref object shared across helpers
+
     function focusFirstInvalid() {
       const order = [ input.name, input.description, input.other ];
-
       for (const el of order) {
         if (el.hasAttribute("aria-invalid")) {
-          el.focus({preventScroll: true});
+          el.focus({ preventScroll: true });
           return;
         }
       }
     }
 
-    // ===== Utilities =====
-    const show = (el, on)        => { el.style.display = on ? "block" : "none"; };
-    const nonEmpty = (s)         => s.trim().length > 0;
-
-    // Normalize
-    const collapseSpaces = (s) => String(s).replace(/\s+/g, " ").trim();
-
-    // Live feedback (after submit)
-    [input.name, input.description, input.other].forEach((el) => {
-      el.addEventListener("input", () => {
-        if (!hasSubmitted) return;
-        clearStatus();
-        validateFields();
-      })
-    })
-
+    // =========================
     // Post-Submit (success) click to clear
-    Object.values(input).forEach((field) => {
-      field.addEventListener("focus", () => {
-        if (formCompleted) {
+    // =========================
+    function attachPostSuccessReset(inputs, form, clearFn, flagRef) {
+      Object.values(inputs).forEach((field) => {
+        field.addEventListener("focus", () => {
+          if (!flagRef.value) return;
           form.reset();
-          clearStatus();
-          Object.values(input).forEach(f => f.removeAttribute("aria-invalid"));
-          formCompleted = false;
-        }
-      })
-    })
+          clearFn();
+          Object.values(inputs).forEach((f) => f.removeAttribute("aria-invalid"));
+          flagRef.value = false;
+        });
+      });
+    }
 
-    // ===== Validation =====
+    attachPostSuccessReset(input, form, clearStatus, formCompletedRef);
+
+    // =========================
+    // Live validation
+    // =========================
+    function attachLiveValidation(fields, validateFn, debounceMs = 200) {
+      let timer = null;
+      fields.forEach((field) => {
+        field.addEventListener("input", () => {
+          if (!hasSubmitted) return;
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            clearStatus();
+            validateFn();
+          }, debounceMs);
+        });
+      });
+    }
+
+    attachLiveValidation([input.name, input.description, input.other], validateFields);
+
+    // =========================
+    // Validation
+    // =========================
     function validateFields() {
       let valid = true;
 
       // Normalize field values
-      const vName =  collapseSpaces(input.name.value);
-      const vDesc =  collapseSpaces(input.description.value);
-      const vOther = collapseSpaces(input.other.value);
+      const vName  = collapse(input.name.value);
+      const vDesc  = collapse(input.description.value);
+      const vOther = collapse(input.other.value);
 
-      // --- Name (Required) ---
-      const okName = nonEmpty(vName) && vName.length <= 64;
+      // Name: required, length ≤ 64
+      const okName = vName.length > 0 && vName.length <= 64;
       show(err.name, !okName);
       input.name.toggleAttribute("aria-invalid", !okName);
-      valid &&= okName;
+      if (!okName) valid = false;
 
-      // --- Description (Optional, but check max length if provided) ---
-      if (vDesc.length > 255) {
+      // Description: optional, length ≤ 255
+      const okDesc = vDesc.length <= 255;
+      input.description.toggleAttribute("aria-invalid", !okDesc);
+      show(err.description, !okDesc); 
+      if (!okDesc) {
         showErr("Description must be 255 characters or less.");
-        input.description.setAttribute("aria-invalid", "true");
         valid = false;
       }
-      else {
-        input.description.removeAttribute("aria-invalid");
-      }
 
-      // --- Other (Optional, but check max length if provided) ---
-      if (vOther.length > 128) {
+      // Other: optional, length ≤ 128
+      const okOther = vOther.length <= 128;
+      input.other.toggleAttribute("aria-invalid", !okOther);
+      show(err.other, !okOther);
+      if (!okOther) {
         showErr("Other field must be 128 characters or less.");
-        input.other.setAttribute("aria-invalid", "true");
         valid = false;
       }
-      else {
-        input.other.removeAttribute("aria-invalid");
-      }
 
+      // write back normalized values
       input.name.value        = vName;
       input.description.value = vDesc;
       input.other.value       = vOther;
 
-      return valid
+      return valid;
     }
 
-    // ===== Submit Handler =====
+    // =========================
+    // Server Message Display (Boundary)
+    // =========================
+    async function displayServerMessage(response, { onSuccess } = {}) {
+      let body = null;
+      let serverMsg = "";
+
+      try {
+        body = await response.clone().json();
+        if (body && typeof body === "object" && "message" in body) {
+          serverMsg = String(body.message || "").trim();
+        }
+      } catch {
+        try { serverMsg = (await response.clone().text()).trim(); } catch {}
+      }
+
+      // Success
+      if (response.status === 200) {
+        const okFlag = body === true || body === "true";
+        if (okFlag) {
+          showOk(serverMsg || "Profile created successfully!");
+          if (typeof onSuccess === "function") onSuccess(body);
+          else formCompletedRef.value = true;
+          return;
+        }
+        showErr(serverMsg || "Unexpected response from server (expected true).");
+        return;
+      }
+      
+      // --- Common Error Branches ---
+      if (response.status === 400) { showErr(serverMsg || "Failed to create new User Profile. Name already exists."); return; }
+      if (response.status === 401) { showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
+      if (response.status === 402) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
+
+      // --- Fallback ---
+      showErr(serverMsg || `Unexpected Error: ${response.status}`);
+    }
+
+    // =========================
+    // Submit
+    // =========================
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -433,18 +490,16 @@
 
       // Build payload (normalized)
       const payload = {
-        name:        collapseSpaces(input.name.value),
-        description: collapseSpaces(input.description.value),
-        other:       collapseSpaces(input.other.value),
+        name        : collapse(input.name.value),
+        description : collapse(input.description.value),
+        other       : collapse(input.other.value),
       };
 
       if (DEBUG) {
         showDebug(payload);
-
         submitBtn.disabled = false;
         submitting = false;
         hasSubmitted = false;
-
         return; // break early (don't go into fetch block)
       }
 
@@ -457,26 +512,11 @@
           body : JSON.stringify(payload)
         });
 
-        if (response.ok) {
-
-          showOk("Profile created successfully!");
-          formCompleted = true; // enable post-success click-to-clear
-
-          // Optional: redirect after short delay
-          // setTimeout(() => { window.location.href = "admin_dashboard.html"; }, 1000);
-          
-          // Optionally clear the form
-          // form.reset()
-        }
-        else if (response.status === 400) { // refer to /control/user-profiles.js
-          showErr("Failed to create new User Profile. Name already exists.");
-        }
-        else if (response.status === 401) {
-          showErr("Unauthorized. Please log in and try again.");
-        }
-        else {
-          showErr(`Unexpected error: ${response.status}`);
-        }
+        await displayServerMessage(response, {
+          onSuccess() {
+            formCompletedRef.value = true;
+          }
+        });
       }
       catch (error) {
         console.error("Network Error: ", error);
@@ -487,20 +527,20 @@
       }
     });
 
-    // ===== Reset Handler =====
-    form.addEventListener('reset', () => {
-      // Hide all error messages
-      Object.values(err).forEach(el => el.style.display = 'none');
-
-      // Remove aria-invalid from all input fields
-      Object.values(input).forEach(field => field.removeAttribute('aria-invalid'));
-
-      // Clear success/error banners
+    // =========================
+    // Reset
+    // =========================
+    form.addEventListener("reset", () => {
+      Object.values(err).forEach(el => (el.style.display = "none"));
+      Object.values(input).forEach(field => field.removeAttribute("aria-invalid"));
       clearStatus();
       hasSubmitted = false;
+      formCompletedRef.value = false;
     });
 
-    // ===== Navigation =====
+    // =========================
+    // Navigation
+    // =========================
     $("returnDashboard").addEventListener("click", () => {
       window.location.href = "/user_admin/admin_dashboard.html";
     });

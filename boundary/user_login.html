@@ -404,17 +404,27 @@
         return valid;
       }
 
-      // Live validation - triggers after first submit
-      [ input.loginId, input.password ].forEach((el) => {
-        el.addEventListener("input", () => {
-          if (!hasSubmitted) return;
-          clearStatus();
-          validateFields();
-        });
-      });
+      // =========================
+      // Live Validation
+      // =========================
+      function attachLiveValidation(fields, validateFn, debounceMs = 200) {
+        let timer = null;
+        fields.forEach(field =>
+          field.addEventListener("input", () => {
+            if (!hasSubmitted) return;
+            clearTimeout(liveTimer);
+            timer = setTimeout(() => {
+              clearStatus();
+              validateFn();
+            }, debounceMs);
+          })
+        )
+      }
+
+      attachLiveValidation([input.loginId, input.password], validateFields);
 
       // =========================
-      // Server Message Display
+      // Server Message Display (Boundary)
       // =========================
       async function displayServerMessage(response) {
         let body = null;
@@ -452,17 +462,10 @@
           return;
         }
 
-        // ---------- Error 403: ----------
-        if (response.status === 403) {
-          showErr(serverMsg || "Invalid username or password.");
-          return;
-        }
-
-        // ---------- Error 500: Server Error ----------
-        if (response.status === 500) {
-          showErr(serverMsg || "Server Error. Please try again later.");
-          return;
-        }
+        if (response.status === 400) { showErr(serverMsg || "Missing username or password."); return; }
+        if (response.status === 401) { showErr(serverMsg || "Invalid username or password."); return; }
+        if (response.status === 403) { showErr(serverMsg || "Invalid username or password."); return; }
+        if (response.status === 500) { showErr(serverMsg || "Server Error. Please try again later."); return; }
 
         // Fallback for any other errors
         showErr(serverMsg || `Unexpected Error: ${response.status}`);
@@ -524,7 +527,9 @@
         }
       });
 
-      // ===== Reset Handler =====
+      // =========================
+      // Reset
+      // =========================
       form.addEventListener('reset', () => {
         Object.values(err).forEach(el => el.style.display = 'none');
         Object.values(input).forEach(field => 

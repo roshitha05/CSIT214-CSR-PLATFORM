@@ -175,6 +175,9 @@
     .modal-input:focus, .modal-textarea:focus {
       outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
     }
+    .modal-input[disabled] {
+      cursor: not-allowed; opacity: .8; background: #f1f5f9;
+    }
     .modal-textarea { min-height:110px; resize:vertical; }
 
     .modal-actions {
@@ -210,7 +213,7 @@
     <div class="header">
       <h1>Profile Management</h1>
       <div class="header-controls">
-        <button class="btn-dashboard" onclick="returnToDashboard()">Return to Dashboard</button>
+        <button class="btn-dashboard" id="returnDashboard">Return to Dashboard</button>
         <div class="search-box">
           <input type="text" id="search" placeholder="Search by keyword...">
         </div>
@@ -221,7 +224,7 @@
       <table id="profileTable">
         <colgroup>
           <col style="width: 20%"> <!-- Name -->
-          <col>                    <!-- Description -->
+          <col style="width: 35%"> <!-- Description -->
           <col style="width: 10%"> <!-- Other -->
           <col style="width: 15%"> <!-- Status -->
           <col style="width: 20%"> <!-- Actions -->
@@ -280,7 +283,7 @@
 
         <div class="modal-actions">
           <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
-          <button type="button" class="btn-primary" onclick="saveEdit()">Save</button>
+          <button type="button" class="btn-primary" onclick="saveEditModal()">Save</button>
         </div>
       </div>
     </div>
@@ -312,32 +315,55 @@
 
   <script>
     // =========================
-    // Config & Constants
+    // Config 
     // =========================
-    const DEBUG = false; // flip to true for console logs
-
+    const DEBUG         = false;
     const API_URL       = "http://127.0.0.1:80/api";
     const PROFILES_API  = `${API_URL}/user-profiles`;
-
-    const $  = (id) => document.getElementById(id);
-    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
     const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
 
     // Policy toggles (case-insensitive names)
     const RESERVED_NAMES = new Set([
       "user admin",
-      // "csr representative",
-      // "person-in-need",
-      // "platform management",
+      "csr representative",
+      "person-in-need",
+      "platform management",
     ]);
-    const PROTECTED_SUSPEND_NAMES = RESERVED_NAMES; // cannot suspend
-    const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES; // cannot edit name
+
+    const PROTECTED_SUSPEND_NAMES = new Set(["user admin"]); // "User Admin" is suspension-protected
+    const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES;          // cannot edit name
+
+    // =========================
+    // DOM
+    // =========================
+    const $  = (id) => document.getElementById(id);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+    const els = {
+      table: $("profileTable"),
+      tbody: $("profileTable")?.querySelector("tbody"),
+      noResultsRow: $("noResultsRow"),
+      search: $("search"),
+
+      editModal: $("editModal"),
+      editName: $("editName"),
+      editDesc: $("editDesc"),
+      editOther: $("editOther"),
+      editErrName: $("editErr-name"),
+      editErrDesc: $("editErr-desc"),
+      editErrOther: $("editErr-other"),
+      success: $("success"),
+    }
 
     // =========================
     // Utilities / Normalizers
     // =========================
     const log = (...args) => { if (DEBUG) console.log("[profiles]", ...args); };
+
+    const norm            = (s) => String(s ?? "").trim().toLowerCase();
+    const collapseSpaces  = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
+    const nonEmpty        = (s) => collapseSpaces(s).length > 0;
 
     const escapeHTML = (s) =>
       String(s ?? "")
@@ -347,11 +373,7 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
-    const norm            = (s) => String(s ?? "").trim().toLowerCase();
-    const collapseSpaces  = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-    const nonEmpty        = (s) => collapseSpaces(s).length > 0;
-
-    const isSuspended         = (p) => (p?.status ?? STATUS.ACTIVE) === STATUS.SUSPENDED;
+    // Name policy checks
     const isProtectedSuspend  = (name) => PROTECTED_SUSPEND_NAMES.has(norm(name));
     const isNameLocked        = (name) => LOCK_NAME_EDIT_NAMES.has(norm(name));
     const isReservedName      = (name) => RESERVED_NAMES.has(norm(name));
@@ -380,9 +402,51 @@
     let reactivating   = false;
 
     // =========================
+    // UI Status Helpers
+    // =========================
+    function showErr(message) {
+      els.success.style.display = "block";
+      els.success.style.background = "#fee2e2";
+      els.success.style.border = "1px solid #fecaca";
+      els.success.style.color = "#991b1b";
+      els.success.textContent = message;
+    }
+
+    function clearStatus() {
+      els.success.style.display = "none";
+      els.success.textContent = "";
+    }
+
+    // Debug Helper
+    function showDebug(endpoint, payload) {
+      els.success.style.display = "block";
+      els.success.style.background = "#fef9c3";   
+      els.success.style.border = "1px solid #fde047";
+      els.success.style.color = "#854d0e";
+      els.success.style.whiteSpace = "pre-wrap";
+      els.success.textContent =
+        `[DEBUG]:\n\n` +
+        `This would PUT to:\n${endpoint}\n\n` +
+        `With values:\n${JSON.stringify(payload, null, 2)}`;
+    }
+
+    // =========================
+    // API
+    // =========================
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, { credentials: "include", mode: "cors", ...options });
+      const ct = res.headers.get("content-type") || "";
+      let data = null;
+      try {
+        data = ct.includes("application/json") ? await res.json() : await res.text();
+      } catch {}
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    // =========================
     // Rendering
     // =========================
-    function renderStatusBadgeFromStatus(name, statusStr) {
+    function statusBadgeHTML(name, statusStr) {
       if (isProtectedSuspend(name)) {
         return `
           <span class="badge badge-protected" title="Protected role — cannot be suspended">
@@ -397,7 +461,7 @@
         : '<span class="badge badge-active">Active</span>';
     }
 
-    function actionButtonHTMLFromStatus(name, statusStr) {
+    function actionButtonHTML(name, statusStr) {
       if (isProtectedSuspend(name)) {
         return '<button class="btn-suspend" disabled title="Protected role — cannot be suspended">Suspend</button>';
       }
@@ -406,108 +470,138 @@
         : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
     }
 
-    function populateTable(profiles) {
-      const tbody = $("profileTable").querySelector("tbody");
-      tbody.innerHTML = "";
+    function rowHTML(p) {
+      const rawName = String(p?.name ?? "");
+      const status  = (p?.status || STATUS.ACTIVE).toUpperCase();
+      const name    = escapeHTML(p?.name);
+      const desc    = escapeHTML(p?.description);
+      const other   = p?.other ? escapeHTML(p.other) : "";
+      const key     = encodeURIComponent(rawName);
 
-      profiles
+      return `
+        <tr data-key="${key}" data-user-profile="${name}" data-raw="${rawName}" data-status="${status}">
+          <td class="name">${name}</td>
+          <td class="description">${desc}</td>
+          <td class="other">${other}</td>
+          <td class="status">${statusBadgeHTML(rawName, status)}</td>
+          <td class="actions">
+            <div class="btn-row">
+              <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
+              ${actionButtonHTML(rawName, status)}
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function populateTable(profiles) {
+      els.tbody.innerHTML = profiles
         .slice()
         .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
-        .forEach((p) => {
-          const status = (p.status || STATUS.ACTIVE).toUpperCase();
-          const html = `
-            <tr data-user-profile="${escapeHTML(p.name)}" data-status="${status}">
-              <td class="name">${escapeHTML(p.name)}</td>
-              <td class="description">${escapeHTML(p.description)}</td>
-              <td class="other">${p.other ? escapeHTML(p.other) : ""}</td>
-              <td class="status">${renderStatusBadgeFromStatus(p.name, status)}</td>
-              <td class="actions">
-                <div class="btn-row">
-                  <button class="btn-edit" onclick="openEditModal(this)">Edit</button>
-                  ${actionButtonHTMLFromStatus(p.name, status)}
-                </div>
-              </td>
-            </tr>`;
-          tbody.insertAdjacentHTML("beforeend", html);
-        });
-
+        .map(rowHTML)
+        .join("");
       updateNoResults();
     }
 
     function updateNoResults() {
-      const rows    = $$("#profileTable tbody tr");
+      const rows = $$("#profileTable tbody tr");
       const visible = rows.some((r) => r.style.display !== "none");
-      $("noResultsRow").style.display = visible ? "none" : "";
+      els.noResultsRow.style.display = visible ? "none" : "";
     }
+
+    function applyStatusToRow(row, statusStr) {
+      const status = (statusStr || STATUS.ACTIVE).toUpperCase();
+      const name   = row.dataset.userProfile;
+
+      row.dataset.status = status;
+      row.querySelector(".status").innerHTML = statusBadgeHTML(name, status);
+
+      const btnRow = row.querySelector(".actions .btn-row");
+      const swapTarget = btnRow.querySelector(".btn-suspend, .btn-reactivate");
+
+      const tmp = document.createElement("div");
+      tmp.innerHTML = actionButtonHTML(name, status);
+      const fresh = tmp.firstElementChild;
+
+      swapTarget ? swapTarget.replaceWith(fresh) : btnRow.appendChild(fresh);
+    }
+
+    async function loadProfiles() {
+      try {
+        const { ok, status, data } = await fetchJSON(PROFILES_API, { method: "GET" });
+        if (!ok) throw new Error(`Failed to load profiles (${status})`);
+        const list = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
+        allProfiles = list;
+        populateTable(allProfiles);
+      } catch (e) {
+        console.error(e);
+        allProfiles = [];
+        populateTable(allProfiles); // shows “No results”
+        showErr("Unable to load profiles. Please try again later.");
+      }
+    }
+
+    loadProfiles();
 
     // =========================
     // Search
     // =========================
-    $("search").addEventListener("input", function () {
+    els.search.addEventListener("input", function () {
       const filter = this.value.toLowerCase();
-      const rows = $$("#profileTable tbody tr");
-      rows.forEach((row) => {
+      $$("#profileTable tbody tr").forEach((row) => {
         row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
       });
       updateNoResults();
-    });
+      });
 
     // =========================
-    // Initial Load
+    // Modals: Edit
     // =========================
-    (async function loadProfiles() {
-      try {
-        const res = await fetch(PROFILES_API, {
-          method: "GET",
-          mode: "cors",
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(`Failed to load profiles (${res.status})`);
-        const data = await res.json();
-        allProfiles = Array.isArray(data.userProfiles) ? data.userProfiles : [];
-        populateTable(allProfiles);
-        log("Loaded profiles:", allProfiles.length);
-      } catch (e) {
-        console.error(e);
-        allProfiles = [];
-        populateTable(allProfiles); // will show "No results"
+    function openEditModal(row) {
+      currentRow = row;
+      const currentName = currentRow.dataset.raw || "";
+
+      els.editName.value  = currentRow.querySelector(".name").textContent.trim();
+      els.editDesc.value  = currentRow.querySelector(".description").textContent.trim();
+      els.editOther.value = currentRow.querySelector(".other").textContent.trim();
+
+      const protectedSuspend = isProtectedSuspend(currentName);
+      els.editName.disabled = isNameLocked(currentName);
+
+      if (protectedSuspend) {
+        els.editName.title = "This profile is protected; its name cannot be changed.";
+      } else {
+        els.editName.removeAttribute("title");
       }
-    })();
 
-    // =========================
-    // Edit Modal
-    // =========================
-    window.openEditModal = function (button) {
-      currentRow = button.closest("tr");
-      const currentName = currentRow?.dataset?.userProfile || "";
+      // reset UI
+      els.editErrName.style.display = "none";
+      els.editErrDesc.style.display = "none";
+      els.editErrOther.style.display = "none";
+      [els.editName, els.editDesc, els.editOther].forEach(el => el.removeAttribute("aria-invalid"));
+      clearStatus();
 
-      $("editName").value = currentRow.querySelector(".name").textContent.trim();
-      $("editDesc").value = currentRow.querySelector(".description").textContent.trim();
-      $("editOther").value = currentRow.querySelector(".other").textContent.trim();
+      els.editModal.style.display = "flex";
+    }
 
-      $("editName").disabled = isNameLocked(currentName);
+    function closeEditModal() {
+      els.editModal.style.display = "none";
+      els.editName.disabled = false;
 
-      // clear any prior messages
-      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => $(id).style.display = "none");
-      ["editName", "editDesc", "editOther"].forEach(id => $(id).removeAttribute("aria-invalid"));
-      $("success")?.style && ( $("success").style.display = "none", $("success").textContent = "" );
+      // reset UI (field-level)
+      els.editErrName.style.display = "none";
+      els.editErrDesc.style.display = "none";
+      els.editErrOther.style.display = "none";
+      [els.editName, els.editDesc, els.editOther].forEach(el => el.removeAttribute("aria-invalid"));
 
-      $("editModal").style.display = "flex";
-    };
+      clearStatus();
+    }
 
-    window.closeEditModal = function () {
-      $("editModal").style.display = "none";
-      $("editName").disabled = false;
-      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => $(id).style.display = "none");
-      ["editName", "editDesc", "editOther"].forEach(id => $(id).removeAttribute("aria-invalid"));
-    };
+    function validateEditForm() {
+      const nameEl  = els.editName;
+      const descEl  = els.editDesc;
+      const otherEl = els.editOther;
 
-    function validateEditModal() {
-      const nameEl  = $("editName");
-      const descEl  = $("editDesc");
-      const otherEl = $("editOther");
-
-      // normalize (so what you see is what you submit)
       const vName  = collapseSpaces(nameEl.value);
       const vDesc  = collapseSpaces(descEl.value);
       const vOther = collapseSpaces(otherEl.value);
@@ -518,218 +612,200 @@
 
       let ok = true;
 
-      // reset UI
-      ["editErr-name", "editErr-desc", "editErr-other"].forEach(id => $(id).style.display = "none");
-      [nameEl, descEl, otherEl].forEach(el => el.removeAttribute("aria-invalid"));
-
-      // name
+      // Name: required (1–64), not reserved, not duplicate (case-insensitive)
       if (!nameEl.disabled) {
         if (!nonEmpty(vName) || vName.length > 64) {
-          $("editErr-name").textContent = "Please enter a valid name (1–64 characters).";
-          $("editErr-name").style.display = "block";
+          els.editErrName.textContent = "Please enter a valid name (1–64 characters).";
+          els.editErrName.style.display = "block";
           nameEl.setAttribute("aria-invalid", "true");
           ok = false;
         } else if (isReservedName(vName)) {
-          $("editErr-name").textContent = "This name is reserved and cannot be used.";
-          $("editErr-name").style.display = "block";
+          els.editErrName.textContent = "This name is reserved and cannot be used.";
+          els.editErrName.style.display = "block";
           nameEl.setAttribute("aria-invalid", "true");
           ok = false;
-        } else if (isDuplicateName(vName, allProfiles, currentRow?.dataset?.userProfile)) {
-          $("editErr-name").textContent = "A profile with that name already exists.";
-          $("editErr-name").style.display = "block";
+        } else if (isDuplicateName(vName, allProfiles, currentRow?.dataset?.raw)) {
+          els.editErrName.textContent = "A profile with that name already exists.";
+          els.editErrName.style.display = "block";
           nameEl.setAttribute("aria-invalid", "true");
           ok = false;
         }
       }
 
-      // description
+      // Description: optional, <= 255
       if (vDesc.length > 255) {
-        $("editErr-desc").style.display = "block";
+        els.editErrDesc.style.display = "block";
         descEl.setAttribute("aria-invalid", "true");
         ok = false;
       }
 
-      // other
+      // Other: optional, <= 128
       if (vOther.length > 128) {
-        $("editErr-other").style.display = "block";
+        els.editErrOther.style.display = "block";
         otherEl.setAttribute("aria-invalid", "true");
         ok = false;
       }
 
-      // focus first invalid
+      // Focus first invalid
       if (!ok) {
-        if (!nameEl.disabled && nameEl.hasAttribute("aria-invalid")) nameEl.focus({ preventScroll: true });
-        else if (descEl.hasAttribute("aria-invalid")) descEl.focus({ preventScroll: true });
-        else if (otherEl.hasAttribute("aria-invalid")) otherEl.focus({ preventScroll: true });
+        if (!nameEl.disabled && nameEl.hasAttribute("aria-invalid")) {
+          nameEl.focus({ preventScroll: true });
+        } else if (descEl.hasAttribute("aria-invalid")) {
+          descEl.focus({ preventScroll: true });
+        } else if (otherEl.hasAttribute("aria-invalid")) {
+          otherEl.focus({ preventScroll: true });
+        }
       }
-
+      
       return ok;
     }
 
-    window.saveEdit = async function () {
+    async function saveEditModal() {
       if (editing) return;
-      if (!validateEditModal()) return;
+      if (!validateEditForm()) return;
 
       editing = true;
 
-      const name = $("editName").value.trim();
-      const description = $("editDesc").value.trim();
-      const other = $("editOther").value.trim();
+      const name = els.editName.value.trim();
+      const description = els.editDesc.value.trim();
+      const other = els.editOther.value.trim();
 
-      const curName  = currentRow.dataset.userProfile;
+      const curKey   = currentRow.dataset.key;
+      const curRaw  = currentRow.dataset.raw;
       const curDesc  = currentRow.querySelector(".description").textContent.trim();
       const curOther = currentRow.querySelector(".other").textContent.trim();
 
+      const payload = { name, description, other }
+
       // nothing changed
-      if (name === curName && description === curDesc && other === curOther) {
+      if (name === curRaw && description === curDesc && other === curOther) {
         editing = false;
         closeEditModal();
         return;
       }
 
-      // PUT update
+      // DEBUG mode
+      if (DEBUG) {
+        showDebug(`${PROFILES_API}/${curKey}`, payload);
+        editing = false;
+        return;
+      }
+
       try {
-        const res = await fetch(`${PROFILES_API}/${encodeURIComponent(curName)}`, {
+        const { ok, status } = await fetchJSON(`${PROFILES_API}/${curKey}`, {
           method: "PUT",
-          mode: "cors",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, description, other }),
+          body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error(`Update failed (${res.status})`);
+        if (!ok) throw new Error(`Update failed (${status})`);
 
         // Update row in place
         currentRow.querySelector(".name").textContent        = name;
         currentRow.querySelector(".description").textContent = description;
         currentRow.querySelector(".other").textContent       = other;
-        currentRow.dataset.userProfile = name;
 
-        // Update in memory
-        const i = allProfiles.findIndex(p => norm(p.name) === norm(curName));
-        if (i !== -1) allProfiles[i] = { ...allProfiles[i], name, description, other };
+        currentRow.dataset.raw = name;
+        currentRow.dataset.key = encodeURIComponent(name);
+
+        // Update cache
+        const i = allProfiles.findIndex(p => norm(p.name) === norm(curRaw));
+        if (i !== -1) allProfiles[i] = { ...allProfiles[i], ...payload };
 
         closeEditModal();
       } catch (e) {
         console.error(e);
-        alert("Could not save changes. Please try again.");
-        closeEditModal();
+        showErr("Could not save changes. Please try again.");
+        // keep modal open so user can correct
       } finally {
         editing = false;
       }
-    };
-
-    // ===========================
-    // Suspend / Reactivate Modals
-    // ===========================
-    function applyStatusToRow(row, statusStr) {
-      const status = (statusStr || STATUS.ACTIVE).toUpperCase();
-      const name   = row.dataset.userProfile;
-
-      row.dataset.status = status;
-      row.querySelector(".status").innerHTML = renderStatusBadgeFromStatus(name, status);
-
-      const btnRow = row.querySelector(".actions .btn-row");
-      const oldBtn = btnRow.querySelector(".btn-suspend, .btn-reactivate");
-
-      const tmp = document.createElement("div");
-      tmp.innerHTML = actionButtonHTMLFromStatus(name, status);
-      const fresh = tmp.firstElementChild;
-
-      oldBtn ? oldBtn.replaceWith(fresh) : btnRow.appendChild(fresh);
     }
 
-    // ----- Suspend -----
-    window.openSuspendModal = function (button) {
+    // =========================
+    // Modals: Suspend
+    // =========================
+    function openSuspendModal(button) {
       const row  = button.closest("tr");
       const name = row.dataset.userProfile;
       if (isProtectedSuspend(name)) return;
-
       pendingSuspendRow = row;
       $("suspendModal").style.display = "flex";
-    };
-
-    window.closeSuspendModal = function () {
+    }
+    function closeSuspendModal() {
       $("suspendModal").style.display = "none";
       pendingSuspendRow = null;
-    };
+    }
 
-    window.confirmSuspendUI = async function () {
+    async function confirmSuspendUI() {
       if (!pendingSuspendRow || suspending) return;
       suspending = true;
 
-      const key = pendingSuspendRow.dataset.userProfile;
-
+      const key = pendingSuspendRow.dataset.key;
       try {
-        const res = await fetch(`${API_URL}/user-profiles/${encodeURIComponent(key)}/suspend`, {
-          method: "POST",
-          mode: "cors",
-          credentials: "include",
+        const { ok, status, data } = await fetchJSON(`${PROFILES_API}/${key}/suspend`, {
+          method: "POST"
         });
-        if (!res.ok) throw new Error(`Suspend failed (${res.status})`);
+        if (!ok) throw new Error(`Suspend failed (${status})`);
 
-        // Some backends return updated entity; gracefully handle both
         let newStatus = STATUS.SUSPENDED;
-        try {
-          const data = await res.json();
-          newStatus = String((data?.data?.status ?? STATUS.SUSPENDED)).toUpperCase();
-        } catch {}
-
+        try { newStatus = String((data?.data?.status ?? STATUS.SUSPENDED)).toUpperCase(); } catch {}
         applyStatusToRow(pendingSuspendRow, newStatus);
       } catch (e) {
         console.error(e);
-        alert("Could not suspend. Please try again.");
+        showErr("Could not suspend. Please try again.");
       } finally {
         suspending = false;
         closeSuspendModal();
       }
-    };
+    }
 
-    // ----- Reactivate -----
-    window.openReactivateModal = function (button) {
+    // =========================
+    // Modals: Reactivate / Reinstate
+    // =========================
+    function openReactivateModal(button) {
       pendingReactivateRow = button.closest("tr");
       $("reactivateModal").style.display = "flex";
-    };
+    }
 
-    window.closeReactivateModal = function () {
+    function closeReactivateModal() {
       $("reactivateModal").style.display = "none";
       pendingReactivateRow = null;
-    };
+    }
 
-    window.confirmReactivateUI = async function () {
+    async function confirmReactivateUI() {
       if (!pendingReactivateRow || reactivating) return;
       reactivating = true;
 
-      const key = pendingReactivateRow.dataset.userProfile;
+      const key = pendingReactivateRow.dataset.key;
       const modalBtn = document.querySelector("#reactivateModal .btn-primary");
       modalBtn.disabled = true;
+      const original = modalBtn.textContent;
       modalBtn.textContent = "Reactivating...";
 
       try {
-        const res = await fetch(`${API_URL}/user-profiles/${encodeURIComponent(key)}/reinstate`, {
-          method: "POST",
-          mode: "cors",
-          credentials: "include",
+        const { ok, status } = await fetchJSON(`${PROFILES_API}/${key}/reinstate`, {
+          method: "POST"
         });
-        if (!res.ok) throw new Error(`Reinstate failed (${res.status})`);
+        if (!ok) throw new Error(`Reinstate failed (${status})`);
 
         applyStatusToRow(pendingReactivateRow, STATUS.ACTIVE);
       } catch (e) {
         console.error(e);
-        alert("Could not reactivate. Please try again.");
+        showErr("Could not reactivate. Please try again.");
       } finally {
         reactivating = false;
         modalBtn.disabled = false;
-        modalBtn.textContent = "Reactivate";
+        modalBtn.textContent = original;
         closeReactivateModal();
       }
-    };
+    }
 
     // =========================
     // Navigation
     // =========================
-    window.returnToDashboard = function () {
-      window.location.href = "admin_dashboard.html";
-    };
+    $("returnDashboard").addEventListener("click", () => {
+      window.location.href = "/user_admin/admin_dashboard.html";
+    });
   </script>
 </body>
 </html>
