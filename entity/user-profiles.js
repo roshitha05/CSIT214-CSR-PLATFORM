@@ -40,7 +40,7 @@ export default class UserProfilesEntity extends Entity {
         if (!await this.nameExists(name)) return false;
         if (
             update.name !== undefined
-            && !await this.nameExists(update.name)
+            && await this.nameExists(update.name)
         ) return false;
 
         const setQuery = {};
