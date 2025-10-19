@@ -1,6 +1,7 @@
 import express from 'express';
 import UsersEntity from '../entity/users.js';
 import UserProfilesEntity from '../entity/user-profiles.js';
+import CategoriesEntity from '../entity/categories.js';
 
 export default class Control {
     constructor() {
@@ -10,6 +11,7 @@ export default class Control {
         });
         this.userProfileEntity = new UserProfilesEntity();
         this.usersEntity = new UsersEntity();
+        this.categoriesEntity = new CategoriesEntity();
 
         this.createController();
     }

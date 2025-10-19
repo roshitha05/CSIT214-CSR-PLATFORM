@@ -58,7 +58,10 @@ export const serviceRequestsTable = pgTable('service_requests', {
     title: text().notNull(),
     description: text().notNull(),
     category: varchar({ length: 256 })
-        .references(() => categoriesTable.name)
+        .references(() => categoriesTable.name, {
+            onDelete: 'cascade',
+            onUpdate: 'cascade'
+        })
         .notNull(),
     status: varchar({ length: 256 }).notNull(),
     created_by: integer()
