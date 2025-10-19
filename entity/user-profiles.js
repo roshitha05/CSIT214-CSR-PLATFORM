@@ -37,12 +37,12 @@ export default class UserProfilesEntity extends Entity {
 
     async updateUserProfile(name, update) {
         if (Object.keys(update).length == 0) return true;
-        if (!await this.nameExists(name)) return false;
+        console.log(name + update.name)
         if (
-            update.name !== undefined
-            && await this.nameExists(update.name)
+            !name === update.name
+            && !await this.nameExists(name)
         ) return false;
-
+        
         const setQuery = {};
         Object.keys(update).forEach((key) => {
             if (update[key] !== undefined && userProfilesTable[key]) {
