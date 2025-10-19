@@ -399,6 +399,7 @@
       success.style.background = "#dcfce7";
       success.style.border = "1px solid #bbf7d0";
       success.style.color = "#166534";
+      success.setAttribute("aria-live", "polite");
       success.textContent = message;
     }
 
@@ -407,12 +408,14 @@
       success.style.background = "#fee2e2";
       success.style.border = "1px solid #fecaca";
       success.style.color = "#991b1b";
+      success.setAttribute("aria-live", "assertive");
       success.textContent = message;
     }
 
     function clearStatus() {
       success.style.display = "none";
       success.textContent = "";
+      success.setAttribute("aria-live", "polite");
     }
 
     // Accept past dates only

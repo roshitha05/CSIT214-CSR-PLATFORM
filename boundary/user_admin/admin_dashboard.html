@@ -282,10 +282,10 @@
     <!-- Main content -->
     <main class="main">
       <div class="topbar">
-        <h1>Welcome back, <span class='show-username'></span>👋</h1>
+        <h1>Welcome back, <span class='show-fullname'></span>👋</h1>
         <div class="user-info">
           <img src="https://i.pravatar.cc/100?img=68" alt="User" />
-          <span class="show-username"></span>
+          <span class="show-fullname"></span>
         </div>
       </div>
 
@@ -316,7 +316,7 @@
       </div>
     </main>
 
-    <!-- Logout Confirm Modal -->
+    <!-- Logout Modal -->
     <div class="modal" id="logoutModal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
       <div class="modal-content">
         <h2 id="logoutTitle">Confirm Logout</h2>
@@ -330,14 +330,15 @@
 
   </body>
   <script>
-    const showUsernames = document.getElementsByClassName('show-username');
-    for (const element of showUsernames) {
-      element.innerHTML = (localStorage.getItem('username')) || 'Not logged in';
+    const showFullName = document.getElementsByClassName('show-fullname');
+    for (const element of showFullName) {
+      element.innerHTML = (localStorage.getItem('fullname')) || 'Not logged in';
     };
 
     const API_URL = "http://127.0.0.1:80/api/logout";
 
     const $ = (id) => document.getElementById(id);
+    
     const ui = {
       logoutBtn: $("logoutBtn") || document.querySelector(".logout-btn"),
       modal: $("logoutModal"),

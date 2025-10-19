@@ -226,13 +226,21 @@
         <p>Sign in to continue...</p>
       </div>
 
-      <form id="loginForm">
+      <form id="loginForm" novalidate>
         <div class="row">
           <label for="username"
             >Username / Email <span style="color: var(--muted)">*</span>
           </label>
-          <input type="text" id="username" name="username" required 
-            aria-describedby="user-error" placeholder="Enter your username or email" autofocus/>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            required 
+            aria-describedby="user-error" 
+            placeholder="Enter your username or email" 
+            autofocus 
+            autocomplete="username"
+          />
           <div id="user-error" class="error">Please enter your username.</div>
         </div>
 
@@ -241,14 +249,20 @@
             >Password <span style="color: var(--muted)">*</span>
           </label>
           <div class="password-wrapper">
-            <input type="password" id="password" placeholder="Enter your password" required />
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              required 
+              aria-describedby="pass-error" 
+              placeholder="Enter your password" />
             <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
           </div>
           <div id="pass-error" class="error">Please enter your password.</div>
         </div>
 
         <div class="actions">
-          <button class="btn-primary" type="submit">Login</button>
+          <button class="btn-primary" type="submit" id="loginBtn">Login</button>
           <button class="btn-secondary" type="reset">Clear</button>
         </div>
 
@@ -259,94 +273,237 @@
     </div>
 
     <script>
-      // ===== Config / Selectors =====
+      // =========================
+      // Config
+      // =========================
+      const DEBUG = false; // turn on / off whenever
+
       const API_URL = "http://127.0.0.1:80/api"
+      const LOGIN_API = `${API_URL}/login`;
+
       const ROLE_REDIRECT = {
         "User Admin"          : "/user_admin/admin_dashboard.html",
         "CSR Representative"  : "/csr_representative/csr_dashboard.html",
-        "Person-In-Need"      : "pin_dashboard.html",
-        "Platform Management" : "platform_dashboard.html"
+        "Person-In-Need"      : "/pin/pin_dashboard.html",
+        "Platform Management" : "/platform_management/platform_dashboard.html"
       }
 
-      const form = document.getElementById("loginForm");
-      form.setAttribute("novalidate", "");
+      // =========================
+      // DOM Helpers / Elements
+      // =========================
+      const $ = (id) => document.getElementById(id);
+      
+      const form      = $("loginForm");
+      const success   = $("success");
+      const submitBtn = $("loginBtn");
 
-      const username = document.getElementById("username");
-      const password = document.getElementById("password");
-      const userError = document.getElementById("user-error");
-      const passError = document.getElementById("pass-error");
-      const success = document.getElementById("success");
-      const togglePassword = document.querySelector("#togglePassword");
+      const input = {
+        loginId:  $("username"),
+        password: $("password"),
+      }
 
-      let hasSubmitted = false;
+      const err = {
+        loginId: $("user-error"),
+        password: $("pass-error"),
+      }
 
-      // ===== Helper Functions =====
+      // =========================
+      // UI Status Helpers
+      // =========================
       function showOk(message) {
         success.style.display = "block";
         success.style.background = "#dcfce7";
         success.style.border = "1px solid #bbf7d0";
         success.style.color = "#166534";
+        success.setAttribute("aria-live", "polite");
         success.textContent = message;
       }
+
       function showErr(message) {
         success.style.display = "block";
         success.style.background = "#fee2e2";
         success.style.border = "1px solid #fecaca";
         success.style.color = "#991b1b";
+        success.setAttribute("aria-live", "assertive");
         success.textContent = message;
       }
+
       function clearStatus() {
         success.style.display = "none";
         success.textContent = "";
+        success.setAttribute("aria-live", "polite");
       }
 
-      // ===== Toggle Password (Show / Hide) =====
+      // Debug Helper
+      function showDebug(payload) {
+        success.style.display = "block";
+        success.style.background = "#fef9c3";   
+        success.style.border = "1px solid #fde047";
+        success.style.color = "#854d0e";
+        success.style.whiteSpace = "pre-wrap";
+        success.textContent =
+          `[DEBUG]:\n\n` +
+          `This would POST to:\n${LOGIN_API}\n\n` +
+          `With values:\n${JSON.stringify(payload, null, 2)}`;
+      }
+
+      // =========================
+      // Password Visibility Toggle
+      // =========================
+      const togglePassword  = $("togglePassword");
       togglePassword.addEventListener("click", function () {
-        const type =
-          password.getAttribute("type") === "password" ? "text" : "password";
-        password.setAttribute("type", type);
-        this.classList.toggle("fa-eye");
-        this.classList.toggle("fa-eye-slash");
+        const isPassword = input.password.type === "password";
+        input.password.type = isPassword ? "text" : "password";
+        this.classList.toggle("fa-eye", isPassword);
+        this.classList.toggle("fa-eye-slash", !isPassword);
       });
 
-      // ===== Validation =====
+      // =========================
+      // Validation
+      // =========================
+      let hasSubmitted = false;
+      let submitting = false;
+
+      function focusFirstInvalid() {
+        const order = [ input.loginId, input.password ];
+        for (const el of order) {
+          if (el.hasAttribute("aria-invalid")) {
+            el.focus({ preventScroll: true });
+            return;
+          }
+        }
+      }
+
       function validateFields() {
+        // Normalize for consistency
+        const loginVal = input.loginId.value.trim();
+        const passVal = input.password.value.trim();
+
         let valid = true;
-        if (!username.value.trim()) {
-          userError.style.display = "block";
-          username.setAttribute("aria-invalid", "true");
+
+        // --- Login (Email / Login ID) Validation ---
+        if (!loginVal) {
+          err.loginId.style.display = "block";
+          input.loginId.setAttribute("aria-invalid", "true");
           valid = false;
         } else {
-          userError.style.display = "none";
-          username.removeAttribute("aria-invalid");
+          err.loginId.style.display = "none";
+          input.loginId.removeAttribute("aria-invalid");
         }
 
-        if (!password.value.trim()) {
-          passError.style.display = "block";
-          password.setAttribute("aria-invalid", "true");
+        // --- Password Validation ---
+        if (!passVal) {
+          err.password.style.display = "block";
+          input.password.setAttribute("aria-invalid", "true");
           valid = false;
         } else {
-          passError.style.display = "none";
-          password.removeAttribute("aria-invalid");
+          err.password.style.display = "none";
+          input.password.removeAttribute("aria-invalid");
         }
+
         return valid;
       }
 
-      // ===== Submit =====
+      // Live validation - triggers after first submit
+      [ input.loginId, input.password ].forEach((el) => {
+        el.addEventListener("input", () => {
+          if (!hasSubmitted) return;
+          clearStatus();
+          validateFields();
+        });
+      });
+
+      // =========================
+      // Server Message Display
+      // =========================
+      async function displayServerMessage(response) {
+        let body = null;
+        let serverMsg = "";
+
+        try {
+          body = await response.clone().json();
+          serverMsg = (body && body.message) ? String(body.message).trim() : "";
+        }
+        catch (_) {
+          // No / invalid JSON - ignore
+        }
+
+        if (response.status === 200) {
+          showOk(serverMsg || "Login successful.");
+
+          const user = body?.user || {};
+          const role = (user.user_profile || "").trim();
+
+          // Store name for dashboard
+          if (user.fullname) {
+            localStorage.setItem("fullname", user.fullname);
+          }
+          
+          // Find redirect target by role
+          const target = ROLE_REDIRECT[role];
+
+          if (!target) {
+            showErr("Logged in but no dashboard assigned. Please contact support.");
+            return;
+          }
+
+          // Redirect
+          setTimeout(() => { window.location.href = target; }, 800);
+          return;
+        }
+
+        // ---------- Error 403: ----------
+        if (response.status === 403) {
+          showErr(serverMsg || "Invalid username or password.");
+          return;
+        }
+
+        // ---------- Error 500: Server Error ----------
+        if (response.status === 500) {
+          showErr(serverMsg || "Server Error. Please try again later.");
+          return;
+        }
+
+        // Fallback for any other errors
+        showErr(serverMsg || `Unexpected Error: ${response.status}`);
+      }
+
+      // =========================
+      // Submit
+      // =========================
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
+        
+        if (submitting) return;   // safeguard
+        submitting = true;
         hasSubmitted = true;
         clearStatus();
 
-        if (!validateFields()) return;
+        if (!validateFields()) {
+          submitting = false;
+          focusFirstInvalid();
+          return;
+        }
 
+        submitBtn.disabled = true;
+        // submitBtn.textContent = "Logging in...";
+
+        // Build payload
         const payload = {
-          login: username.value.trim(),
-          password: password.value.trim(),
+          login: input.loginId.value.trim(),
+          password: input.password.value.trim(),
         };
 
+        if (DEBUG) {
+          showDebug(payload);
+          submitBtn.disabled = false;
+          submitting = false;
+          hasSubmitted = false;
+          return; // break early (don't go into fetch block)
+        }
+
         try { // refer to /control/auth.js
-          const response = await fetch(`${API_URL}/login`, {
+          const response = await fetch(LOGIN_API, {
             method : "POST",
             mode : "cors",
             credentials : "include",
@@ -354,54 +511,28 @@
             body : JSON.stringify(payload),
           });
 
-          if (response.ok) {                                  
-            const data = await response.json();               
-            const user = data.user || {};                     
-            const role = (user.user_profile || "").trim();    
-            
-            localStorage.setItem('username', user.username);
-
-            // Pick target from map ROLE_REDIRECT
-            const target = ROLE_REDIRECT[role];
-            showOk("Login Successful! Redirecting...");
-            
-            setTimeout(() => {
-              window.location.href = target;
-            }, 1000);
-          }
-          else if (response.status === 400) { 
-            // Missing username or password
-            showErr("Missing username or password.");
-          }
-          else if (response.status === 401) {
-            // Invalid username or password
-            showErr("Invalid username or password. Please try again.");
-          }
-          else {
-            showErr(`Unexpected Error: ${response.status}`);
-          }
+          await displayServerMessage(response);
         }
         catch (error) {
           console.error("Network Error: ", error);
           showErr("Network Error. Please ensure the server is running.");
         }
+        finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Login";
+          submitting = false;
+        }
       });
 
-      // Live validation - after first submit
-      [username, password].forEach((input) => {
-        input.addEventListener("input", () => {
-          if (hasSubmitted) validateFields();
-        });
-      });
-
-      // Reset UI
-      form.addEventListener("reset", () => {
-        userError.style.display = "none";
-        passError.style.display = "none";
-        username.removeAttribute("aria-invalid");
-        password.removeAttribute("aria-invalid");
-        success.style.display = "none";
-        hasSubmitted = false; // reset state
+      // ===== Reset Handler =====
+      form.addEventListener('reset', () => {
+        Object.values(err).forEach(el => el.style.display = 'none');
+        Object.values(input).forEach(field => 
+          field.removeAttribute('aria-invalid')
+        );
+        clearStatus();
+        hasSubmitted = false;
+        submitting = false;
       });
     </script>
   </body>
