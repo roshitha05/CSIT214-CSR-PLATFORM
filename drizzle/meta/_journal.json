@@ -43,6 +43,13 @@
       "when": 1760713185214,
       "tag": "0005_1.0",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1760883004779,
+      "tag": "0006_on_update_category_name_cascade",
+      "breakpoints": true
     }
   ]
 }

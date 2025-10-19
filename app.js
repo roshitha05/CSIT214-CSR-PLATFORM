@@ -24,6 +24,11 @@ import ReinstateUser from './control/users/reinstate-user.js';
 
 import Login from './control/login.js';
 import Logout from './control/logout.js';
+import CreateCategory from './control/categories/create-category.js';
+import GetCategories from './control/categories/get-categories.js';
+import SearchCategories from './control/categories/search-categories.js';
+import UpdateCategory from './control/categories/update-category.js';
+import DeleteCategory from './control/categories/delete-category.js';
 
 export default class App {
     constructor() {
@@ -84,18 +89,10 @@ export default class App {
         ));
 
         // routers
-        const apiRouter = express.Router({
-            caseSensitive: true,
-            strict: true,
-        });
-        const userProfilesRouter = express.Router({
-            caseSensitive: true,
-            strict: true
-        });
-        const usersRouter = express.Router({
-            caseSensitive: true,
-            strict: true
-        });
+        const apiRouter = express.Router();
+        const userProfilesRouter = express.Router();
+        const usersRouter = express.Router();
+        const categoriesRouter = express.Router();
 
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
@@ -114,8 +111,15 @@ export default class App {
         usersRouter.use('/', new SuspendUser().getRouter());
         usersRouter.use('/', new ReinstateUser().getRouter());
 
+        categoriesRouter.use('/', new CreateCategory().getRouter());
+        categoriesRouter.use('/', new GetCategories().getRouter());
+        categoriesRouter.use('/', new SearchCategories().getRouter());
+        categoriesRouter.use('/', new UpdateCategory().getRouter());
+        categoriesRouter.use('/', new DeleteCategory().getRouter());
+
         apiRouter.use('/user-profiles', userProfilesRouter);
         apiRouter.use('/users', usersRouter);
+        apiRouter.use('/categories', categoriesRouter);
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('boundary'));
