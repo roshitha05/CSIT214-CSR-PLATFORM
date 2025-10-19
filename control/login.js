@@ -13,16 +13,16 @@ export default class Login extends Control {
             const user = await this.authEntity
                 .authenticateUser(req.body);
 
-            if (user === false) return res.status(403);
+            if (user === false) return res.status(403).send();
             delete user.password;
 
             req.session.regenerate((err) => {
-                if (err) return res.status(500);
+                if (err) return res.status(500).send();
                 
                 req.session.user_id = user.user_id;
 
                 req.session.save((err) => {
-                    if (err) return res.status(500);
+                    if (err) return res.status(500).send();
                     res.status(200).json({ user });
                 });
             });
