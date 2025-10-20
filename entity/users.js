@@ -36,15 +36,24 @@ export default class UsersEntity extends Entity {
 
     async updateUser(user_id, update) {
         if (Object.keys(update).length == 0) return true;
-        if (!await this.userIdExists(user_id)) return false;
+
+        const currentUser = (await this.getUsers({ user_id }))[0];
+
+        if (currentUser === undefined) return false;
         if (
-            update.email !== undefined
-            && await this.emailExists(update.email)
-        ) return false;
+            currentUser.username !== update.username
+            && update.username !== undefined
+        ) {
+            if (!await this.usernameExists(currentUser.username)) return false;
+            if (await this.usernameExists(update.username)) return false;
+        }
         if (
-            update.username !== undefined
-            && await this.usernameExists(update.username)
-        ) return false;
+            currentUser.email !== update.email
+            && update.email !== undefined
+        ) {
+            if (!await this.emailExists(currentUser.email)) return false;
+            if (await this.emailExists(update.email)) return false;
+        }
 
         const setQuery = {};
         Object.keys(update).forEach((key) => {

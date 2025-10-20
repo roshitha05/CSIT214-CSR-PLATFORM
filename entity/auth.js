@@ -25,9 +25,8 @@ export default class AuthEntity extends Entity {
         user = user[0];
 
         if (user.status.toLowerCase() !== 'active') return false;
-
         const userProfile = (await userProfilesEntity
-            .getUserProfiles({ name: user.userProfile }))[0];
+            .getUserProfiles({ name: user.user_profile }))[0];
         if (userProfile.status.toLowerCase() !== 'active') return false;
 
         return user;
