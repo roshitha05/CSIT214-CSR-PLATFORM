@@ -268,7 +268,7 @@
   <body>
     <!-- Sidebar -->
     <aside class="sidebar">
-      <h2>Administrator</h2>
+      <h2>Platform Management</h2>
       <a href="#" class="active"><i class="fa-solid fa-house"></i><span>Home</span></a>
       <a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a>
       <a href="#"><i class="fa-solid fa-list"></i><span>Reports</span></a>
@@ -290,28 +290,22 @@
       </div>
 
       <div class="cards">
-        <div class="card" id="createProfilesCard">
+        <div class="card" id="createCategoriesCard">
           <i class="fa-solid fa-book"></i>
-          <h3>Create User Profiles</h3>
-          <p>Set up new user roles.</p>
+          <h3>Create Category</h3>
+          <p>Add a new type of help request (e.g., Transport, Meals, etc.).</p>
         </div>
 
-        <div class="card" id="createAccountsCard">
-          <i class="fa-solid fa-chevron-circle-right"></i>
-          <h3>Create User Accounts</h3>
-          <p>Set up new user accounts.</p>
+        <div class="card" id="manageCategoriesCard">
+          <i class="fa-solid fa-layer-group"></i>
+          <h3>Manage Categories</h3>
+          <p>Manage and review categories.</p>
         </div>
 
-        <div class="card" id="profileManagementCard">
-          <i class="fa-solid fa-users"></i>
-          <h3>Profile management</h3>
-          <p>Manage user profiles.</p>
-        </div>
-        
-        <div class="card" id="accountManagementCard">
-          <i class="fa-solid fa-contact-book"></i>
-          <h3>Account Management</h3>
-          <p>Manage and review account details.</p>
+        <div class="card" id="reportCard">
+          <i class="fa-solid fa-file-lines"></i>
+          <h3>Generate Reports</h3>
+          <p>Generate Daily, Weekly or Monthly reports.</p>
         </div>
       </div>
     </main>
@@ -441,10 +435,9 @@
     // Card Navigation
     // =========================
     const NAV = {                                                     
-      createProfilesCard:      "/user_admin/create_profile.html",
-      createAccountsCard:      "/user_admin/create_account.html",
-      profileManagementCard:   "/user_admin/profile_management.html",
-      accountManagementCard:   "/user_admin/account_management.html",
+      createCategoriesCard : "/platform_management/create_category.html",
+      manageCategoriesCard : "/platform_management/category_management.html",
+      reportCard           : "/platform_management/report.html"
     };
 
     function wireCardNavigation(mapping) {
