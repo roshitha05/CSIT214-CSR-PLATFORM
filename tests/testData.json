@@ -1,0 +1,35 @@
+{
+  "admin": {
+    "loginId": "LiamCarter",
+    "password": "LiamCarter"
+  },
+  "csrUser": {
+    "loginId": "OliviaBennett",
+    "password": "OliviaBennett"
+  },
+  "profileKey": {
+    "name": "CSR Representative"
+  },
+  "create": {
+    "user": {
+      "username": "ManualUser01",
+      "loginId": "ManualUser01",
+      "password": "ManualUser01",
+      "email": "ManualUser01@CSR.com",
+      "role": "CSR Representative",
+      "phone": "91234567"
+    },
+    "profile": {
+      "name": "CSR_Profile_Manual",
+      "description": "CSR profile created by manual Jest"
+    }
+  },
+  "update": {
+    "user": { "phone": "9999" },
+    "profile": { "description": "Updated CSR description" }
+  },
+  "suspend": {
+    "user": { "suspended": true },
+    "profile": { "suspended": true }
+  }
+}
