@@ -30,6 +30,18 @@ async function main(tx) {
     await tx.execute(
         sql`TRUNCATE TABLE user_profiles RESTART IDENTITY CASCADE`
     );
+    await tx.execute(
+        sql`TRUNCATE TABLE categories RESTART IDENTITY CASCADE`
+    );
+    await tx.execute(
+        sql`TRUNCATE TABLE matches RESTART IDENTITY CASCADE`
+    );
+    await tx.execute(
+        sql`TRUNCATE TABLE service_requests RESTART IDENTITY CASCADE`
+    );
+    await tx.execute(
+        sql`TRUNCATE TABLE shortlists RESTART IDENTITY CASCADE`
+    );
 
     // seed user_profiles
     console.log('Seeding user profiles...');
@@ -91,7 +103,7 @@ async function main(tx) {
         const { user_id } = (await tx.insert(usersTable).values({
             fullname: user,
             email: getEmail(user),
-            username: user,
+            username: getPassword(user),
             password: getPassword(user),
             phone_number: getPhoneNumber(),
             address: `Lorem ipsum dolor sit amet...`,
