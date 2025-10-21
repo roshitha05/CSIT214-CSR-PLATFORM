@@ -131,7 +131,10 @@ jest.unstable_mockModule('../../database/db.js', () => {
 
   return {
     default: {
-      getInstance: () => ({ getPool: () => pool })
+      getInstance: () => ({
+        getDatabase: () => pool,
+        getPool: () => pool
+      })
     }
   };
 });
