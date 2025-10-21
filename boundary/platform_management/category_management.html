@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Profile Management</title>
+  <title>Category Management</title>
   <style>
     :root {
       --bg:#f0f9ff; 
@@ -97,7 +97,7 @@
     td.status { text-align:center; }
     td.actions { text-align:center; }
 
-    th:nth-child(4), th:nth-child(5) {
+    th:nth-child(3), th:nth-child(4) {
       text-align: center;
     }
 
@@ -211,7 +211,7 @@
 <body>
   <div class="card">
     <div class="header">
-      <h1>Profile Management</h1>
+      <h1>Category Management</h1>
       <div class="header-controls">
         <button class="btn-dashboard" id="returnDashboard">Return to Dashboard</button>
         <div class="search-box">
@@ -224,16 +224,14 @@
       <table id="profileTable">
         <colgroup>
           <col style="width: 20%"> <!-- Name -->
-          <col style="width: 35%"> <!-- Description -->
-          <col style="width: 10%"> <!-- Other -->
-          <col style="width: 15%"> <!-- Status -->
+          <col style="width: 40%"> <!-- Description -->
+          <col style="width: 20%"> <!-- Status -->
           <col style="width: 20%"> <!-- Actions -->
         </colgroup>
         <thead>
           <tr>
             <th>Name</th>
             <th>Description</th>
-            <th>Other</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -241,7 +239,7 @@
         <tbody></tbody>
         <tfoot>
           <tr id="noResultsRow" style="display:none;">
-            <td colspan="5" class="no-results">No results found.</td>
+            <td colspan="4" class="no-results">No results found.</td>
           </tr>
         </tfoot>
       </table>
@@ -255,28 +253,21 @@
   <!-- Edit Modal -->
   <div class="modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
     <div class="modal-content">
-      <h2 id="editTitle">Edit Profile</h2>
+      <h2 id="editTitle">Edit Category</h2>
 
       <div class="modal-body">
         <div class="form-row">
           <label for="editName">Name <span style="color:var(--muted)">*</span></label>
-          <input type="text" id="editName" class="modal-input" placeholder="Profile name"/>
+          <input type="text" id="editName" class="modal-input" placeholder="Category name"/>
           <small class="hint">Required. 1–64 characters.</small>
           <div id="editErr-name" class="error" style="display:none;">Please enter a valid name (1–64 characters).</div>
         </div>
 
         <div class="form-row">
-          <label for="editDesc">Description</label>
+          <label for="editDesc">Description <span style="color:var(--muted)">*</span></label>
           <textarea id="editDesc" class="modal-textarea" placeholder="Short description"></textarea>
-          <small class="hint">Optional. Up to 255 characters.</small>
+          <small class="hint">Required. Up to 255 characters.</small>
           <div id="editErr-desc" class="error" style="display:none;">Description must be 255 characters or fewer.</div>
-        </div>
-
-        <div class="form-row">
-          <label for="editOther">Other Info</label>
-          <textarea id="editOther" class="modal-textarea" placeholder="Additional notes or info"></textarea>
-          <small class="hint">Optional. Up to 128 characters.</small>
-          <div id="editErr-other" class="error" style="display:none;">Other info must be 128 characters or fewer.</div>
         </div>
 
         <div id="success" class="success" role="status" aria-live="polite"></div>
@@ -289,11 +280,11 @@
     </div>
   </div>
 
-  <!-- Suspend Modal -->
+  <!-- Archive Modal -->
   <div class="modal" id="suspendModal" role="dialog" aria-modal="true" aria-labelledby="suspendTitle">
     <div class="modal-content">
       <h2 id="suspendTitle">Confirm Suspend</h2>
-      <p>Are you sure you want to suspend this profile?</p>
+      <p>Are you sure you want to suspend this category?</p>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeSuspendModal()">Cancel</button>
         <button class="btn-danger" onclick="confirmSuspendUI()">Suspend</button>
@@ -305,7 +296,7 @@
   <div class="modal" id="reactivateModal" role="dialog" aria-modal="true" aria-labelledby="reactivateTitle">
     <div class="modal-content">
       <h2 id="reactivateTitle">Confirm Reactivation</h2>
-      <p>Are you sure you want to reactivate this profile?</p>
+      <p>Are you sure you want to reactivate this category?</p>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeReactivateModal()">Cancel</button>
         <button class="btn-primary" onclick="confirmReactivateUI()">Reactivate</button>
@@ -317,22 +308,11 @@
     // =========================
     // Config 
     // =========================
-    const DEBUG         = false;
-    const API_URL       = "http://127.0.0.1:80/api";
-    const PROFILES_API  = `${API_URL}/user-profiles`;
+    const DEBUG           = false;
+    const API_URL         = "http://127.0.0.1:80/api";
+    const CATEGORIES_API  = `${API_URL}/categories`;
 
     const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
-
-    // Policy toggles (case-insensitive names)
-    const RESERVED_NAMES = new Set([
-      "user admin",
-      "csr representative",
-      "person-in-need",
-      "platform management",
-    ]);
-
-    const PROTECTED_SUSPEND_NAMES = new Set(["user admin"]); // "User Admin" is suspension-protected
-    const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES;          // cannot edit name
 
     // =========================
     // DOM
@@ -349,17 +329,15 @@
       editModal: $("editModal"),
       editName: $("editName"),
       editDesc: $("editDesc"),
-      editOther: $("editOther"),
       editErrName: $("editErr-name"),
       editErrDesc: $("editErr-desc"),
-      editErrOther: $("editErr-other"),
       success: $("success"),
     }
 
     // =========================
     // Utilities / Normalizers
     // =========================
-    const log = (...args) => { if (DEBUG) console.log("[profiles]", ...args); };
+    const log = (...args) => { if (DEBUG) console.log("[categories]", ...args); };
 
     const norm            = (s) => String(s ?? "").trim().toLowerCase();
     const collapseSpaces  = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
@@ -372,11 +350,6 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-
-    // Name policy checks
-    const isProtectedSuspend  = (name) => PROTECTED_SUSPEND_NAMES.has(norm(name));
-    const isNameLocked        = (name) => LOCK_NAME_EDIT_NAMES.has(norm(name));
-    const isReservedName      = (name) => RESERVED_NAMES.has(norm(name));
 
     // Duplicate name check (case-insensitive). Ignores the current record if provided.
     function isDuplicateName(newName, profiles, currentName = null) {
@@ -391,7 +364,7 @@
     // =========================
     // State
     // =========================
-    let allProfiles          = [];
+    let allCategories          = [];
     let currentRow           = null; // row being edited
     let pendingSuspendRow    = null;
     let pendingReactivateRow = null;
@@ -446,31 +419,16 @@
     // =========================
     // Rendering
     // =========================
-
-    // shows the status (visual / UI)
-    function statusBadgeHTML(name, statusStr) {
-      if (isProtectedSuspend(name)) {
-        return `
-          <span class="badge badge-protected" title="Protected role — cannot be suspended">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="12" height="12">
-              <path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 116 0v3H9z"/>
-            </svg>
-            Protected
-          </span>`;
-      }
-      return String(statusStr).toUpperCase() === STATUS.SUSPENDED
-        ? '<span class="badge badge-suspended">Suspended</span>'
-        : '<span class="badge badge-active">Active</span>';
+    function statusBadgeHTML(statusStr) {
+        return String(statusStr).toUpperCase() === STATUS.SUSPENDED
+            ? '<span class="badge badge-suspended">Suspended</span>'
+            : '<span class="badge badge-active">Active</span>';
     }
 
-    // decides which buttons the user can click (UX)
-    function actionButtonHTML(name, statusStr) {
-      if (isProtectedSuspend(name)) {
-        return '<button class="btn-suspend" disabled title="Protected role — cannot be suspended">Suspend</button>';
-      }
-      return String(statusStr).toUpperCase() === STATUS.SUSPENDED
-        ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>'
-        : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
+    function actionButtonHTML(statusStr) {
+        return String(statusStr).toUpperCase() === STATUS.SUSPENDED
+            ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>'
+            : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
     }
 
     function rowHTML(p) {
@@ -478,19 +436,17 @@
       const status  = (p?.status || STATUS.ACTIVE).toUpperCase();
       const name    = escapeHTML(p?.name);
       const desc    = escapeHTML(p?.description);
-      const other   = p?.other ? escapeHTML(p.other) : "";
       const key     = encodeURIComponent(rawName);
 
       return `
-        <tr data-key="${key}" data-user-profile="${name}" data-raw="${rawName}" data-status="${status}">
+        <tr data-key="${key}" data-category="${name}" data-raw="${rawName}" data-status="${status}">
           <td class="name">${name}</td>
           <td class="description">${desc}</td>
-          <td class="other">${other}</td>
-          <td class="status">${statusBadgeHTML(rawName, status)}</td>
+          <td class="status">${statusBadgeHTML(status)}</td>
           <td class="actions">
             <div class="btn-row">
               <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
-              ${actionButtonHTML(rawName, status)}
+              ${actionButtonHTML(status)}
             </div>
           </td>
         </tr>
@@ -514,37 +470,35 @@
 
     function applyStatusToRow(row, statusStr) {
       const status = (statusStr || STATUS.ACTIVE).toUpperCase();
-      const name   = row.dataset.userProfile;
-
       row.dataset.status = status;
-      row.querySelector(".status").innerHTML = statusBadgeHTML(name, status);
+      row.querySelector(".status").innerHTML = statusBadgeHTML(status);
 
       const btnRow = row.querySelector(".actions .btn-row");
       const swapTarget = btnRow.querySelector(".btn-suspend, .btn-reactivate");
 
       const tmp = document.createElement("div");
-      tmp.innerHTML = actionButtonHTML(name, status);
+      tmp.innerHTML = actionButtonHTML(status);
       const fresh = tmp.firstElementChild;
 
       swapTarget ? swapTarget.replaceWith(fresh) : btnRow.appendChild(fresh);
     }
 
-    async function loadProfiles() {
+    async function loadCategories() {
       try {
-        const { ok, status, data } = await fetchJSON(PROFILES_API, { method: "GET" });
-        if (!ok) throw new Error(`Failed to load profiles (${status})`);
-        const list = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
-        allProfiles = list;
-        populateTable(allProfiles);
+        const { ok, status, data } = await fetchJSON(CATEGORIES_API, { method: "GET" });
+        if (!ok) throw new Error(`Failed to load categories (${status})`);
+        const list = Array.isArray(data?.categories) ? data.categories : [];
+        allCategories = list;
+        populateTable(allCategories);
       } catch (e) {
         console.error(e);
-        allProfiles = [];
-        populateTable(allProfiles); // shows “No results”
-        showErr("Unable to load profiles. Please try again later.");
+        allCategories = [];
+        populateTable(allCategories); // shows “No results”
+        showErr("Unable to load categories. Please try again later.");
       }
     }
 
-    loadProfiles();
+    loadCategories();
 
     // =========================
     // Search
@@ -566,22 +520,11 @@
 
       els.editName.value  = currentRow.querySelector(".name").textContent.trim();
       els.editDesc.value  = currentRow.querySelector(".description").textContent.trim();
-      els.editOther.value = currentRow.querySelector(".other").textContent.trim();
-
-      const protectedSuspend = isProtectedSuspend(currentName);
-      els.editName.disabled = isNameLocked(currentName);
-
-      if (protectedSuspend) {
-        els.editName.title = "This profile is protected; its name cannot be changed.";
-      } else {
-        els.editName.removeAttribute("title");
-      }
 
       // reset UI
       els.editErrName.style.display = "none";
       els.editErrDesc.style.display = "none";
-      els.editErrOther.style.display = "none";
-      [els.editName, els.editDesc, els.editOther].forEach(el => el.removeAttribute("aria-invalid"));
+      [els.editName, els.editDesc].forEach(el => el.removeAttribute("aria-invalid"));
       clearStatus();
 
       els.editModal.style.display = "flex";
@@ -594,8 +537,8 @@
       // reset UI (field-level)
       els.editErrName.style.display = "none";
       els.editErrDesc.style.display = "none";
-      els.editErrOther.style.display = "none";
-      [els.editName, els.editDesc, els.editOther].forEach(el => el.removeAttribute("aria-invalid"));
+
+      [els.editName, els.editDesc].forEach(el => el.removeAttribute("aria-invalid"));
 
       clearStatus();
     }
@@ -603,61 +546,41 @@
     function validateEditForm() {
       const nameEl  = els.editName;
       const descEl  = els.editDesc;
-      const otherEl = els.editOther;
 
       const vName  = collapseSpaces(nameEl.value);
       const vDesc  = collapseSpaces(descEl.value);
-      const vOther = collapseSpaces(otherEl.value);
 
       nameEl.value  = vName;
       descEl.value  = vDesc;
-      otherEl.value = vOther;
 
       let ok = true;
 
-      // Name: required (1–64), not reserved, not duplicate (case-insensitive)
-      if (!nameEl.disabled) {
-        if (!nonEmpty(vName) || vName.length > 64) {
-          els.editErrName.textContent = "Please enter a valid name (1–64 characters).";
-          els.editErrName.style.display = "block";
-          nameEl.setAttribute("aria-invalid", "true");
-          ok = false;
-        } else if (isReservedName(vName)) {
-          els.editErrName.textContent = "This name is reserved and cannot be used.";
-          els.editErrName.style.display = "block";
-          nameEl.setAttribute("aria-invalid", "true");
-          ok = false;
-        } else if (isDuplicateName(vName, allProfiles, currentRow?.dataset?.raw)) {
-          els.editErrName.textContent = "A profile with that name already exists.";
-          els.editErrName.style.display = "block";
-          nameEl.setAttribute("aria-invalid", "true");
-          ok = false;
-        }
+      // Name: required (1–64), not duplicate (case-insensitive)
+      if (!nonEmpty(vName) || vName.length > 64) {
+        els.editErrName.textContent = "Please enter a valid name (1–64 characters).";
+        els.editErrName.style.display = "block";
+        nameEl.setAttribute("aria-invalid", "true");
+        ok = false;
+      } 
+      else if (isDuplicateName(vName, allCategories, currentRow?.dataset?.raw)) {
+        els.editErrName.textContent = "A category with that name already exists.";
+        els.editErrName.style.display = "block";
+        nameEl.setAttribute("aria-invalid", "true");
+        ok = false;
       }
 
-      // Description: optional, <= 255
-      if (vDesc.length > 255) {
+      // Description: required, <= 255
+      if (!nonEmpty(vDesc) || vDesc.length > 255) {
+        els.editErrDesc.textContent = "Description must be 255 characters or fewer.";
         els.editErrDesc.style.display = "block";
         descEl.setAttribute("aria-invalid", "true");
         ok = false;
       }
 
-      // Other: optional, <= 128
-      if (vOther.length > 128) {
-        els.editErrOther.style.display = "block";
-        otherEl.setAttribute("aria-invalid", "true");
-        ok = false;
-      }
-
       // Focus first invalid
       if (!ok) {
-        if (!nameEl.disabled && nameEl.hasAttribute("aria-invalid")) {
-          nameEl.focus({ preventScroll: true });
-        } else if (descEl.hasAttribute("aria-invalid")) {
-          descEl.focus({ preventScroll: true });
-        } else if (otherEl.hasAttribute("aria-invalid")) {
-          otherEl.focus({ preventScroll: true });
-        }
+        if (nameEl.hasAttribute("aria-invalid")) nameEl.focus({ preventScroll: true });
+        else if (descEl.hasAttribute("aria-invalid")) descEl.focus({ preventScroll: true });
       }
       
       return ok;
@@ -671,17 +594,15 @@
 
       const name = els.editName.value.trim();
       const description = els.editDesc.value.trim();
-      const other = els.editOther.value.trim();
 
       const curKey   = currentRow.dataset.key;
-      const curRaw  = currentRow.dataset.raw;
+      const curRaw   = currentRow.dataset.raw;
       const curDesc  = currentRow.querySelector(".description").textContent.trim();
-      const curOther = currentRow.querySelector(".other").textContent.trim();
 
-      const payload = { name, description, other }
+      const payload = { name, description }
 
       // nothing changed
-      if (name === curRaw && description === curDesc && other === curOther) {
+      if (name === curRaw && description === curDesc) {
         editing = false;
         closeEditModal();
         return;
@@ -689,13 +610,13 @@
 
       // DEBUG mode
       if (DEBUG) {
-        showDebug(`${PROFILES_API}/${curKey}`, payload);
+        showDebug(`${CATEGORIES_API}/${curKey}`, payload);
         editing = false;
         return;
       }
 
       try {
-        const { ok, status } = await fetchJSON(`${PROFILES_API}/${curKey}`, {
+        const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${curKey}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -705,14 +626,13 @@
         // Update row in place
         currentRow.querySelector(".name").textContent        = name;
         currentRow.querySelector(".description").textContent = description;
-        currentRow.querySelector(".other").textContent       = other;
 
         currentRow.dataset.raw = name;
         currentRow.dataset.key = encodeURIComponent(name);
 
         // Update cache
-        const i = allProfiles.findIndex(p => norm(p.name) === norm(curRaw));
-        if (i !== -1) allProfiles[i] = { ...allProfiles[i], ...payload };
+        const i = allCategories.findIndex(p => norm(p.name) === norm(curRaw));
+        if (i !== -1) allCategories[i] = { ...allCategories[i], ...payload };
 
         closeEditModal();
       } catch (e) {
@@ -728,13 +648,10 @@
     // Modals: Suspend
     // =========================
     function openSuspendModal(button) {
-      const row  = button.closest("tr");
-      const name = row.dataset.userProfile;
-      if (isProtectedSuspend(name)) return;
-      pendingSuspendRow = row;
+      pendingSuspendRow = button.closest("tr");
       $("suspendModal").style.display = "flex";
     }
-    
+
     function closeSuspendModal() {
       $("suspendModal").style.display = "none";
       pendingSuspendRow = null;
@@ -746,7 +663,7 @@
 
       const key = pendingSuspendRow.dataset.key;
       try {
-        const { ok, status, data } = await fetchJSON(`${PROFILES_API}/${key}/suspend`, {
+        const { ok, status, data } = await fetchJSON(`${CATEGORIES_API}/${key}/suspend`, {
           method: "POST"
         });
         if (!ok) throw new Error(`Suspend failed (${status})`);
@@ -787,7 +704,7 @@
       modalBtn.textContent = "Reactivating...";
 
       try {
-        const { ok, status } = await fetchJSON(`${PROFILES_API}/${key}/reinstate`, {
+        const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${key}/reinstate`, {
           method: "POST"
         });
         if (!ok) throw new Error(`Reinstate failed (${status})`);
@@ -808,7 +725,7 @@
     // Navigation
     // =========================
     $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "/user_admin/admin_dashboard.html";
+      window.location.href = "/platform_management/platform_dashboard.html";
     });
   </script>
 </body>

@@ -179,9 +179,9 @@
     </style>
   </head>
   <body>
-    <div class="card" role="region" aria-labelledby="title">
+    <div class="card" role="region">
       <div class="header">
-        <h1 id="title">User Registration</h1>
+        <h1>User Registration</h1>
         <p>Create an account to request help, represent users, or volunteer.</p>
       </div>
 
@@ -197,10 +197,11 @@
               required
               maxlength="64"
               placeholder="e.g., Jane Doe"
+              aria-describedby="fullName-hint err-fullName"
               autocomplete="name"
               autofocus
             />
-            <small class="hint">Required. Up to 64 characters.</small>
+            <small id="fullName-hint" class="hint">Required. Up to 64 characters.</small>
             <div id="err-fullName" class="error">
               Please enter your name (max 64 chars).
             </div>
@@ -216,10 +217,11 @@
               required
               maxlength="32"
               placeholder="e.g., janedoe123"
+              aria-describedby="loginId-hint err-loginId"
               autocomplete="username"
               pattern="^[A-Za-z0-9._-]{3,32}$"
             />
-            <small class="hint"
+            <small id="loginId-hint" class="hint"
               >Required. 3–32 chars: letters, numbers, dot, underscore,
               hyphen.</small
             >
@@ -238,9 +240,10 @@
               required
               maxlength="254"
               placeholder="you@example.com"
+              aria-describedby="email-hint err-email"
               autocomplete="email"
             />
-            <small class="hint">Required.</small>
+            <small id="email-hint" class="hint">Required.</small>
             <div id="err-email" class="error">
               Please enter a valid email address.
             </div>
@@ -259,10 +262,11 @@
                 maxlength="128"
                 autocomplete="new-password"
                 placeholder="At least 8 characters"
+                aria-describedby="password-hint err-password"
               />
               <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
-            <small class="hint">Required. Password should be at least 8 characters.</small>
+            <small id="password-hint" class="hint">Required. Password should be at least 8 characters.</small>
             <div id="err-password" class="error">Please enter a password (8–128 chars).</div>
           </div>
 
@@ -278,10 +282,11 @@
               maxlength="8"
               inputmode="tel"
               placeholder="8123 4567"
+              aria-describedby="phone-hint err-phone"
               autocomplete="tel"
               pattern="^[+0-9()\-.\s]{6,20}$"
             />
-            <small class="hint"
+            <small id="phone-hint" class="hint"
               >Required. 8 digits</small
             >
             <div id="err-phone" class="error">
@@ -298,10 +303,11 @@
               required
               maxlength="255"
               placeholder="Block/Street, Unit, Postal Code"
+              aria-describedby="address-hint err-address"
               autocomplete="street-address"
               spellcheck="false"
             ></textarea>
-            <small class="hint">Required. Up to 255 characters.</small>
+            <small id="err-address" class="hint">Required. Up to 255 characters.</small>
             <div id="err-address" class="error">
               Please enter your address (max 255 chars).
             </div>
@@ -310,8 +316,8 @@
           <!-- 7. DOB (required) -->
           <div class="row">
             <label for="dob">Date of Birth <span style="color: var(--muted)">*</span></label>
-            <input id="dob" name="dob" type="date" required max="" />
-            <small class="hint">Required.</small>
+            <input id="dob" name="dob" type="date" required max="" aria-describedby="hint-dob err-dob"/>
+            <small id="hint-dob" class="hint">Required.</small>
             <div id="err-dob" class="error">
               Please choose a valid date in the past.
             </div>
@@ -400,6 +406,7 @@
       success.style.color = "#166534";
       success.setAttribute("aria-live", "polite");
       success.textContent = message;
+      formCompletedRef.value = true;
     }
 
     function showErr(message) {
@@ -409,6 +416,7 @@
       success.style.color = "#991b1b";
       success.setAttribute("aria-live", "assertive");
       success.textContent = message;
+      formCompletedRef.value = true;
     }
 
     function clearStatus() {
@@ -516,6 +524,55 @@
     attachPostSuccessReset(input, form, clearStatus, formCompletedRef);
 
     // =========================
+    // Load roles (profiles)
+    // =========================
+    document.addEventListener("DOMContentLoaded", loadProfiles);
+
+    async function loadProfiles() {
+      const select = input.profile;
+      select.innerHTML = '<option value="">Loading profiles…</option>';
+      select.disabled  = true;
+
+      try {
+        const response = await fetch(PROFILES_API, {
+          method: "GET",
+          mode: "cors",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        // Non-OK -> error UI
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const profiles = data.userProfiles || data.data || [];
+
+        select.innerHTML = "";
+        select.appendChild(new Option("Select a profile…", ""));
+
+        if (!Array.isArray(profiles) || profiles.length === 0) {
+          select.appendChild(new Option("No profiles available", ""));
+          select.disabled = true;
+          return;
+        }
+
+        profiles
+          .map(p => p?.name || p?.profile_name)
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+          .forEach((name) => select.appendChild(new Option(name, name)));
+
+        select.disabled = false;
+      } catch (e) {
+        console.error("Failed to load profiles:", e);
+        select.innerHTML = "";
+        select.appendChild(new Option("Error loading profiles", ""));
+        select.disabled = true;
+        showErr("Unable to load profiles. Please try again later.");
+      }
+    }
+
+    // =========================
     // Validation
     // =========================
     function validateFields() {
@@ -615,53 +672,6 @@
 
       // Fallback
       showErr(serverMsg || `Unexpected error: ${response.status}`);
-    }
-
-    // =========================
-    // Load roles (profiles)
-    // =========================
-    document.addEventListener("DOMContentLoaded", loadProfiles);
-
-    async function loadProfiles() {
-      const select = input.profile;
-      select.innerHTML = '<option value="">Loading profiles…</option>';
-      select.disabled  = true;
-
-      try {
-        const response = await fetch(PROFILES_API, {
-          method: "GET",
-          mode: "cors",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const data = await response.json();
-        const profiles = data.userProfiles || data.data || [];
-
-        select.innerHTML = "";
-        select.appendChild(new Option("Select a profile…", ""));
-
-        if (!Array.isArray(profiles) || profiles.length === 0) {
-          select.appendChild(new Option("No profiles available", ""));
-          select.disabled = true;
-          return;
-        }
-
-        profiles
-          .map(p => p?.name || p?.profile_name)
-          .filter(Boolean)
-          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-          .forEach((name) => select.appendChild(new Option(name, name)));
-
-        select.disabled = false;
-      } catch (e) {
-        console.error("Failed to load profiles:", e);
-        select.innerHTML = "";
-        select.appendChild(new Option("Error loading profiles", ""));
-        select.disabled = true;
-        showErr("Unable to load profiles. Please try again later.");
-      }
     }
 
     // =========================

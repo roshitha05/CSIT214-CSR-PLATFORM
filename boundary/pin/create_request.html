@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Create User Profile</title>
+  <title>Create Category</title>
   <style>
     /* =========================
       Design Tokens
@@ -192,64 +192,66 @@
 <body>
 
   <!-- Header -->
-  <div class="card" role="region">
+  <div class="card" role="region" aria-labelledby="pageTitle">
     <div class="header">
-      <h1>Create User Profile</h1>
-      <p>Fill in the details below to add a new profile or role.</p>
+      <h1 id="pageTitle">Create Service Requests</h1>
+      <p>Submit a new request (e.g., Transport, Meals, etc.).</p>
     </div>
 
     <!-- Form -->
-    <form id="profileForm" novalidate>
+    <form id="requestForm" novalidate>
 
-      <!-- Name (Required) -->
+      <!-- Title (Required) -->
       <div class="row">
-        <label for="name">Name <span style="color:var(--muted)">*</span></label>
+        <label for="title">Title <span style="color:var(--muted)">*</span></label>
         <input
-          id="name"
-          name="name"
+          id="title"
+          name="title"
           type="text"
-          placeholder="e.g., User Admin, CSR Representative, Person In Need, Platform Management"
+          placeholder="e.g., Ride to clinic"
           required
-          maxlength="64"
-          aria-describedby="name-hint err-name"
+          maxlength="80"
+          aria-describedby="title-hint err-title"
           autofocus
         />
-        <small id="name-hint" class="hint">Required. 1–64 characters. Must be unique.</small>
-        <div id="err-name" class="error">
-          Please enter a profile name.
+        <small id="title-hint" class="hint">Required. 1–80 characters.</small>
+        <div id="err-title" class="error">
+          Please enter a valid title.
         </div>
-    </div>
+      </div>
 
-      <!-- Description (optional) -->
+      <!-- Description (Required) -->
       <div class="row">
-        <label for="description">Description</label>
+        <label for="description">Description <span style="color:var(--muted)">*</span></label>
         <textarea 
           id="description" 
           name="description" 
-          placeholder="Optional. Short description of this role's responsibilities." 
+          placeholder="Briefly describe what you need help with." 
+          required
           maxlength="255"
           aria-describedby="desc-hint err-desc"
         ></textarea>
-        <small id="desc-hint" class="hint">Optional. Up to 255 characters.</small>
+        <small id="desc-hint" class="hint">Required. Up to 255 characters.</small>
         <div id="err-desc" class="error">
           Please enter a valid description (max 255 characters).
         </div>
       </div>
 
-      <!-- Other (optional) -->
+      <!-- Category (Required) -->
       <div class="row">
-        <label for="other">Other</label>
-        <input id="other" 
-          name="other" 
-          type="text" 
-          placeholder="Optional. Notes or additional details." 
-          maxlength="128" 
-          aria-describedby="oth-hint err-oth"
-        />
-        <small id="oth-hint" class="hint">Examples: “Emergency Contact”, “Case Manager”, “Senior Volunteer”.</small>
-        <div id="err-oth" class="error">
-          Please enter a valid information (max 128 characters).
-        </div>
+        <label for="category">Category <span style="color: var(--muted)">*</span></label>
+        <select
+          id="category"
+          name="category"
+          required
+          aria-describedby="cat-hint err-category"
+        >
+          <option value="">Loading categories...</option>
+        </select>
+        <small id="cat-hint" class="hint"
+          >Required. Choose the most suitable category.</small
+        >
+        <div id="err-category" class="error">Please select a category.</div>
       </div>
 
       <!-- Buttons -->
@@ -272,29 +274,30 @@
     // =========================
     // Config
     // =========================
-    const DEBUG        = false;  // toggle as needed
-    const API_URL      = "http://127.0.0.1:80/api";
-    const PROFILES_API = `${API_URL}/user-profiles`;
+    const DEBUG          = false;  // toggle as needed
+    const API_URL        = "http://127.0.0.1:80/api";
+    const REQUESTS_API   = `${API_URL}/requests`;
+    const CATEGORIES_API = `${API_URL}/categories`;
 
     // =========================
     // DOM
     // =========================
     const $ = (id) => document.getElementById(id);
 
-    const form      = $("profileForm");
+    const form      = $("requestForm");
     const success   = $("success");
     const submitBtn = $("submitBtn");
 
     const input = {
-      name        : $("name"),
-      description : $("description"),
-      other       : $("other"),
+      title        : $("title"),
+      description  : $("description"),
+      category     : $("category"),
     }
 
     const err = {
-      name        : $("err-name"),
+      title       : $("err-title"),
       description : $("err-desc"),
-      other       : $("err-oth"),
+      category    : $("err-category"),
     }
 
     // =========================
@@ -335,7 +338,7 @@
       success.style.whiteSpace = "pre-wrap";
       success.textContent =
         `[DEBUG]:\n\n` +
-        `This would POST to:\n${PROFILES_API}\n\n` +
+        `This would POST to:\n${REQUESTS_API}\n\n` +
         `With values:\n${JSON.stringify(payload, null, 2)}`;
     }
 
@@ -344,13 +347,14 @@
     // =========================
     const show     = (el, on)        => { el.style.display = on ? "block" : "none"; };
     const collapse = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
+    const nonEmpty = (s) => collapse(s).length > 0;
 
     let hasSubmitted = false;                   // used for live validation after submit
     let submitting   = false;                   // used for safeguard to prevent double submission
     const formCompletedRef = { value: false };  // use as a ref object shared across helpers
 
     function focusFirstInvalid() {
-      const order = [ input.name, input.description, input.other ];
+      const order = [ input.title, input.description, input.category ];
       for (const el of order) {
         if (el.hasAttribute("aria-invalid")) {
           el.focus({ preventScroll: true });
@@ -393,7 +397,7 @@
       });
     }
 
-    attachLiveValidation([input.name, input.description, input.other], validateFields);
+    attachLiveValidation([input.title, input.description, input.category], validateFields);
 
     // =========================
     // Validation
@@ -402,34 +406,86 @@
       let valid = true;
 
       // Normalize field values
-      const vName  = collapse(input.name.value);
+      const vTitle = collapse(input.title.value);
       const vDesc  = collapse(input.description.value);
-      const vOther = collapse(input.other.value);
+      const vCat   = String(input.category.value || "").trim();
 
-      // Name: required, length ≤ 64
-      const okName = vName.length > 0 && vName.length <= 64;
-      show(err.name, !okName);
-      input.name.toggleAttribute("aria-invalid", !okName);
-      valid &&= okName;
+      // Title: required, length ≤ 80
+      const okTitle = nonEmpty(vTitle) && vTitle.length <= 80;
+      show(err.title, !okTitle);
+      input.title.toggleAttribute("aria-invalid", !okTitle);
+      valid &&= okTitle;
 
-      // Description: optional, length ≤ 255
-      const okDesc = vDesc.length <= 255;
-      show(err.description, !okDesc); 
+      // Description: required, length ≤ 255
+      const okDesc = nonEmpty(vDesc) && vDesc.length <= 255;
+      show(err.description, !okDesc);
       input.description.toggleAttribute("aria-invalid", !okDesc);
       valid &&= okDesc;
 
-      // Other: optional, length ≤ 128
-      const okOther = vOther.length <= 128;
-      input.other.toggleAttribute("aria-invalid", !okOther);
-      show(err.other, !okOther);
-      valid &&= okOther;
+      // Category: required
+      const okCat = nonEmpty(vCat);
+      show(err.category, !okCat);
+      input.category.toggleAttribute("aria-invalid", !okCat);
+      valid &&= okCat;
 
       // write back normalized values
-      input.name.value        = vName;
-      input.description.value = vDesc;
-      input.other.value       = vOther;
+      input.title.value        = vTitle;
+      input.description.value  = vDesc;
 
       return valid;
+    }
+
+    // =========================
+    // Load Categories
+    // =========================
+    document.addEventListener("DOMContentLoaded", loadCategories);
+
+    async function loadCategories() {
+        const select = input.category;
+        select.innerHTML = '<option value="">Loading categories...</option>';
+        select.disabled = true;
+
+        try {
+            const response = await fetch(CATEGORIES_API, {
+                method: "GET",
+                mode: "cors",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+            });
+
+            // Non-OK -> error UI
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            const categories = Array.isArray(data?.categories) ? data.categories : [];
+
+            select.innerHTML = "";
+            select.appendChild(new Option("Select a category...", ""));
+
+            if (categories.length === 0) {
+                select.appendChild(new Option("No categories available", ""));
+                select.disabled = true;
+                showErr("No categories found. Please contact support to add categories.");
+                return;
+            }
+
+            // Sort by name case-insensitive
+            categories
+                .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
+                .forEach((c) => {
+                    const value = c.id ?? c.name;
+                    const label = c.name ?? String(value);
+                    select.appendChild(new Option(label, value));
+                });
+
+            select.disabled = false;
+        } catch (e) {
+            console.error("Failed to load categories: ", e);
+            select.innerHTML = "";
+            select.appendChild(new Option("Error loading categories", ""));
+            select.disabled = true;
+            showErr("Unable to load categories. Please try again later.");
+        }
     }
 
     // =========================
@@ -452,7 +508,7 @@
       if (response.status === 200) {
         const okFlag = body === true || body === "true";
         if (okFlag) {
-          showOk(serverMsg || "Profile created successfully!");
+          showOk(serverMsg || "Request submitted successfully!");
           if (typeof onSuccess === "function") onSuccess(body);
           else formCompletedRef.value = true;
           return;
@@ -462,9 +518,9 @@
       }
       
       // --- Common Error Branches ---
-      if (response.status === 400) { showErr(serverMsg || "Failed to create User Profile. Name already exists."); return; }
+      if (response.status === 400) { showErr(serverMsg || "Submission failed. Please check your inputs."); return; }
       if (response.status === 401) { showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
-      if (response.status === 402) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
+      if (response.status === 403) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
 
       // --- Fallback ---
       showErr(serverMsg || `Unexpected Error: ${response.status}`);
@@ -491,9 +547,9 @@
 
       // Build payload (normalized)
       const payload = {
-        name        : collapse(input.name.value),
+        title       : collapse(input.title.value),
         description : collapse(input.description.value),
-        other       : collapse(input.other.value),
+        category    : collapse(input.category.value),
       };
 
       if (DEBUG) {
@@ -505,7 +561,7 @@
       }
 
       try {
-        const response = await fetch(PROFILES_API, {
+        const response = await fetch(REQUESTS_API, {
           method : "POST",
           mode : "cors",
           credentials: "include",
@@ -519,8 +575,8 @@
           }
         });
       }
-      catch (error) {
-        console.error("Network Error: ", error);
+      catch (e) {
+        console.error("Network Error: ", e);
         showErr("Network error. Please ensure the server is running.");
       }
       finally {
@@ -543,7 +599,7 @@
     // Navigation
     // =========================
     $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "/user_admin/admin_dashboard.html";
+      window.location.href = "/pin/pin_dashboard.html";
     });
   </script>
 </body>
