@@ -1,11 +1,30 @@
-import {jest} from '@jest/globals';
+import { jest } from '@jest/globals';
+
 jest.unstable_mockModule('connect-pg-simple', () => ({
-  default: () =>
-    class FakePgStore {
-      set() {}
-      get() {}
-      destroy() {}
-      touch() {}
+  default: (session) =>
+    class FakePgStore extends session.Store {
+      constructor() {
+        super();
+        this.sessions = new Map();
+      }
+      get(sid, cb) {
+        cb && cb(null, this.sessions.get(sid) ?? null);
+      }
+      set(sid, sess, cb) {
+        this.sessions.set(sid, sess);
+        cb && cb(null);
+      }
+      destroy(sid, cb) {
+        this.sessions.delete(sid);
+        cb && cb(null);
+      }
+      touch(sid, sess, cb) {
+        this.sessions.set(sid, sess);
+        cb && cb(null);
+      }
+      all(cb) { cb && cb(null, Array.from(this.sessions.values())); }
+      clear(cb) { this.sessions.clear(); cb && cb(null); }
+      length(cb) { cb && cb(null, this.sessions.size); }
     }
 }));
 
@@ -20,113 +39,84 @@ const mem = {
   nextProfileId: 2
 };
 
-function toId(prefix, n) { return `${prefix}${n}`; }
+function norm(sql) { return String(sql).toLowerCase().replace(/\s+/g, ' '); }
 
 jest.unstable_mockModule('../../database/db.js', () => {
-  const norm = (sql) => String(sql).toLowerCase().replace(/\s+/g, ' ');
-
   const pool = {
     query: async (sql, params = []) => {
       const s = norm(sql);
 
+      // USERS
       if (s.includes('insert into') && s.includes('user')) {
         const body = params.find(p => p && typeof p === 'object') || {};
-        const candidate = {
-          username: body.username ?? params[0],
-          loginId:  body.loginId  ?? params[1],
-          password: body.password ?? params[2],
-          email:    body.email    ?? params[3],
-          role:     body.role     ?? params[4],
-          phone:    body.phone    ?? params[5],
-        };
-
         const exists = mem.users.find(u =>
-          u.loginId === candidate.loginId ||
-          u.username === candidate.username ||
-          (candidate.email && u.email === candidate.email)
+          u.loginId === body.loginId || u.username === body.username || (body.email && u.email === body.email)
         );
-        if (exists) {
-          const err = new Error('duplicate key value');
-          err.code = '23505'; 
-          throw err; 
-        }
-        const id = toId('u', mem.nextUserId++);
-        mem.users.push({ id, suspended: false, ...candidate });
+        if (exists) { const e = new Error('duplicate'); e.code = '23505'; throw e; }
+        const id = `u${mem.nextUserId++}`;
+        mem.users.push({ id, suspended: false, ...body });
         return { rows: [{ id }] };
       }
-
       if (s.includes('update users') && s.includes(' set ') && s.includes('suspend')) {
         const id = params.find(p => typeof p === 'string' && p.startsWith('u')) ?? params.at(-1);
-        const user = mem.users.find(u => u.id === id);
-        if (!user) return { rows: [] };
+        const u = mem.users.find(x => x.id === id);
+        if (!u) return { rows: [] };
         const body = params.find(p => p && typeof p === 'object') || {};
-        user.suspended = Boolean(body.suspended ?? true);
-        return { rows: [{ id: user.id, suspended: user.suspended }] };
+        u.suspended = Boolean(body.suspended ?? true);
+        return { rows: [{ id: u.id, suspended: u.suspended }] };
       }
-
       if (s.includes('update users') && s.includes(' set ')) {
         const id = params.find(p => typeof p === 'string' && p.startsWith('u')) ?? params.at(-1);
-        const user = mem.users.find(u => u.id === id);
-        if (!user) return { rows: [] };
+        const u = mem.users.find(x => x.id === id);
+        if (!u) return { rows: [] };
         const body = params.find(p => p && typeof p === 'object') || {};
-        Object.assign(user, body);
-        return { rows: [{ id: user.id }] };
+        Object.assign(u, body);
+        return { rows: [{ id: u.id }] };
       }
-
       if (s.includes('from users') && s.includes('where') && (s.includes('user_id') || s.includes('id ='))) {
         const id = params.find(p => typeof p === 'string' && p.startsWith('u')) ?? params[0];
-        const user = mem.users.find(u => u.id === id);
-        return { rows: user ? [user] : [] };
+        const u = mem.users.find(x => x.id === id);
+        return { rows: u ? [u] : [] };
       }
-
       if (s.includes('from users') && s.includes('where') &&
-         (s.includes('loginid') || s.includes('username') || s.includes('email'))) {
+          (s.includes('loginid') || s.includes('username') || s.includes('email'))) {
         const needle = String(params[0] ?? params[1] ?? '').toLowerCase();
         const rows = mem.users.filter(u =>
           [u.loginId, u.username, u.email].some(v => (v || '').toLowerCase().includes(needle))
         );
         return { rows };
       }
-
       if (s.includes('from users')) return { rows: mem.users.slice() };
-
-      if (s.includes('insert into') && s.includes('user_profiles')) {
+      // PROFILES
+      if (s.includes('insert into') && (s.includes('user_profiles') || s.includes('profile'))) {
         const body = params.find(p => p && typeof p === 'object') || { name: params[0], description: params[1] };
         const exists = mem.profiles.find(p => p.name === body.name);
-        if (exists) {
-          const err = new Error('duplicate key value');
-          err.code = '23505';
-          throw err;
-        }
-        const id = toId('p', mem.nextProfileId++);
+        if (exists) { const e = new Error('duplicate'); e.code = '23505'; throw e; }
+        const id = `p${mem.nextProfileId++}`;
         mem.profiles.push({ id, suspended: false, ...body });
         return { rows: [{ id }] };
       }
-
       if (s.includes('update user_profiles') && s.includes(' set ') && s.includes('suspend')) {
         const id = params.find(p => typeof p === 'string' && p.startsWith('p')) ?? params.at(-1);
-        const prof = mem.profiles.find(p => p.id === id);
-        if (!prof) return { rows: [] };
+        const p = mem.profiles.find(x => x.id === id);
+        if (!p) return { rows: [] };
         const body = params.find(p => p && typeof p === 'object') || {};
-        prof.suspended = Boolean(body.suspended ?? true);
-        return { rows: [{ id: prof.id, suspended: prof.suspended }] };
+        p.suspended = Boolean(body.suspended ?? true);
+        return { rows: [{ id: p.id, suspended: p.suspended }] };
       }
-
       if (s.includes('update user_profiles') && s.includes(' set ')) {
         const id = params.find(p => typeof p === 'string' && p.startsWith('p')) ?? params.at(-1);
-        const prof = mem.profiles.find(p => p.id === id);
-        if (!prof) return { rows: [] };
+        const p = mem.profiles.find(x => x.id === id);
+        if (!p) return { rows: [] };
         const body = params.find(p => p && typeof p === 'object') || {};
-        Object.assign(prof, body);
-        return { rows: [{ id: prof.id }] };
+        Object.assign(p, body);
+        return { rows: [{ id: p.id }] };
       }
-
       if (s.includes('from user_profiles') && s.includes('where') && (s.includes('profile_id') || s.includes('id ='))) {
         const id = params.find(p => typeof p === 'string' && p.startsWith('p')) ?? params[0];
-        const prof = mem.profiles.find(p => p.id === id);
-        return { rows: prof ? [prof] : [] };
+        const p = mem.profiles.find(x => x.id === id);
+        return { rows: p ? [p] : [] };
       }
-
       if (s.includes('from user_profiles') && s.includes('where') &&
           (s.includes('name') || s.includes('description'))) {
         const needle = String(params[0] ?? params[1] ?? '').toLowerCase();
@@ -135,9 +125,7 @@ jest.unstable_mockModule('../../database/db.js', () => {
         );
         return { rows };
       }
-
       if (s.includes('from user_profiles')) return { rows: mem.profiles.slice() };
-
       return { rows: [] };
     }
   };
