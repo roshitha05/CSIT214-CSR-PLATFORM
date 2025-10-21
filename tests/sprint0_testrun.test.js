@@ -13,7 +13,7 @@ test('UA-10 — Admin logs in successfully', async () => {
   console.log('Login response:', res.statusCode, res.body); 
   expect([200, 204]).toContain(res.statusCode);
   expect(res.body).toHaveProperty('user');
-  expect(res.body.user).toHaveProperty('loginId', admin.loginId);
+  expect(res.body.user).toHaveProperty('username', admin.loginId);
 });
 
 test('UA-11 — Admin logs out successfully', async () => {
