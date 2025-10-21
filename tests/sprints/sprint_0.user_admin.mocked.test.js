@@ -2,16 +2,16 @@ import {jest} from '@jest/globals';
 process.env.DATABASE_URL ??= 'postgresql://mock:mock@localhost/mockdb?sslmode=require';
 process.env.ENV ??= 'testing';       
 
-import './helpers/mockDB.js';
+import '../helpers/mockDB.js';
 
 import request from 'supertest';
-const { default: App } = await import('../app.js');
+const { default: App } = await import('../../app.js');
 
 import {
   BASE, USERS, USER, USERS_SEARCH, USER_SUSPEND,
   PROFILES, PROFILE, PROFILES_SEARCH, PROFILE_SUSPEND,
   LOGIN, LOGOUT
-} from './helpers/testConfig.js';
+} from './testConfig.js';
 
 const app = new App().app;
 const agent = request.agent(app);
