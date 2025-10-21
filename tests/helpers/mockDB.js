@@ -1,5 +1,4 @@
 import { jest } from '@jest/globals';
-
 jest.unstable_mockModule('connect-pg-simple', () => ({
   default: (session) =>
     class FakePgStore extends session.Store {

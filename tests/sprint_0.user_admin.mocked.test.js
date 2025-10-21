@@ -1,5 +1,4 @@
 import {jest} from '@jest/globals';
-
 process.env.DATABASE_URL ??= 'postgresql://mock:mock@localhost/mockdb?sslmode=require';
 process.env.ENV ??= 'testing';       
 
