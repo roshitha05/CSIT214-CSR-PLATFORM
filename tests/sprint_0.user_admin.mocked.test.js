@@ -1,6 +1,9 @@
 import {jest} from '@jest/globals';
 import './helpers/mockDB.js';
 
+process.env.DATABASE_URL ??= 'postgresql://mock:mock@localhost/mockdb?sslmode=require';
+process.env.ENV ??= 'testing';       
+
 import request from 'supertest';
 const { default: App } = await import('../app.js');
 
