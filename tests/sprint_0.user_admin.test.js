@@ -1,5 +1,6 @@
 import request from 'supertest';
-import app from '../app.js'; 
+import App from '../app.js';
+const app = new App().app; 
 
 import {
   USERS, USER, USERS_SEARCH, USER_SUSPEND,
