@@ -1,6 +1,17 @@
 import request from 'supertest';
 import App from '../app.js';
 const app = new App().app; 
+const agent = request.agent(app);
+
+// logs into main admin user account before all tests
+beforeAll(async () => {
+  const admin = { loginId: 'LiamCarter', password: 'LiamCarter' };
+  const res = await agent.post('/api/login').send(admin);
+  if (![200, 204].includes(res.statusCode)) {
+    console.error('LOGIN failed:', res.statusCode, res.body);
+  }
+  expect([200, 204]).toContain(res.statusCode);
+});
 
 import {
   USERS, USER, USERS_SEARCH, USER_SUSPEND,
