@@ -134,6 +134,7 @@
     .btn-reactivate{ background:#22c55e; color:#fff; }
     .btn-edit:hover, .btn-suspend:hover, .btn-reactivate:hover{ opacity:.85; }
     .btn-suspend[disabled]{ opacity:.6; cursor:not-allowed; }
+    .btn-reactivate[disabled]{ opacity:.6; cursor:not-allowed; }
 
     .badge{
       display:inline-block; padding:4px 10px; border-radius:9999px;
@@ -452,14 +453,21 @@
     // =========================
     // Rendering
     // =========================
-    const statusBadgeHTML = (statusStr) =>
-      String(statusStr || "").toUpperCase() === STATUS.SUSPENDED
-        ? '<span class="badge badge-suspended">Suspended</span>'
-        : '<span class="badge badge-active">Active</span>';
+    const statusBadgeHTML = (statusStr) => {
+      if (String(statusStr || "").toUpperCase() === STATUS.SUSPENDED) {
+        return '<span class="badge badge-suspended">Suspended</span>'
+      }
+      if (String(statusStr || "").toUpperCase() === STATUS.ACTIVE) {
+        return '<span class="badge badge-active">Active</span>';
+      }
+      return '<span class="badge badge-active">Suspended (Profile)</span>';
+    }
 
     function rowHTML(u) {
       const key = encodeURIComponent(String(u.user_id ?? u.username ?? ""));
-      const status = String(u.status || STATUS.ACTIVE).toUpperCase();
+      let status = String(u.status || STATUS.ACTIVE).toUpperCase();
+      if (u.user_profile_status.toUpperCase() === STATUS.SUSPENDED)
+        status = `${STATUS.SUSPENDED} (Profile)`;
 
       const fullname   = escapeHTML(u.fullname)        || "—";
       const email      = escapeHTML(u.email)           || "—";
@@ -485,9 +493,9 @@
             <div class="btn-row">
               <button class="btn-edit" data-action="edit">Edit</button>
               ${
-                status === STATUS.SUSPENDED
-                  ? '<button class="btn-reactivate" data-action="reinstate">Reinstate</button>'
-                  : '<button class="btn-suspend" data-action="suspend">Suspend</button>'
+                status === STATUS.ACTIVE ? '<button class="btn-suspend" data-action="suspend">Suspend</button>':
+                status === STATUS.SUSPENDED ? '<button class="btn-reactivate" data-action="reinstate">Reinstate</button>':
+                '<button class="btn-reactivate" data-action="reinstate" disabled>Reinstate</button>'
               }
             </div>
           </td>
@@ -531,6 +539,7 @@
     // State
     // =========================
     let allUsers            = [];
+    let allProfiles         = [];
     let currentRow          = null; // editing
     let pendingSuspendRow   = null;
     let pendingReactRow     = null;
@@ -548,7 +557,21 @@
       try {
         const { ok, status, data } = await fetchJSON(USERS_API, { method: "GET" });
         if (!ok) throw new Error(`Failed to load users (${status})`);
+
+        let profile_res = await fetchJSON(PROFILES_API, { method: "GET" });
+        if (!profile_res.ok) throw new Error(`Failed to load user profiles (${status_profiles})`);
+
+        allProfiles = Array.isArray(profile_res.data?.userProfiles) ? profile_res.data.userProfiles : [];
+        userProfilesStatusDict = {}
+        allProfiles.forEach( profile => {
+          userProfilesStatusDict[profile.name] = profile.status;
+        });
+
         allUsers = Array.isArray(data?.users) ? data.users : [];
+        allUsers.forEach( user => {
+          user.user_profile_status = userProfilesStatusDict[user.user_profile];
+        });
+
         populateTable(allUsers);
         applyFilter();
       } catch (e) {
