@@ -1,14 +1,15 @@
+import {jest} from '@jest/globals';
 import './helpers/mockDB.js';
 
 import request from 'supertest';
-import App from '../app.js';
+const { default: App } = await import('../app.js');
+
 import {
   BASE, USERS, USER, USERS_SEARCH, USER_SUSPEND,
   PROFILES, PROFILE, PROFILES_SEARCH, PROFILE_SUSPEND,
   LOGIN, LOGOUT
 } from './helpers/testConfig.js';
 
-// 2) Build app + agent (session persists)
 const app = new App().app;
 const agent = request.agent(app);
 
