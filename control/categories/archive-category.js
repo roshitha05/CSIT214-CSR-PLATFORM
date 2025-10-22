@@ -6,9 +6,9 @@ export default class ArchiveCategory extends Control {
     }
 
     createController() {
-        this.router.post('/:name/archive', async (req, res, next) => {
+        this.router.post('/:category_id/archive', async (req, res, next) => {
             const success = await this.categoriesEntity
-                .updateCategory(req.params.name, { status: 'ARCHIVED' });
+                .updateCategory(req.params.category_id, { status: 'ARCHIVED' });
                 
             if (success) return res.status(200).send(true);
             res.status(400).send(false);

@@ -35,15 +35,12 @@ export default class UserProfilesEntity extends Entity {
         return true;
     }
 
-    async updateUserProfile(name, update) {
+    async updateUserProfile(user_profile_id, update) {
         if (Object.keys(update).length == 0) return true;
         if (
-            name !== update.name
-            && update.name !== undefined
-        ) {
-            if (!await this.nameExists(name)) return false;
-            if (await this.nameExists(update.name)) return false;
-        }
+            update.name !== undefined
+            && await this.nameExists(update.name)
+        ) return false;
         
         const setQuery = {};
         Object.keys(update).forEach((key) => {
@@ -55,7 +52,7 @@ export default class UserProfilesEntity extends Entity {
         await this.db
             .update(userProfilesTable)
             .set(setQuery)
-            .where(ilike(userProfilesTable.name, name))
+            .where(eq(userProfilesTable.user_profile_id, user_profile_id))
 
         return true;
     }
