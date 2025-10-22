@@ -14,7 +14,9 @@ export default class CategoriesEntity extends Entity {
         const conditions = [];
         Object.keys(searchBy).forEach((key) => {
             if (searchBy[key] !== undefined && categoriesTable[key]) {
-                conditions.push(ilike(categoriesTable[key], searchBy[key]));
+                if (key === 'name') 
+                    conditions.push(ilike(categoriesTable[key], searchBy[key]));
+                else conditions.push(eq(categoriesTable[key], searchBy[key]));
             }
         });
 
@@ -55,7 +57,7 @@ export default class CategoriesEntity extends Entity {
         await this.db
             .update(categoriesTable)
             .set(setQuery)
-            .where(eq(categoriesTable.name, name));
+            .where(ilike(categoriesTable.name, name));
 
         return true;
     }
