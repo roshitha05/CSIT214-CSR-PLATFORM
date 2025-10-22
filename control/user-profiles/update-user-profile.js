@@ -6,9 +6,9 @@ export default class UpdateUserProfile extends Control {
     }
 
     createController() {
-        this.router.put('/:user_profile_id', this.requireAuth('User Admin'), async (req, res, next) => {
+        this.router.put('/:name', this.requireAuth('User Admin'), async (req, res, next) => {
             const success = await this.userProfileEntity
-                .updateUserProfile(req.params.user_profile_id, req.body);
+                .updateUserProfile(req.params.name, req.body);
 
             if (success) return res.status(200).send(true);
             res.status(400).send(false);

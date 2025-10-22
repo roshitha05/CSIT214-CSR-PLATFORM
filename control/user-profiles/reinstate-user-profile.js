@@ -6,9 +6,9 @@ export default class ReinstateUserProfile extends Control {
     }
 
     createController() {
-        this.router.post('/:user_profile_id/reinstate', this.requireAuth('User Admin'), async (req, res, next) => {    
+        this.router.post('/:name/reinstate', this.requireAuth('User Admin'), async (req, res, next) => {    
             const success = await this.userProfileEntity
-                .updateUserProfile(req.params.user_profile_id, { status: 'ACTIVE'});
+                .updateUserProfile(req.params.name, { status: 'ACTIVE'});
             
             if (success) return res.status(200).send(true);
             res.status(400).send(false);

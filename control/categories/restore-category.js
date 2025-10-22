@@ -6,9 +6,9 @@ export default class RestoreCategory extends Control {
     }
 
     createController() {
-        this.router.post('/:category_id/restore', async (req, res, next) => {
+        this.router.post('/:name/restore', async (req, res, next) => {
             const success = await this.categoriesEntity
-                .updateCategory(req.params.category_id, { status: 'ACTIVE' });
+                .updateCategory(req.params.name, { status: 'ACTIVE' });
                 
             if (success) return res.status(200).send(true);
             res.status(400).send(false);

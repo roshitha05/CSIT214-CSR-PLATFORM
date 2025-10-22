@@ -14,9 +14,7 @@ export default class CategoriesEntity extends Entity {
         const conditions = [];
         Object.keys(searchBy).forEach((key) => {
             if (searchBy[key] !== undefined && categoriesTable[key]) {
-                if (key === 'name') 
-                    conditions.push(ilike(categoriesTable[key], searchBy[key]));
-                else conditions.push(eq(categoriesTable[key], searchBy[key]));
+                conditions.push(ilike(categoriesTable[key], searchBy[key]));
             }
         });
 
@@ -30,23 +28,22 @@ export default class CategoriesEntity extends Entity {
     async insertCategory(category) {
         if (await this.nameExists(category.name)) return false;
 
-        try {
-            await this.db.insert(categoriesTable)
-                .values(category)
-                .returning();
-        } catch (error) {
-            return false;
-        }
+        await this.db.insert(categoriesTable)
+            .values(category)
+            .returning();
 
         return true;
     }
 
-    async updateCategory(category_id, update) {
+    async updateCategory(name, update) {
         if (Object.keys(update).length == 0) return true;
         if (
-            update.name !== undefined
-            && await this.nameExists(update.name)
-        ) return false;
+            name !== update.name
+            && update.name !== undefined
+        ) {
+            if (!await this.nameExists(name)) return false;
+            if (await this.nameExists(update.name)) return false;
+        };
 
         const setQuery = {};
         Object.keys(update).forEach((key) => {
@@ -55,14 +52,10 @@ export default class CategoriesEntity extends Entity {
             };
         });
 
-        try {
-            await this.db
-                .update(categoriesTable)
-                .set(setQuery)
-                .where(eq(categoriesTable.category_id, category_id));
-        } catch (error) {
-            return false;
-        }
+        await this.db
+            .update(categoriesTable)
+            .set(setQuery)
+            .where(eq(categoriesTable.name, name));
 
         return true;
     }
@@ -71,6 +64,6 @@ export default class CategoriesEntity extends Entity {
         const nameCheck = await this.getCategories({ name });
 
         if (nameCheck.length > 0) return true;
-        return false;
+        return false
     }
 }
