@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ilike } from 'drizzle-orm';
 import { categoriesTable, usersTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -14,7 +14,7 @@ export default class CategoriesEntity extends Entity {
         const conditions = [];
         Object.keys(searchBy).forEach((key) => {
             if (searchBy[key] !== undefined && categoriesTable[key]) {
-                conditions.push(eq(categoriesTable[key], searchBy[key]));
+                conditions.push(ilike(categoriesTable[key], searchBy[key]));
             }
         });
 
