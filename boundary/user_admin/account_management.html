@@ -226,8 +226,8 @@
         <col style="width: 18%">   <!-- Address (allows wrapping) -->
         <col style="width: 8%">   <!-- Date of Birth -->
         <col style="width: 10%">   <!-- Profile -->
-        <col style="width: 10%">   <!-- Created At -->
-        <col style="width: 8%">    <!-- Status -->
+        <col style="width: 8%">   <!-- Created At -->
+        <col style="width: 10%">    <!-- Status -->
         <col style="width: 170px"> <!-- Actions -->
       </colgroup>
       <thead>
@@ -254,9 +254,9 @@
   </div>
 
   <!-- Edit Modal -->
-  <div class="modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+  <div class="modal" id="editModal" role="dialog" aria-modal="true">
     <div class="modal-content">
-      <h2 id="editTitle">Edit User</h2>
+      <h2>Edit User</h2>
 
       <div class="modal-body">
         <form id="editForm" novalidate>
@@ -366,6 +366,7 @@
     const PROFILES_API = `${API_URL}/user-profiles`;
 
     const STATUS = { ACTIVE : "ACTIVE", SUSPENDED : "SUSPENDED" }
+    const CURRENT_USERNAME = (window.CURRENT_USERNAME ?? localStorage.getItem("username") ?? "").trim(); // who am I? 
 
     // =========================
     // DOM
@@ -438,6 +439,22 @@
     };
 
     // =========================
+    // Helpers
+    // =========================
+    function getRowUsername(row) {
+      if (!row) return "";
+      return (
+        row.dataset.username ||
+        row.querySelector(".username")?.textContent.trim() ||
+        ""
+      );
+    }
+
+    function sameUser(a, b) {
+      return String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+    }
+
+    // =========================
     // API
     // =========================
     async function fetchJSON(url, options = {}) {
@@ -460,7 +477,32 @@
       if (String(statusStr || "").toUpperCase() === STATUS.ACTIVE) {
         return '<span class="badge badge-active">Active</span>';
       }
-      return '<span class="badge badge-active">Suspended (Profile)</span>';
+      // Profile-level suspension
+      return '<span class="badge badge-suspended">Suspended (Profile)</span>';
+    }
+
+    function actionButtonHTML(user) {
+      const username       = String(user.username || "");
+      const isSelf         = username === CURRENT_USERNAME;
+      const status         = String(user.status || "").toUpperCase();
+      const profileSuspend = String(user.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED;
+
+      // If this is your own account -> disable suspend / reactivate
+      if (isSelf) {
+        return `<button class="btn-suspend" disabled title="You cannot suspend your own account">Suspend</button>`;
+      }
+
+      if (profileSuspend) {
+        return `<button class="btn-reactivate" data-action="reinstate" disabled
+                  title="This account is suspended via profile. Reinstate the profile first.">
+                  Reinstate
+                </button>`;
+      }
+
+      // Normal logic for other users
+      return status === STATUS.ACTIVE
+        ? `<button class="btn-suspend" data-action="suspend">Suspend</button>`
+        : `<button class="btn-reactivate" data-action="reinstate">Reinstate</button>`;
     }
 
     function rowHTML(u) {
@@ -479,7 +521,13 @@
       const created_at = formatDateTime(u.created_at);
 
       return `
-        <tr data-key="${key}" data-user-id="${escapeHTML(String(u.user_id ?? ""))}" data-status="${status}">
+        <tr 
+          data-key="${key}" 
+          data-user-id="${escapeHTML(String(u.user_id ?? ""))}" 
+          data-username="${escapeHTML(String(u.username ?? ""))}"
+          data-profile-suspended="${String(u.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED}"
+          data-status="${status}"
+        >
           <td class="fullname">${fullname}</td>
           <td class="email">${email}</td>
           <td class="username">${username}</td>
@@ -492,11 +540,7 @@
           <td class="actions">
             <div class="btn-row">
               <button class="btn-edit" data-action="edit">Edit</button>
-              ${
-                status === STATUS.ACTIVE ? '<button class="btn-suspend" data-action="suspend">Suspend</button>':
-                status === STATUS.SUSPENDED ? '<button class="btn-reactivate" data-action="reinstate">Reinstate</button>':
-                '<button class="btn-reactivate" data-action="reinstate" disabled>Reinstate</button>'
-              }
+              ${actionButtonHTML(u)}
             </div>
           </td>
         </tr>
@@ -526,12 +570,16 @@
 
       const btnRow = row.querySelector(".actions .btn-row");
       const swap = btnRow.querySelector(".btn-suspend, .btn-reactivate");
-      const tmp = document.createElement("div");
-      tmp.innerHTML = status === STATUS.SUSPENDED
-        ? '<button class="btn-reactivate" data-action="reinstate">Reinstate</button>'
-        : '<button class="btn-suspend" data-action="suspend">Suspend</button>';
-      const fresh = tmp.firstElementChild;
 
+      const userForButtons = {
+        username: row.dataset.username || row.querySelector(".username")?.textContent.trim() || "",
+        status,
+        user_profile_status: (row.dataset.profileSuspended === "true" ? STATUS.SUSPENDED : STATUS.ACTIVE)
+      }
+
+      const tmp = document.createElement("div");
+      tmp.innerHTML = actionButtonHTML(userForButtons);
+      const fresh = tmp.firstElementChild;
       swap ? swap.replaceWith(fresh) : btnRow.appendChild(fresh);
     }
 
@@ -600,10 +648,30 @@
     // =========================
     // Edit Modal — Profiles dropdown
     // =========================
-    async function loadProfilesForEdit(preselect) {
+    async function loadProfilesForEdit(preselect, opts = {}) {
+      const locked = !!opts.locked;
       const select = els.editProfile;
-      select.innerHTML = '<option value="">Loading profiles…</option>';
+
+      // Always start disabled while loading
       select.disabled = true;
+
+      // If editing yourself, render just your current profile and return early
+      if (locked && preselect) {
+        const label = String(preselect);
+        select.innerHTML = `<option value="${label}">${label}</option`;
+        select.value = label;
+        select.setAttribute("aria-disabled", "true");
+        select.title = "You cannot change your own profile.";
+        select.dataset.locked = true;
+        return;
+      }
+      else {
+        delete select.dataset.locked;
+        select.title = "";
+      }
+
+      // normal (unlocked) load
+      select.innerHTML = '<option value="">Loading profiles...</option>';
 
       try {
         const { ok, status, data } = await fetchJSON(PROFILES_API, { method: "GET" });
@@ -613,23 +681,15 @@
         select.innerHTML = "";
         select.appendChild(new Option("Select a profile…", ""));
 
-        if (profiles.length === 0) {
-          select.appendChild(new Option("No profiles available", ""));
-          select.disabled = true;
-          return;
-        }
-
-        profiles.forEach(p => {
-          if (p?.name) select.appendChild(new Option(p.name, p.name));
-        });
-
+        profiles.forEach(p => { if (p?.name) select.appendChild(new Option(p.name, p.name)); })
         if (preselect) select.value = preselect;
-        select.disabled = false;
+
+        select.disabled = profiles.length === 0;
       } catch (e) {
         console.error(e);
         select.innerHTML = "";
         select.appendChild(new Option("Error loading profiles", ""));
-        select.disabled = true;
+        select.disabled = true; // stay disabled on error
       }
     }
 
@@ -656,9 +716,14 @@
       // Reset field errors
       Object.values(els.editErr).forEach(el => el && (el.style.display = "none"));
 
+      // --- Lock Profile change when editing yourself ---
+      const rowUser = getRowUsername(row);
+      const isSelf  = String(rowUser).trim().toLowerCase() === String(CURRENT_USERNAME).trim().toLowerCase();
+      if (isSelf) els.editProfile.dataset.locked = "true"; else delete els.editProfile.dataset.locked;
+
       setDobMaxToday();
       els.editModal.style.display = "flex";
-      await loadProfilesForEdit(curProfile);
+      await loadProfilesForEdit(curProfile, { locked: isSelf });
     }
 
     function closeEditModal() {
@@ -714,9 +779,11 @@
       const okDob = vDob.length > 0 && pastDateOnly(vDob);
       els.editErr.dob.style.display = okDob ? "none" : "block"; ok &&= okDob;
 
-      // Profile: required
-      const okProf = vProf.length > 0;
-      els.editErr.profile.style.display = okProf ? "none" : "block"; ok &&= okProf;
+      // Profile: required unless the control is locked / disabled
+      const profileLocked = els.editProfile.disabled || els.editProfile.dataset.locked === "true";
+      const okProf = profileLocked ? true : (collapseSpaces(els.editProfile.value).length > 0);
+      els.editErr.profile.style.display = okProf ? "none" : "block"; 
+      ok &&= okProf;
 
       return ok;
     }
@@ -755,6 +822,13 @@
         date_of_birth: els.editDob.value.trim(),
         user_profile:  els.editProfile.value.trim(),
       };
+
+      // --- Self Safeguard: prevent changing your own profile ---
+      const rowUser = getRowUsername(currentRow);
+      if (rowUser === CURRENT_USERNAME && payload.user_profile !== cur.user_profile) {
+        editing = false;
+        return;
+      }
 
       // Early exit if nothing changed
       const changed = Object.keys(payload).some(k => String(payload[k] ?? "") !== String(cur[k] ?? ""));
@@ -818,18 +892,35 @@
     // Suspend / Reinstate
     // =========================
     function openSuspendModal(button) {
-      pendingSuspendRow = button.closest("tr");
+      const row = button.closest("tr");
+      const rowUser = row?.dataset.username || "";
+      if (rowUser === CURRENT_USERNAME) {
+        alert("You cannot suspend your own account.");
+        return;
+      }
+      pendingSuspendRow = row;
       els.suspendModal.style.display = "flex";
     }
+
     function closeSuspendModal() {
       els.suspendModal.style.display = "none";
       pendingSuspendRow = null;
     }
+
     window.closeSuspendModal = closeSuspendModal;
 
     async function confirmSuspendUI() {
       if (!pendingSuspendRow || suspending) return;
       suspending = true;
+
+      // --- Self-safeguard: prevent suspending yourself ---
+      const rowUser = getRowUsername(pendingSuspendRow);
+      if (rowUser === CURRENT_USERNAME) {
+        alert("You cannot suspend your own account.");
+        suspending = false;
+        closeSuspendModal();
+        return;
+      }
 
       const key = pendingSuspendRow.dataset.key;
 

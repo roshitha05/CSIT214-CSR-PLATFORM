@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Create User Profile</title>
+  <title>Create Category</title>
   <style>
     /* =========================
       Design Tokens
@@ -194,12 +194,12 @@
   <!-- Header -->
   <div class="card" role="region">
     <div class="header">
-      <h1>Create User Profile</h1>
-      <p>Fill in the details below to add a new profile or role.</p>
+      <h1>Create Category</h1>
+      <p>Add a new category (e.g., Emergency Assistance, Transport)</p>
     </div>
 
     <!-- Form -->
-    <form id="profileForm" novalidate>
+    <form id="categoryForm" novalidate>
 
       <!-- Name (Required) -->
       <div class="row">
@@ -208,7 +208,7 @@
           id="name"
           name="name"
           type="text"
-          placeholder="e.g., User Admin, CSR Representative, Person In Need, Platform Management"
+          placeholder="e.g., Transport Help"
           required
           maxlength="64"
           aria-describedby="name-hint err-name"
@@ -216,39 +216,24 @@
         />
         <small id="name-hint" class="hint">Required. 1–64 characters. Must be unique.</small>
         <div id="err-name" class="error">
-          Please enter a profile name.
+          Please enter a category name.
         </div>
     </div>
 
-      <!-- Description (optional) -->
+      <!-- Description (Required) -->
       <div class="row">
-        <label for="description">Description</label>
+        <label for="description">Description <span style="color:var(--muted)">*</span></label>
         <textarea 
           id="description" 
           name="description" 
-          placeholder="Optional. Short description of this role's responsibilities." 
+          placeholder="Required. Short description of this category." 
+          required
           maxlength="255"
           aria-describedby="desc-hint err-desc"
         ></textarea>
-        <small id="desc-hint" class="hint">Optional. Up to 255 characters.</small>
+        <small id="desc-hint" class="hint">Required. Up to 255 characters.</small>
         <div id="err-desc" class="error">
           Please enter a valid description (max 255 characters).
-        </div>
-      </div>
-
-      <!-- Other (optional) -->
-      <div class="row">
-        <label for="other">Other</label>
-        <input id="other" 
-          name="other" 
-          type="text" 
-          placeholder="Optional. Notes or additional details." 
-          maxlength="128" 
-          aria-describedby="oth-hint err-oth"
-        />
-        <small id="oth-hint" class="hint">Examples: “Emergency Contact”, “Case Manager”, “Senior Volunteer”.</small>
-        <div id="err-oth" class="error">
-          Please enter a valid information (max 128 characters).
         </div>
       </div>
 
@@ -272,29 +257,27 @@
     // =========================
     // Config
     // =========================
-    const DEBUG        = false;  // toggle as needed
-    const API_URL      = "http://127.0.0.1:80/api";
-    const PROFILES_API = `${API_URL}/user-profiles`;
+    const DEBUG          = false;  // toggle as needed
+    const API_URL        = "http://127.0.0.1:80/api";
+    const CATEGORIES_API = `${API_URL}/categories`;
 
     // =========================
     // DOM
     // =========================
     const $ = (id) => document.getElementById(id);
 
-    const form      = $("profileForm");
+    const form      = $("categoryForm");
     const success   = $("success");
     const submitBtn = $("submitBtn");
 
     const input = {
       name        : $("name"),
       description : $("description"),
-      other       : $("other"),
     }
 
     const err = {
       name        : $("err-name"),
       description : $("err-desc"),
-      other       : $("err-oth"),
     }
 
     // =========================
@@ -335,14 +318,14 @@
       success.style.whiteSpace = "pre-wrap";
       success.textContent =
         `[DEBUG]:\n\n` +
-        `This would POST to:\n${PROFILES_API}\n\n` +
+        `This would POST to:\n${CATEGORIES_API}\n\n` +
         `With values:\n${JSON.stringify(payload, null, 2)}`;
     }
 
     // =========================
     // Utils
     // =========================
-    const show     = (el, on)        => { el.style.display = on ? "block" : "none"; };
+    const show = (el, on)        => { el.style.display = on ? "block" : "none"; };
     const collapse = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
 
     let hasSubmitted = false;                   // used for live validation after submit
@@ -350,7 +333,7 @@
     const formCompletedRef = { value: false };  // use as a ref object shared across helpers
 
     function focusFirstInvalid() {
-      const order = [ input.name, input.description, input.other ];
+      const order = [ input.name, input.description ];
       for (const el of order) {
         if (el.hasAttribute("aria-invalid")) {
           el.focus({ preventScroll: true });
@@ -393,7 +376,7 @@
       });
     }
 
-    attachLiveValidation([input.name, input.description, input.other], validateFields);
+    attachLiveValidation([input.name, input.description], validateFields);
 
     // =========================
     // Validation
@@ -404,7 +387,6 @@
       // Normalize field values
       const vName  = collapse(input.name.value);
       const vDesc  = collapse(input.description.value);
-      const vOther = collapse(input.other.value);
 
       // Name: required, length ≤ 64
       const okName = vName.length > 0 && vName.length <= 64;
@@ -412,22 +394,15 @@
       input.name.toggleAttribute("aria-invalid", !okName);
       valid &&= okName;
 
-      // Description: optional, length ≤ 255
-      const okDesc = vDesc.length <= 255;
-      show(err.description, !okDesc); 
+      // Description: required, length ≤ 255
+      const okDesc = vDesc.length > 0 && vDesc.length <= 255;
+      show(err.description, !okDesc);
       input.description.toggleAttribute("aria-invalid", !okDesc);
       valid &&= okDesc;
-
-      // Other: optional, length ≤ 128
-      const okOther = vOther.length <= 128;
-      input.other.toggleAttribute("aria-invalid", !okOther);
-      show(err.other, !okOther);
-      valid &&= okOther;
 
       // write back normalized values
       input.name.value        = vName;
       input.description.value = vDesc;
-      input.other.value       = vOther;
 
       return valid;
     }
@@ -452,7 +427,7 @@
       if (response.status === 200) {
         const okFlag = body === true || body === "true";
         if (okFlag) {
-          showOk(serverMsg || "Profile created successfully!");
+          showOk(serverMsg || "Category created successfully!");
           if (typeof onSuccess === "function") onSuccess(body);
           else formCompletedRef.value = true;
           return;
@@ -462,9 +437,9 @@
       }
       
       // --- Common Error Branches ---
-      if (response.status === 400) { showErr(serverMsg || "Failed to create User Profile. Name already exists."); return; }
+      if (response.status === 400) { showErr(serverMsg || "Failed to create Category. The name may already exists."); return; }
       if (response.status === 401) { showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
-      if (response.status === 402) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
+      if (response.status === 403) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
 
       // --- Fallback ---
       showErr(serverMsg || `Unexpected Error: ${response.status}`);
@@ -493,7 +468,6 @@
       const payload = {
         name        : collapse(input.name.value),
         description : collapse(input.description.value),
-        other       : collapse(input.other.value),
       };
 
       if (DEBUG) {
@@ -505,7 +479,7 @@
       }
 
       try {
-        const response = await fetch(PROFILES_API, {
+        const response = await fetch(CATEGORIES_API, {
           method : "POST",
           mode : "cors",
           credentials: "include",
@@ -543,7 +517,7 @@
     // Navigation
     // =========================
     $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "/user_admin/admin_dashboard.html";
+      window.location.href = "/platform_management/platform_dashboard.html";
     });
   </script>
 </body>

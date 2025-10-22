@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Platform Management Dashboard</title>
+    <title>Person-In-Need Dashboard</title>
 
     <!-- Font Awesome Icons -->
     <link
@@ -268,10 +268,9 @@
   <body>
     <!-- Sidebar -->
     <aside class="sidebar">
-      <h2>Platform Management</h2>
+      <h2>Person-In-Need</h2>
       <a href="#" class="active"><i class="fa-solid fa-house"></i><span>Home</span></a>
       <a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a>
-      <a href="#"><i class="fa-solid fa-list"></i><span>Reports</span></a>
       <a href="#"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
 
       <button class="logout-btn" id="logoutBtn">
@@ -289,27 +288,21 @@
         </div>
       </div>
 
-      <!-- Create Category -->
+      <!-- Create Service Requests -->
       <div class="cards">
-        <div class="card" id="createCategoriesCard">
-          <i class="fa-solid fa-book"></i>
-          <h3>Create Category</h3>
-          <p>Add a new type of help request (e.g., Transport, Meals, etc.).</p>
+        <div class="card" id="createRequestsCard">
+          <i class="fa-solid fa-hand-holding-heart"></i>
+          <h3>Create Service Request</h3>
+          <p>Request help such as Transport, Meals, or other assistance.</p>
         </div>
 
-        <!-- Manage Categories (View-Update-Delete-Search) -->
-        <div class="card" id="manageCategoriesCard">
-          <i class="fa-solid fa-layer-group"></i>
-          <h3>Manage Categories</h3>
-          <p>Manage and review categories.</p>
+        <!-- Manage Service Requests (View-Update-Delete-Search)-->
+        <div class="card" id="manageRequestsCard">
+          <i class="fa-solid fa-list-check"></i>
+          <h3>Manage Service Requests</h3>
+          <p>View the status of your previous requests or update details.</p>
         </div>
 
-        <!-- Generate Reports (Daily, Weekly, Monthly) -->
-        <div class="card" id="reportCard">
-          <i class="fa-solid fa-file-lines"></i>
-          <h3>Generate Reports</h3>
-          <p>Generate Daily, Weekly or Monthly reports.</p>
-        </div>
       </div>
     </main>
 
@@ -438,9 +431,8 @@
     // Card Navigation
     // =========================
     const NAV = {                                                     
-      createCategoriesCard : "/platform_management/create_category.html",
-      manageCategoriesCard : "/platform_management/category_management.html",
-      reportCard           : "/platform_management/report.html"
+      createRequestsCard : "/pin/create_request.html",
+      manageRequestsCard : "/pin/request_management.html"
     };
 
     function wireCardNavigation(mapping) {
