@@ -109,7 +109,7 @@ async function main(tx) {
             address: `Lorem ipsum dolor sit amet...`,
             date_of_birth: getDOB(),
             status: 'ACTIVE',
-            user_profile: profile.user_profile_id,
+            user_profile: profile.name,
         }).returning())[0];
         
         allUsers[profile.name].push(user_id);
@@ -117,25 +117,22 @@ async function main(tx) {
 
     console.log('Seeding categories...');
 
-    const insertedCategories = []
     for (const category of categories) {
-        insertedCategories.push((await tx.insert(categoriesTable).values({
+        await tx.insert(categoriesTable).values({
             name: category[0],
             description: category[1],
             status: 'ACTIVE'
-        }).returning())[0]);
+        });
     };
 
     console.log('Seeding service requests...');
 
     const requests = [];
     for (const request of serviceRequests) {
-        const category = insertedCategories.find(category => category.name === request[2]);
-
         const { service_request_id } = (await tx.insert(serviceRequestsTable).values({
             title: request[0],
             description: request[1],
-            category: category.category_id,
+            category: request[2],
             status: 'ACTIVE',
             created_by: allUsers
                 ['Person-In-Need']

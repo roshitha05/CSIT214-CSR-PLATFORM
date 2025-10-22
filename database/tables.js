@@ -17,8 +17,8 @@ export const usersTable = pgTable('users', {
     address: text().notNull(),
     date_of_birth: date().notNull(),
     status: varchar({ length: 256 }).notNull(),
-    user_profile: integer()
-        .references(() => userProfilesTable.user_profile_id, {
+    user_profile: varchar({ length: 256 })
+        .references(() => userProfilesTable.name, {
             onDelete: 'cascade',
             onUpdate: 'cascade'
         })
@@ -27,22 +27,19 @@ export const usersTable = pgTable('users', {
 });
 
 export const userProfilesTable = pgTable('user_profiles', {
-    user_profile_id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    name: varchar({ length: 256 }).unique(),
+    name: varchar({ length: 256 }).primaryKey(),
     description: text().notNull(),
     status: varchar({ length: 256 }).notNull(),
     other: text(),
 });
 
 export const categoriesTable = pgTable('categories', {
-    category_id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    name: varchar({ length: 256 }).unique(),
+    name: varchar({ length: 256 }).primaryKey(),
     description: text().notNull(),
     status: varchar({ length: 256 }).notNull()
 });
 
 export const matchesTable = pgTable('matches', {
-    match_id: integer().primaryKey().generatedAlwaysAsIdentity(),
     service_request: integer()
         .references(() => serviceRequestsTable.service_request_id, {
             onDelete: 'cascade'
@@ -60,8 +57,8 @@ export const serviceRequestsTable = pgTable('service_requests', {
     service_request_id: integer().primaryKey().generatedAlwaysAsIdentity(),
     title: text().notNull(),
     description: text().notNull(),
-    category: integer()
-        .references(() => categoriesTable.category_id, {
+    category: varchar({ length: 256 })
+        .references(() => categoriesTable.name, {
             onDelete: 'cascade',
             onUpdate: 'cascade'
         })
