@@ -28,7 +28,8 @@ import CreateCategory from './control/categories/create-category.js';
 import GetCategories from './control/categories/get-categories.js';
 import SearchCategories from './control/categories/search-categories.js';
 import UpdateCategory from './control/categories/update-category.js';
-import DeleteCategory from './control/categories/delete-category.js';
+import ArchiveCategory from './control/categories/archive-category.js';
+import RestoreCategory from './control/categories/restore-category.js';
 
 export default class App {
     constructor() {
@@ -115,7 +116,8 @@ export default class App {
         categoriesRouter.use('/', new GetCategories().getRouter());
         categoriesRouter.use('/', new SearchCategories().getRouter());
         categoriesRouter.use('/', new UpdateCategory().getRouter());
-        categoriesRouter.use('/', new DeleteCategory().getRouter());
+        categoriesRouter.use('/', new ArchiveCategory().getRouter());
+        categoriesRouter.use('/', new RestoreCategory().getRouter());
 
         apiRouter.use('/user-profiles', userProfilesRouter);
         apiRouter.use('/users', usersRouter);
