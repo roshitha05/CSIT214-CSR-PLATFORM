@@ -283,8 +283,8 @@
   <!-- Archive Modal -->
   <div class="modal" id="suspendModal" role="dialog" aria-modal="true" aria-labelledby="suspendTitle">
     <div class="modal-content">
-      <h2 id="suspendTitle">Confirm Suspend</h2>
-      <p>Are you sure you want to suspend this category?</p>
+      <h2 id="suspendTitle">Confirm Archive</h2>
+      <p>Are you sure you want to archive this category?</p>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeSuspendModal()">Cancel</button>
         <button class="btn-danger" onclick="confirmSuspendUI()">Suspend</button>
@@ -295,8 +295,8 @@
   <!-- Reactivate Modal -->
   <div class="modal" id="reactivateModal" role="dialog" aria-modal="true" aria-labelledby="reactivateTitle">
     <div class="modal-content">
-      <h2 id="reactivateTitle">Confirm Reactivation</h2>
-      <p>Are you sure you want to reactivate this category?</p>
+      <h2 id="reactivateTitle">Confirm Restore</h2>
+      <p>Are you sure you want to restore this category?</p>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeReactivateModal()">Cancel</button>
         <button class="btn-primary" onclick="confirmReactivateUI()">Reactivate</button>
@@ -312,7 +312,7 @@
     const API_URL         = "http://127.0.0.1:80/api";
     const CATEGORIES_API  = `${API_URL}/categories`;
 
-    const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
+    const STATUS = { ACTIVE: "ACTIVE", ARCHIVED: "ARCHIVED" };
 
     // =========================
     // DOM
@@ -420,15 +420,15 @@
     // Rendering
     // =========================
     function statusBadgeHTML(statusStr) {
-        return String(statusStr).toUpperCase() === STATUS.SUSPENDED
-            ? '<span class="badge badge-suspended">Suspended</span>'
+        return String(statusStr).toUpperCase() === STATUS.ARCHIVED
+            ? '<span class="badge badge-suspended">Archived</span>'
             : '<span class="badge badge-active">Active</span>';
     }
 
     function actionButtonHTML(statusStr) {
-        return String(statusStr).toUpperCase() === STATUS.SUSPENDED
-            ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>'
-            : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
+        return String(statusStr).toUpperCase() === STATUS.ARCHIVED
+            ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Restore</button>'
+            : '<button class="btn-suspend" onclick="openSuspendModal(this)">Archive</button>';
     }
 
     function rowHTML(p) {
@@ -663,13 +663,13 @@
 
       const key = pendingSuspendRow.dataset.key;
       try {
-        const { ok, status, data } = await fetchJSON(`${CATEGORIES_API}/${key}/suspend`, {
+        const { ok, status, data } = await fetchJSON(`${CATEGORIES_API}/${key}/archive`, {
           method: "POST"
         });
-        if (!ok) throw new Error(`Suspend failed (${status})`);
+        if (!ok) throw new Error(`Archive failed (${status})`);
 
-        let newStatus = STATUS.SUSPENDED;
-        try { newStatus = String((data?.data?.status ?? STATUS.SUSPENDED)).toUpperCase(); } catch {}
+        let newStatus = STATUS.ARCHIVED;
+        try { newStatus = String((data?.data?.status ?? STATUS.ARCHIVED)).toUpperCase(); } catch {}
         applyStatusToRow(pendingSuspendRow, newStatus);
       } catch (e) {
         console.error(e);
@@ -681,7 +681,7 @@
     }
 
     // =========================
-    // Modals: Reactivate / Reinstate
+    // Modals: Restore
     // =========================
     function openReactivateModal(button) {
       pendingReactivateRow = button.closest("tr");
@@ -701,10 +701,10 @@
       const modalBtn = document.querySelector("#reactivateModal .btn-primary");
       modalBtn.disabled = true;
       const original = modalBtn.textContent;
-      modalBtn.textContent = "Reactivating...";
+      modalBtn.textContent = "Restoring...";
 
       try {
-        const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${key}/reinstate`, {
+        const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${key}/restore`, {
           method: "POST"
         });
         if (!ok) throw new Error(`Reinstate failed (${status})`);

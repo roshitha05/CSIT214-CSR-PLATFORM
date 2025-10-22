@@ -73,7 +73,7 @@
       Form & Fields
     ========================== */
     form { padding: 12px 20px; }
-    .row { margin-bottom: 18px; }
+    .row { margin-bottom: 22px; }
 
     label {
       display: inline-block;
@@ -105,6 +105,16 @@
 
     /* Textarea specifics */
     textarea { min-height: 100px; resize: vertical; }
+    textarea:disabled { 
+      margin-top: 10px;
+      background: #f1f5f9; /* slightly darker than normal */
+      color: #475569;      /* softer gray-blue */
+      cursor: not-allowed;
+      opacity: 1;          /* full opacity for readability */
+      font-style: italic;
+      max-height: 120px;
+      overflow-y: auto;
+    }
 
     /* Helper text */
     .hint {
@@ -201,6 +211,31 @@
     <!-- Form -->
     <form id="requestForm" novalidate>
 
+      <!-- Category (Required) -->
+      <div class="row">
+        <label for="category">Category <span style="color: var(--muted)">*</span></label>
+        <select
+          id="category"
+          name="category"
+          required
+          aria-describedby="cat-hint err-category"
+        >
+          <option value="">Loading categories...</option>
+        </select>
+        <div id="err-category" class="error">Please select a category.</div>
+        
+        <!-- Category Description -->
+        <textarea
+          id="categoryDesc"
+          class="modal-textarea"
+          rows="3"
+          disabled
+          placeholder="Select a category to view its description."  
+        ></textarea>
+
+        <small id="cat-hint" class="hint">Required. Choose the most suitable category.</small>
+      </div>
+
       <!-- Title (Required) -->
       <div class="row">
         <label for="title">Title <span style="color:var(--muted)">*</span></label>
@@ -235,23 +270,6 @@
         <div id="err-desc" class="error">
           Please enter a valid description (max 255 characters).
         </div>
-      </div>
-
-      <!-- Category (Required) -->
-      <div class="row">
-        <label for="category">Category <span style="color: var(--muted)">*</span></label>
-        <select
-          id="category"
-          name="category"
-          required
-          aria-describedby="cat-hint err-category"
-        >
-          <option value="">Loading categories...</option>
-        </select>
-        <small id="cat-hint" class="hint"
-          >Required. Choose the most suitable category.</small
-        >
-        <div id="err-category" class="error">Please select a category.</div>
       </div>
 
       <!-- Buttons -->
@@ -349,8 +367,9 @@
     const collapse = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
     const nonEmpty = (s) => collapse(s).length > 0;
 
-    let hasSubmitted = false;                   // used for live validation after submit
-    let submitting   = false;                   // used for safeguard to prevent double submission
+    let hasSubmitted  = false;  // used for live validation after submit
+    let submitting    = false;  // used for safeguard to prevent double submission
+    let allCategories = [];
     const formCompletedRef = { value: false };  // use as a ref object shared across helpers
 
     function focusFirstInvalid() {
@@ -397,7 +416,7 @@
       });
     }
 
-    attachLiveValidation([input.title, input.description, input.category], validateFields);
+    attachLiveValidation([input.title, input.description], validateFields);
 
     // =========================
     // Validation
@@ -462,7 +481,15 @@
             select.innerHTML = "";
             select.appendChild(new Option("Select a category...", ""));
 
-            if (categories.length === 0) {
+            // Display only ACTIVE categories
+            const activeCategories = categories.filter(c => String(c.status).toUpperCase() === "ACTIVE");
+
+            allCategories = activeCategories;
+
+            select.innerHTML = "";
+            select.appendChild(new Option("Select a category...", ""));
+
+            if (activeCategories.length === 0) {
                 select.appendChild(new Option("No categories available", ""));
                 select.disabled = true;
                 showErr("No categories found. Please contact support to add categories.");
@@ -470,12 +497,10 @@
             }
 
             // Sort by name case-insensitive
-            categories
+            activeCategories
                 .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
                 .forEach((c) => {
-                    const value = c.id ?? c.name;
-                    const label = c.name ?? String(value);
-                    select.appendChild(new Option(label, value));
+                    select.appendChild(new Option(c.name, c.name));
                 });
 
             select.disabled = false;
@@ -487,6 +512,21 @@
             showErr("Unable to load categories. Please try again later.");
         }
     }
+
+    input.category.addEventListener("change", () => {
+      const descField = document.getElementById("categoryDesc");
+      const selectedName = String(input.category.value || "").trim();
+
+      const selected = allCategories.find(c => String(c.name).trim() === selectedName);
+
+      if (selected?.description) {
+        descField.value = selected.description;
+      } else if (selectedName) {
+        descField.value = "No description available for this category.";
+      } else {
+        descField.value = "";
+      }
+    })
 
     // =========================
     // Server Message Display (Boundary)

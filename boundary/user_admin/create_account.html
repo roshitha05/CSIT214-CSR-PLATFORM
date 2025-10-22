@@ -450,6 +450,7 @@
     let hasSubmitted = false;
     let submitting   = false;
     const formCompletedRef = { value: false };
+    const isActive = (s) => String(s ?? "").toUpperCase() === "ACTIVE"; // used to filter active profiles
 
     // Accept past dates only
     function pastDateOnly(value) {
@@ -545,24 +546,30 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const data = await response.json();
-        const profiles = data.userProfiles || data.data || [];
+        const raw = data.userProfiles || data.data || [];
 
+        // Normalize -> keep only ACTIVE profiles
+        const activeProfiles = (Array.isArray(raw) ? raw : [])
+          .map(p => ({
+            name: p?.name ?? p?.profile_name ?? "",
+            status: p?.status ?? p?.profile_status ?? "",
+          }))
+          .filter(p => p.name && isActive(p.status))
+          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
+        // Populate
         select.innerHTML = "";
-        select.appendChild(new Option("Select a profile…", ""));
-
-        if (!Array.isArray(profiles) || profiles.length === 0) {
+        select.appendChild(new Option("Select a profile..."));
+      
+        if (activeProfiles.length === 0) {
           select.appendChild(new Option("No profiles available", ""));
           select.disabled = true;
           return;
         }
 
-        profiles
-          .map(p => p?.name || p?.profile_name)
-          .filter(Boolean)
-          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-          .forEach((name) => select.appendChild(new Option(name, name)));
-
+        activeProfiles.forEach(p => select.appendChild(new Option(p.name, p.name)));
         select.disabled = false;
+
       } catch (e) {
         console.error("Failed to load profiles:", e);
         select.innerHTML = "";

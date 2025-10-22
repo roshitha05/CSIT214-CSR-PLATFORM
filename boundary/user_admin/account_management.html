@@ -681,10 +681,17 @@
         select.innerHTML = "";
         select.appendChild(new Option("Select a profile…", ""));
 
-        profiles.forEach(p => { if (p?.name) select.appendChild(new Option(p.name, p.name)); })
-        if (preselect) select.value = preselect;
+        profiles
+          .filter(p => p?.name)
+          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+          .forEach(p => {
+            const opt = new Option(p.name, p.name);
+            select.appendChild(opt);
+          });
 
+        if (preselect) select.value = preselect;
         select.disabled = profiles.length === 0;
+        
       } catch (e) {
         console.error(e);
         select.innerHTML = "";
@@ -863,6 +870,20 @@
         if (payload.address       != null) currentRow.querySelector(".address").textContent  = payload.address       || cur.address      || "—";
         if (payload.date_of_birth != null) currentRow.querySelector(".dob").textContent      = payload.date_of_birth || cur.date_of_birth || "—";
         if (payload.user_profile  != null) currentRow.querySelector(".profile").textContent  = payload.user_profile  || cur.user_profile  || "—";
+
+        // Update status and display badges accordingly
+        const newProfile = (payload.user_profile || cur.user_profile || "").trim();
+        const profStatus = String(userProfilesStatusDict?.[newProfile] ?? STATUS.ACTIVE).toUpperCase();
+        currentRow.dataset.profileSuspended = (profStatus === STATUS.SUSPENDED);
+
+        // Determine the users base status from previous display
+        // If "SUSPENDED" (not profile), keep that; otherwise "ACTIVE"
+        const prevDisplay = String(currentRow.dataset.status || "").toUpperCase();
+        const ownBase     = (prevDisplay === STATUS.SUSPENDED) ? STATUS.SUSPENDED : STATUS.ACTIVE;
+
+        // If profile is suspended -> display "Suspended (Profile)"; else keep base status
+        const effective = (currentRow.dataset.profileSuspended === "true") ? "SUSPENDED_PROFILE" : ownBase;
+        applyStatusToRow(currentRow, effective);
 
         closeEditModal();
       } catch (e) {
