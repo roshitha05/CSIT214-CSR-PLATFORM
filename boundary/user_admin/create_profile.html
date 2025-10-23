@@ -463,7 +463,7 @@
       // --- Common Error Branches ---
       if (response.status === 400) { showErr(serverMsg || "Failed to create User Profile. Name already exists."); return; }
       if (response.status === 401) { showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
-      if (response.status === 402) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
+      if (response.status === 403) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
 
       // --- Fallback ---
       showErr(serverMsg || `Unexpected Error: ${response.status}`);

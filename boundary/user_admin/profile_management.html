@@ -815,7 +815,7 @@
         await new Promise(r => setTimeout(r, 1000));
 
         if (suspendBtn) { suspendBtn.disabled = false; suspendBtn.textContent = original || "Suspend"; }
-        if (cancelBtn)  { els.cancelBtn.disabled = false; }
+        if (cancelBtn)  { cancelBtn.disabled = false; }
 
         closeSuspendModal();
       }

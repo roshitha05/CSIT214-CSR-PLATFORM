@@ -436,7 +436,7 @@
       }
       
       // --- Common Error Branches ---
-      if (response.status === 400) { showErr(serverMsg || "Failed to create Category. The name may already exists."); return; }
+      if (response.status === 400) { showErr(serverMsg || "Failed to create Category. The name may already exist."); return; }
       if (response.status === 401) { showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
       if (response.status === 403) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
 

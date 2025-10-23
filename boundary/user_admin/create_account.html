@@ -548,7 +548,6 @@
         const data = await response.json();
         const raw = data.userProfiles || data.data || [];
 
-        // Normalize -> keep only ACTIVE profiles
         const activeProfiles = (Array.isArray(raw) ? raw : [])
           .map(p => ({
             name: p?.name ?? p?.profile_name ?? "",
@@ -558,7 +557,6 @@
           .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
         const options = [];
-        options.push(new Option("Select a profile...", ""));
 
         if (activeProfiles.length === 0) {
           // No profiles available
@@ -567,7 +565,9 @@
         }
         else {
           // Append all active profiles
+          options.push(new Option("Select a profile...", ""));
           activeProfiles.forEach(p => options.push(new Option(p.name, p.name)));
+          select.replaceChildren(...options);
           select.disabled = false;
         }
 
@@ -575,7 +575,6 @@
 
       } catch (e) {
         console.error("Failed to load profiles:", e);
-        select.innerHTML = "";
         select.replaceChildren(new Option("Error loading profiles", ""));
         select.disabled = true;
         showErr("Unable to load profiles. Please try again later.");
@@ -603,8 +602,8 @@
       input.fullName.toggleAttribute("aria-invalid", !okName);
       valid &&= okName;
 
-      // Login ID: required, 3–32 allowed chars (lowercased for storage)
-      const okLogin = /^[a-z0-9._-]{3,32}$/.test(vLogin);
+      // Login ID: required, 3–32 allowed chars
+      const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
       show(err.loginId, !okLogin);
       input.loginId.toggleAttribute("aria-invalid", !okLogin);
       valid &&= okLogin;
@@ -706,7 +705,7 @@
       // Normalized payload
       const payload = {
         fullname     : collapse(input.fullName.value),
-        username     : lowerTrim(input.loginId.value),
+        username     : collapse(input.loginId.value),
         email        : lowerTrim(input.email.value),
         password     : input.password.value,
         phone_number : digitsOnly(input.phone.value),

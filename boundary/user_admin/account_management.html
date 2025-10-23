@@ -521,7 +521,7 @@
     function rowHTML(u) {
       const key = encodeURIComponent(String(u.user_id ?? u.username ?? ""));
       let status = String(u.status || STATUS.ACTIVE).toUpperCase();
-      if (u.user_profile_status.toUpperCase() === STATUS.SUSPENDED)
+      if (String(u.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED)
         status = `${STATUS.SUSPENDED} (Profile)`;
 
       const fullname   = escapeHTML(u.fullname)        || "—";
@@ -599,11 +599,12 @@
     // =========================
     // State
     // =========================
-    let allUsers            = [];
-    let allProfiles         = [];
-    let currentRow          = null; // editing
-    let pendingSuspendRow   = null;
-    let pendingReactRow     = null;
+    let userProfilesStatusDict = {};
+    let allUsers               = [];
+    let allProfiles            = [];
+    let currentRow             = null; // editing
+    let pendingSuspendRow      = null;
+    let pendingReactRow        = null;
 
     // Request guards
     let editing      = false;
@@ -620,9 +621,10 @@
         if (!ok) throw new Error(`Failed to load users (${status})`);
 
         let profile_res = await fetchJSON(PROFILES_API, { method: "GET" });
-        if (!profile_res.ok) throw new Error(`Failed to load user profiles (${status_profiles})`);
+        if (!profile_res.ok) throw new Error(`Failed to load user profiles (${profile_res.status})`);
 
         allProfiles = Array.isArray(profile_res.data?.userProfiles) ? profile_res.data.userProfiles : [];
+        
         userProfilesStatusDict = {}
         allProfiles.forEach( profile => {
           userProfilesStatusDict[profile.name] = profile.status;
@@ -673,6 +675,7 @@
         const label = String(preselect);
         select.innerHTML = `<option value="${label}">${label}</option`;
         select.value = label;
+        select.disabled = true;
         select.setAttribute("aria-disabled", "true");
         select.title = "You cannot change your own profile.";
         select.dataset.locked = true;
@@ -692,15 +695,18 @@
 
         const profiles = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
         select.innerHTML = "";
-        select.appendChild(new Option("Select a profile…", ""));
 
+        if (profiles.length === 0) {
+          select.appendChild(new Option("No profiles available...", ""));
+          select.disabled = true;
+          return;
+        }
+
+        select.appendChild(new Option("Select a profile...", ""));
         profiles
           .filter(p => p?.name)
           .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
-          .forEach(p => {
-            const opt = new Option(p.name, p.name);
-            select.appendChild(opt);
-          });
+          .forEach(p => select.appendChild(new Option(p.name, p.name)));
 
         if (preselect) select.value = preselect;
         select.disabled = profiles.length === 0;
@@ -880,7 +886,7 @@
       }
 
       if (DEBUG) {
-        console.info("[DEBUG] PUT", `${USERS_API}/${key}`, payload);
+        console.info("[DEBUG] PUT", `${USERS_API}/${id}`, payload);
         await new Promise(r => setTimeout(r, 400)); // brief visual feedback in debug
         if (editBtn)   { editBtn.disabled = false; editBtn.textContent = origText || "Save"; }
         if (cancelBtn) { cancelBtn.disabled = false; }

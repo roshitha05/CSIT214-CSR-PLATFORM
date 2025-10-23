@@ -465,8 +465,8 @@
       `;
     }
 
-    function populateTable(profiles) {
-      els.tbody.innerHTML = profiles
+    function populateTable(categories) {
+      els.tbody.innerHTML = categories
         .slice()
         .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
         .map(rowHTML)
@@ -706,7 +706,7 @@
       const cancelBtn  = els.cancelBtn.archive;
       const original   = archiveBtn?.textContent;
 
-      if (archiveBtn)   { archiveBtn.disabled = true;   archiveBtn.textContent = "Archiving..."; }
+      if (archiveBtn) { archiveBtn.disabled = true;   archiveBtn.textContent = "Archiving..."; }
       if (cancelBtn)  { cancelBtn.disabled = true; }
 
       try {
@@ -756,7 +756,7 @@
         const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${key}/restore`, {
           method: "POST"
         });
-        if (!ok) throw new Error(`Reinstate failed (${status})`);
+        if (!ok) throw new Error(`Restore failed (${status})`);
         applyStatusToRow(pendingRestoreRow, STATUS.ACTIVE);
       } 
       catch (e) {
@@ -775,7 +775,7 @@
     // =========================
     // Navigation
     // =========================
-    function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
+    function returnToDashboard() { window.location.href = "platform_dashboard.html"; }
   </script>
 </body>
 </html>

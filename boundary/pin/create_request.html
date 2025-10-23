@@ -461,6 +461,7 @@
 
     async function loadCategories() {
         const select = input.category;
+
         select.innerHTML = '<option value="">Loading categories...</option>';
         select.disabled = true;
 
@@ -472,39 +473,33 @@
                 headers: { "Content-Type": "application/json" },
             });
 
-            // Non-OK -> error UI
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const data = await response.json();
-            const categories = Array.isArray(data?.categories) ? data.categories : [];
+            const raw = Array.isArray(data?.categories) ? data.categories : [];
 
-            select.innerHTML = "";
-            select.appendChild(new Option("Select a category...", ""));
+            const activeCategories = raw
+              .filter(c => String(c.status).toUpperCase() === "ACTIVE" && c?.name)
+              .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }));
 
-            // Display only ACTIVE categories
-            const activeCategories = categories.filter(c => String(c.status).toUpperCase() === "ACTIVE");
-
-            allCategories = activeCategories;
-
-            select.innerHTML = "";
-            select.appendChild(new Option("Select a category...", ""));
+            allCategories = activeCategories; // populate description textarea
+            const options = []
 
             if (activeCategories.length === 0) {
-                select.appendChild(new Option("No categories available", ""));
-                select.disabled = true;
-                showErr("No categories found. Please contact support to add categories.");
-                return;
+              options.push(new Option("No categories available", ""));
+              select.disabled = true;
+              showErr("No categories found. Please contact support to add categories.");
+              return;
+            }
+            else {
+              options.push(new Option("Select a category...", ""));
+              activeCategories.forEach(c => options.push(new Option(c.name, c.name)));
+              select.disabled = false;
             }
 
-            // Sort by name case-insensitive
-            activeCategories
-                .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
-                .forEach((c) => {
-                    select.appendChild(new Option(c.name, c.name));
-                });
-
-            select.disabled = false;
-        } catch (e) {
+            select.replaceChildren(...options);
+        } 
+        catch (e) {
             console.error("Failed to load categories: ", e);
             select.innerHTML = "";
             select.appendChild(new Option("Error loading categories", ""));
