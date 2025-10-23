@@ -256,7 +256,7 @@
       <div class="actions">
         <button class="btn-primary" type="submit" id="submitBtn">Submit</button>
         <button class="btn-secondary" type="reset">Clear</button>
-        <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
+        <button class="btn-secondary" type="button" onclick="returnToDashboard()">Return to Dashboard</button>
       </div>
 
       <!-- Status Bar (success / failed) -->
@@ -317,7 +317,6 @@
       success.style.color = "#991b1b";
       success.setAttribute("aria-live", "assertive");
       success.textContent = message;
-      formCompletedRef.value = true;
     }
 
     function clearStatus() {
@@ -542,9 +541,7 @@
     // =========================
     // Navigation
     // =========================
-    $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "/user_admin/admin_dashboard.html";
-    });
+    function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
   </script>
 </body>
 </html>

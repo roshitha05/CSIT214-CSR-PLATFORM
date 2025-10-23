@@ -213,7 +213,7 @@
     <div class="header">
       <h1>Category Management</h1>
       <div class="header-controls">
-        <button class="btn-dashboard" id="returnDashboard">Return to Dashboard</button>
+        <button class="btn-dashboard" onclick="returnToDashboard()">Return to Dashboard</button>
         <div class="search-box">
           <input type="text" id="search" placeholder="Search by keyword...">
         </div>
@@ -281,25 +281,25 @@
   </div>
 
   <!-- Archive Modal -->
-  <div class="modal" id="suspendModal" role="dialog" aria-modal="true" aria-labelledby="suspendTitle">
+  <div class="modal" id="archiveModal" role="dialog" aria-modal="true" aria-labelledby="archiveTitle">
     <div class="modal-content">
-      <h2 id="suspendTitle">Confirm Archive</h2>
+      <h2 id="archiveTitle">Confirm Archive</h2>
       <p>Are you sure you want to archive this category?</p>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeSuspendModal()">Cancel</button>
-        <button class="btn-danger" onclick="confirmSuspendUI()">Suspend</button>
+        <button class="btn-cancel" onclick="closeArchiveModal()">Cancel</button>
+        <button class="btn-danger" onclick="confirmArchiveUI()">Archive</button>
       </div>
     </div>
   </div>
 
   <!-- Reactivate Modal -->
-  <div class="modal" id="reactivateModal" role="dialog" aria-modal="true" aria-labelledby="reactivateTitle">
+  <div class="modal" id="restoreModal" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
     <div class="modal-content">
-      <h2 id="reactivateTitle">Confirm Restore</h2>
+      <h2 id="restoreTitle">Confirm Restore</h2>
       <p>Are you sure you want to restore this category?</p>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeReactivateModal()">Cancel</button>
-        <button class="btn-primary" onclick="confirmReactivateUI()">Reactivate</button>
+        <button class="btn-cancel" onclick="closeRestoreModal()">Cancel</button>
+        <button class="btn-primary" onclick="confirmRestoreUI()">Restore</button>
       </div>
     </div>
   </div>
@@ -332,6 +332,18 @@
       editErrName: $("editErr-name"),
       editErrDesc: $("editErr-desc"),
       success: $("success"),
+
+      primaryBtn: {
+        edit: $("editModal")?.querySelector(".btn-primary"),
+        archive: $("archiveModal")?.querySelector(".btn-danger"),
+        restore: $("restoreModal")?.querySelector(".btn-primary"),
+      },
+
+      cancelBtn: {
+        edit: document.querySelector("#editModal .btn-cancel"),
+        archive: document.querySelector("#archiveModal .btn-cancel"),
+        restore: document.querySelector("#restoreModal .btn-cancel"),
+      }
     }
 
     // =========================
@@ -364,15 +376,15 @@
     // =========================
     // State
     // =========================
-    let allCategories          = [];
-    let currentRow           = null; // row being edited
-    let pendingSuspendRow    = null;
-    let pendingReactivateRow = null;
+    let allCategories     = [];
+    let currentRow        = null; // row being edited
+    let pendingArchiveRow = null;
+    let pendingRestoreRow = null;
 
     // Request guards to prevent double-submission
-    let editing        = false;
-    let suspending     = false;
-    let reactivating   = false;
+    let editing   = false;
+    let archiving = false;
+    let restoring = false;
 
     // =========================
     // UI Status Helpers
@@ -427,8 +439,8 @@
 
     function actionButtonHTML(statusStr) {
         return String(statusStr).toUpperCase() === STATUS.ARCHIVED
-            ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Restore</button>'
-            : '<button class="btn-suspend" onclick="openSuspendModal(this)">Archive</button>';
+            ? '<button class="btn-reactivate" onclick="openRestoreModal(this)">Restore</button>'
+            : '<button class="btn-suspend" onclick="openArchiveModal(this)">Archive</button>';
     }
 
     function rowHTML(p) {
@@ -589,6 +601,7 @@
     async function saveEditModal() {
       if (editing) return;
       if (!validateEditForm()) return;
+      if (!currentRow) return;
 
       editing = true;
 
@@ -601,8 +614,23 @@
 
       const payload = { name, description }
 
+      // Lock UI
+      const saveBtn   = els.primaryBtn.edit;
+      const cancelBtn = els.cancelBtn.edit;
+      const origText  = saveBtn?.textContent;
+
+      if (saveBtn)   { saveBtn.disabled = true;   saveBtn.textContent = "Updating..."; }
+      if (cancelBtn) { cancelBtn.disabled = true; }
+
+      const fields = [els.editName, els.editDesc].filter(Boolean);
+      fields.forEach(el => el.disabled = true);
+
       // nothing changed
       if (name === curRaw && description === curDesc) {
+        await new Promise(r => setTimeout(r, 300));
+        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
+        if (cancelBtn) { cancelBtn.disabled = false; }
+        fields.forEach(el => el.disabled = false);
         editing = false;
         closeEditModal();
         return;
@@ -611,9 +639,15 @@
       // DEBUG mode
       if (DEBUG) {
         showDebug(`${CATEGORIES_API}/${curKey}`, payload);
+        await new Promise(r => setTimeout(r, 400));
+        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
+        if (cancelBtn) { cancelBtn.disabled = false; }
+        fields.forEach(el => el.disabled = false);
         editing = false;
         return;
       }
+
+      let updated = false;
 
       try {
         const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${curKey}`, {
@@ -634,99 +668,114 @@
         const i = allCategories.findIndex(p => norm(p.name) === norm(curRaw));
         if (i !== -1) allCategories[i] = { ...allCategories[i], ...payload };
 
-        closeEditModal();
-      } catch (e) {
+        updated = true;
+      } 
+      catch (e) {
         console.error(e);
         showErr("Could not save changes. Please try again.");
-        // keep modal open so user can correct
-      } finally {
+      } 
+      finally {
+        await new Promise(r => setTimeout(r, 1000)); // brief hold
+        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
+        if (cancelBtn) { cancelBtn.disabled = false; }
+        fields.forEach(el => el.disabled = false);
         editing = false;
+        if (updated) closeEditModal();
       }
     }
 
     // =========================
-    // Modals: Suspend
+    // Modals: Archive
     // =========================
-    function openSuspendModal(button) {
-      pendingSuspendRow = button.closest("tr");
-      $("suspendModal").style.display = "flex";
+    function openArchiveModal(button) {
+      pendingArchiveRow = button.closest("tr");
+      $("archiveModal").style.display = "flex";
     }
 
-    function closeSuspendModal() {
-      $("suspendModal").style.display = "none";
-      pendingSuspendRow = null;
+    function closeArchiveModal() {
+      $("archiveModal").style.display = "none";
+      pendingArchiveRow = null;
     }
 
-    async function confirmSuspendUI() {
-      if (!pendingSuspendRow || suspending) return;
-      suspending = true;
+    async function confirmArchiveUI() {
+      if (!pendingArchiveRow || archiving) return;
+      archiving = true;
 
-      const key = pendingSuspendRow.dataset.key;
+      const key = pendingArchiveRow.dataset.key;
+      const archiveBtn   = els.primaryBtn.archive;
+      const cancelBtn  = els.cancelBtn.archive;
+      const original   = archiveBtn?.textContent;
+
+      if (archiveBtn)   { archiveBtn.disabled = true;   archiveBtn.textContent = "Archiving..."; }
+      if (cancelBtn)  { cancelBtn.disabled = true; }
+
       try {
-        const { ok, status, data } = await fetchJSON(`${CATEGORIES_API}/${key}/archive`, {
-          method: "POST"
-        });
+        const { ok, status, data } = await fetchJSON(`${CATEGORIES_API}/${key}/archive`, { method: "POST" });
         if (!ok) throw new Error(`Archive failed (${status})`);
-
-        let newStatus = STATUS.ARCHIVED;
-        try { newStatus = String((data?.data?.status ?? STATUS.ARCHIVED)).toUpperCase(); } catch {}
-        applyStatusToRow(pendingSuspendRow, newStatus);
-      } catch (e) {
+        applyStatusToRow(pendingArchiveRow, STATUS.ARCHIVED);
+      } 
+      catch (e) {
         console.error(e);
-        showErr("Could not suspend. Please try again.");
-      } finally {
-        suspending = false;
-        closeSuspendModal();
+        showErr("Could not archive the category. Please try again.");
+      } 
+      finally {
+        await new Promise(r => setTimeout(r, 800));
+        if (archiveBtn)   { archiveBtn.disabled = false;   archiveBtn.textContent = original || "Archive"; }
+        if (cancelBtn)  { cancelBtn.disabled = false; }
+        archiving = false;
+        closeArchiveModal();
       }
     }
 
     // =========================
     // Modals: Restore
     // =========================
-    function openReactivateModal(button) {
-      pendingReactivateRow = button.closest("tr");
-      $("reactivateModal").style.display = "flex";
+    function openRestoreModal(button) {
+      pendingRestoreRow = button.closest("tr");
+      $("restoreModal").style.display = "flex";
     }
 
-    function closeReactivateModal() {
-      $("reactivateModal").style.display = "none";
-      pendingReactivateRow = null;
+    function closeRestoreModal() {
+      $("restoreModal").style.display = "none";
+      pendingRestoreRow = null;
     }
 
-    async function confirmReactivateUI() {
-      if (!pendingReactivateRow || reactivating) return;
-      reactivating = true;
+    async function confirmRestoreUI() {
+      if (!pendingRestoreRow || restoring) return;
+      restoring = true;
 
-      const key = pendingReactivateRow.dataset.key;
-      const modalBtn = document.querySelector("#reactivateModal .btn-primary");
-      modalBtn.disabled = true;
-      const original = modalBtn.textContent;
-      modalBtn.textContent = "Restoring...";
+      const key = pendingRestoreRow.dataset.key;
+      const restoreBtn   = els.primaryBtn.restore;
+      const cancelBtn  = els.cancelBtn.restore;
+      const original   = restoreBtn?.textContent;
+
+      if (restoreBtn) { restoreBtn.disabled = true;   restoreBtn.textContent = "Restoring..."; }
+      if (cancelBtn)  { cancelBtn.disabled = true; }
 
       try {
         const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${key}/restore`, {
           method: "POST"
         });
         if (!ok) throw new Error(`Reinstate failed (${status})`);
-
-        applyStatusToRow(pendingReactivateRow, STATUS.ACTIVE);
-      } catch (e) {
+        applyStatusToRow(pendingRestoreRow, STATUS.ACTIVE);
+      } 
+      catch (e) {
         console.error(e);
-        showErr("Could not reactivate. Please try again.");
-      } finally {
-        reactivating = false;
-        modalBtn.disabled = false;
-        modalBtn.textContent = original;
-        closeReactivateModal();
+        showErr("Could not restore the category. Please try again.");
+      } 
+      finally {
+        await new Promise(r => setTimeout(r, 800));
+        if (restoreBtn)   { restoreBtn.disabled = false;   restoreBtn.textContent = original || "Restore"; }
+        if (cancelBtn)  { cancelBtn.disabled = false; }
+        restoring = false;
+        closeRestoreModal();
       }
     }
 
     // =========================
     // Navigation
     // =========================
-    $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "/platform_management/platform_dashboard.html";
-    });
+    function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
   </script>
 </body>
 </html>

@@ -284,7 +284,7 @@
               placeholder="8123 4567"
               aria-describedby="phone-hint err-phone"
               autocomplete="tel"
-              pattern="^[+0-9()\-.\s]{6,20}$"
+              pattern="^\d{8}$"
             />
             <small id="phone-hint" class="hint"
               >Required. 8 digits</small
@@ -303,11 +303,11 @@
               required
               maxlength="255"
               placeholder="Block/Street, Unit, Postal Code"
-              aria-describedby="address-hint err-address"
+              aria-describedby="hint-address err-address"
               autocomplete="street-address"
               spellcheck="false"
             ></textarea>
-            <small id="err-address" class="hint">Required. Up to 255 characters.</small>
+            <small id="hint-address" class="hint">Required. Up to 255 characters.</small>
             <div id="err-address" class="error">
               Please enter your address (max 255 chars).
             </div>
@@ -346,7 +346,7 @@
             Create Account
           </button>
           <button class="btn-secondary" type="reset">Clear</button>
-          <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
+          <button class="btn-secondary" type="button" onclick="returnToDashboard()">Return to Dashboard</button>
         </div>
 
         <div id="success" class="success" role="status" aria-live="polite"></div>
@@ -416,7 +416,6 @@
       success.style.color = "#991b1b";
       success.setAttribute("aria-live", "assertive");
       success.textContent = message;
-      formCompletedRef.value = true;
     }
 
     function clearStatus() {
@@ -531,6 +530,7 @@
 
     async function loadProfiles() {
       const select = input.profile;
+
       select.innerHTML = '<option value="">Loading profiles…</option>';
       select.disabled  = true;
 
@@ -557,23 +557,26 @@
           .filter(p => p.name && isActive(p.status))
           .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
-        // Populate
-        select.innerHTML = "";
-        select.appendChild(new Option("Select a profile..."));
-      
+        const options = [];
+        options.push(new Option("Select a profile...", ""));
+
         if (activeProfiles.length === 0) {
-          select.appendChild(new Option("No profiles available", ""));
+          // No profiles available
+          options.push(new Option("No profiles available...", ""));
           select.disabled = true;
-          return;
+        }
+        else {
+          // Append all active profiles
+          activeProfiles.forEach(p => options.push(new Option(p.name, p.name)));
+          select.disabled = false;
         }
 
-        activeProfiles.forEach(p => select.appendChild(new Option(p.name, p.name)));
-        select.disabled = false;
+        select.replaceChildren(...options);
 
       } catch (e) {
         console.error("Failed to load profiles:", e);
         select.innerHTML = "";
-        select.appendChild(new Option("Error loading profiles", ""));
+        select.replaceChildren(new Option("Error loading profiles", ""));
         select.disabled = true;
         showErr("Unable to load profiles. Please try again later.");
       }
@@ -759,9 +762,7 @@
     // =========================
     // Navigation
     // =========================
-    $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "admin_dashboard.html";
-    });
+    function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
   </script>
 </body>
 </html>

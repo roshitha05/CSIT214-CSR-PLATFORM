@@ -403,6 +403,19 @@
       // Suspend / Reactivate modals
       suspendModal: $("suspendModal"),
       reactivateModal: $("reactivateModal"),
+
+      // Buttons
+      primaryBtn: {
+        edit: $("editModal")?.querySelector(".btn-primary"),
+        suspend: $("suspendModal")?.querySelector(".btn-danger"),
+        reactivate: $("reactivateModal")?.querySelector(".btn-primary"),
+      },
+
+      cancelBtn: {
+        edit: $("editModal")?.querySelector(".btn-cancel"),
+        suspend: $("suspendModal")?.querySelector(".btn-cancel"),
+        reactivate: $("reactivateModal")?.querySelector(".btn-cancel"),
+      }
     };
 
     // =========================
@@ -810,6 +823,20 @@
         return;
       }
 
+      const editBtn   = els.primaryBtn.edit;
+      const cancelBtn = els.cancelBtn.edit;
+      const origText  = editBtn?.textContent;
+
+      if (editBtn)   { editBtn.disabled = true;  editBtn.textContent = "Updating..."; }
+      if (cancelBtn) { cancelBtn.disabled = true; }
+
+      // Freeze input fields during submit
+      const formControls = [
+        els.editFullname, els.editUsername, els.editEmail,
+        els.editPhone, els.editAddress, els.editDob, els.editProfile
+      ].filter(Boolean);
+      formControls.forEach(el => el.disabled = true);
+
       const cur = {
         fullname:      currentRow.querySelector(".fullname")?.textContent.trim() || "",
         username:      currentRow.querySelector(".username")?.textContent.trim() || "",
@@ -833,6 +860,9 @@
       // --- Self Safeguard: prevent changing your own profile ---
       const rowUser = getRowUsername(currentRow);
       if (rowUser === CURRENT_USERNAME && payload.user_profile !== cur.user_profile) {
+        if (editBtn)   { editBtn.disabled = false; editBtn.textContent = origText || "Save"; }
+        if (cancelBtn) { cancelBtn.disabled = false; }
+        formControls.forEach(el => el.disabled = false);
         editing = false;
         return;
       }
@@ -840,6 +870,10 @@
       // Early exit if nothing changed
       const changed = Object.keys(payload).some(k => String(payload[k] ?? "") !== String(cur[k] ?? ""));
       if (!changed) {
+        await new Promise(r => setTimeout(r, 100));
+        if (editBtn)   { editBtn.disabled = false; editBtn.textContent = origText || "Save"; }
+        if (cancelBtn) { cancelBtn.disabled = false; }
+        formControls.forEach(el => el.disabled = false);
         editing = false;
         closeEditModal();
         return;
@@ -847,10 +881,16 @@
 
       if (DEBUG) {
         console.info("[DEBUG] PUT", `${USERS_API}/${key}`, payload);
+        await new Promise(r => setTimeout(r, 400)); // brief visual feedback in debug
+        if (editBtn)   { editBtn.disabled = false; editBtn.textContent = origText || "Save"; }
+        if (cancelBtn) { cancelBtn.disabled = false; }
+        formControls.forEach(el => el.disabled = false);
         editing = false;
         closeEditModal();
         return;
       }
+
+      let updated = false;
 
       try {
         const { ok, status, data } = await fetchJSON(`${USERS_API}/${encodeURIComponent(id)}`, {
@@ -866,8 +906,8 @@
         if (payload.fullname      != null) currentRow.querySelector(".fullname").textContent = payload.fullname      || cur.fullname;
         if (payload.username      != null) currentRow.querySelector(".username").textContent = payload.username      || cur.username;
         if (payload.email         != null) currentRow.querySelector(".email").textContent    = payload.email         || cur.email;
-        if (payload.phone_number  != null) currentRow.querySelector(".phone").textContent    = payload.phone_number  || cur.phone_number || "—";
-        if (payload.address       != null) currentRow.querySelector(".address").textContent  = payload.address       || cur.address      || "—";
+        if (payload.phone_number  != null) currentRow.querySelector(".phone").textContent    = payload.phone_number  || cur.phone_number  || "—";
+        if (payload.address       != null) currentRow.querySelector(".address").textContent  = payload.address       || cur.address       || "—";
         if (payload.date_of_birth != null) currentRow.querySelector(".dob").textContent      = payload.date_of_birth || cur.date_of_birth || "—";
         if (payload.user_profile  != null) currentRow.querySelector(".profile").textContent  = payload.user_profile  || cur.user_profile  || "—";
 
@@ -885,12 +925,22 @@
         const effective = (currentRow.dataset.profileSuspended === "true") ? "SUSPENDED_PROFILE" : ownBase;
         applyStatusToRow(currentRow, effective);
 
-        closeEditModal();
-      } catch (e) {
+        updated = true;
+      } 
+      catch (e) {
         console.error(e);
         alert(e.message || "Could not save changes. Please try again.");
-      } finally {
+      } 
+      finally {
+        await new Promise(r => setTimeout(r, 1000));
+
+        if (editBtn)   { editBtn.disabled = false; editBtn.textContent = origText || "Save"; }
+        if (cancelBtn) { cancelBtn.disabled = false; }
+        formControls.forEach(el => el.disabled = false);
+
         editing = false;
+
+        if (updated) closeEditModal();
       }
     }
 
@@ -905,9 +955,6 @@
     ["editDob","editProfile"].forEach(id => {
       $(id)?.addEventListener("change", () => validateEditForm());
     });
-
-    // Keep inline HTML handler working if present
-    window.saveEditModal = saveEditModal;
 
     // =========================
     // Suspend / Reinstate
@@ -928,8 +975,6 @@
       pendingSuspendRow = null;
     }
 
-    window.closeSuspendModal = closeSuspendModal;
-
     async function confirmSuspendUI() {
       if (!pendingSuspendRow || suspending) return;
       suspending = true;
@@ -944,54 +989,75 @@
       }
 
       const key = pendingSuspendRow.dataset.key;
+      const suspendBtn = els.primaryBtn.suspend;
+      const cancelBtn = els.cancelBtn.suspend;
+      const original = suspendBtn?.textContent;
+
+      if (suspendBtn) { suspendBtn.disabled = true; suspendBtn.textContent = "Suspending..."; }
+      if (cancelBtn)  { cancelBtn.disabled = true; }
 
       try {
         const { ok, status } = await fetchJSON(`${USERS_API}/${key}/suspend`, { method: "POST" });
         if (!ok) throw new Error(`Suspend failed (${status})`);
         applyStatusToRow(pendingSuspendRow, STATUS.SUSPENDED);
-      } catch (e) {
+      } 
+      catch (e) {
         console.error(e);
         alert("Could not suspend. Please try again.");
-      } finally {
+      } 
+      finally {
         suspending = false;
+        await new Promise(r => setTimeout(r, 1000));
+
+        if (suspendBtn) { suspendBtn.disabled = false; suspendBtn.textContent = original || "Suspend"; }
+        if (cancelBtn)  { cancelBtn.disabled = false; }
+        
         closeSuspendModal();
       }
     }
-    window.confirmSuspendUI = confirmSuspendUI;
 
     function openReactivateModal(button) {
       pendingReactRow = button.closest("tr");
       els.reactivateModal.style.display = "flex";
     }
+    
     function closeReactivateModal() {
       els.reactivateModal.style.display = "none";
       pendingReactRow = null;
     }
-    window.closeReactivateModal = closeReactivateModal;
 
     async function confirmReactivateUI() {
       if (!pendingReactRow || reactivating) return;
       reactivating = true;
 
       const key = pendingReactRow.dataset.key;
-      const modalBtn = document.querySelector("#reactivateModal .btn-primary");
-      const orig = modalBtn?.textContent;
-      if (modalBtn) { modalBtn.disabled = true; modalBtn.textContent = "Reactivating..."; }
+      const reactivateBtn = els.primaryBtn.reactivate;
+      const cancelBtn = els.cancelBtn.reactivate;
+      const original = reactivateBtn?.textContent;
+
+      if (reactivateBtn) { reactivateBtn.disabled = true; reactivateBtn.textContent = "Reactivating..."; }
+      if (cancelBtn)     { cancelBtn.disabled = true; }
 
       try {
         const { ok, status } = await fetchJSON(`${USERS_API}/${key}/reinstate`, { method: "POST" });
         if (!ok) throw new Error(`Reinstate failed (${status})`);
         applyStatusToRow(pendingReactRow, STATUS.ACTIVE);
-      } catch (e) {
+      } 
+      catch (e) {
         console.error(e);
         alert("Could not reactivate. Please try again.");
-      } finally {
+      } 
+      finally {
         reactivating = false;
-        if (modalBtn) { modalBtn.disabled = false; modalBtn.textContent = orig || "Reactivate"; }
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Re-enable both buttons
+        if (reactivateBtn) { reactivateBtn.disabled = false; reactivateBtn.textContent = original || "Reactivate"; }
+        if (cancelBtn)     { cancelBtn.disabled = false; }
+
         closeReactivateModal();
       }
     }
-    window.confirmReactivateUI = confirmReactivateUI;
 
     // =========================
     // Table click delegation
@@ -1012,7 +1078,6 @@
     // Navigation
     // =========================
     function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
-    window.returnToDashboard = returnToDashboard;
   </script>
 </body>
 </html>
