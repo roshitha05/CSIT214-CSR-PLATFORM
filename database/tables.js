@@ -69,7 +69,9 @@ export const serviceRequestsTable = pgTable('service_requests', {
             onDelete: 'cascade'
         })
         .notNull(),
-    view_count: integer().default(0).notNull()
+    view_count: integer().default(0).notNull(),
+    date_created: timestamp().defaultNow(),
+    date_completed: timestamp()
 });
 
 export const shortlistsTable = pgTable('shortlists', {
