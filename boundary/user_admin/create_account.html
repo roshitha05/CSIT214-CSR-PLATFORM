@@ -567,7 +567,6 @@
           // Append all active profiles
           options.push(new Option("Select a profile...", ""));
           activeProfiles.forEach(p => options.push(new Option(p.name, p.name)));
-          select.replaceChildren(...options);
           select.disabled = false;
         }
 
@@ -588,7 +587,7 @@
       let valid = true;
 
       const vName  = collapse(input.fullName.value);
-      const vLogin = lowerTrim(input.loginId.value);
+      const vLogin = collapse(input.loginId.value);
       const vEmail = lowerTrim(input.email.value);
       const vPw    = input.password.value;
       const vPhone = digitsOnly(input.phone.value);

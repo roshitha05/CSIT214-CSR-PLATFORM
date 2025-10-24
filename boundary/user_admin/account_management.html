@@ -168,15 +168,18 @@
     }
     .modal-input:focus, .modal-textarea:focus{ outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring); }
     .modal-textarea{ min-height:96px; resize:vertical; }
-    .modal-input:disabled{ background:#f1f5f9; color:#94a3b8; cursor:not-allowed; }
+
+    .modal-input:disabled,
+    .modal-textarea:disabled,
+    .modal-select:disabled { 
+      background:#f1f5f9; 
+      color:#94a3b8; 
+      cursor:not-allowed; 
+    }
 
     .modal-actions{
       margin-top:24px; padding-top:12px; border-top:1px solid #e2e8f0;
       display:flex; justify-content:flex-end; gap:10px;
-    }
-
-    #editFullName:disabled {
-      cursor: not-allowed;
     }
 
     /* modal buttons */
@@ -290,7 +293,7 @@
             <div class="row">
               <label for="editPhone">Phone Number <span style="color:var(--muted)">*</span></label>
               <input id="editPhone" type="tel" class="modal-input" minlength="8" maxlength="8"
-                    placeholder="8123 4567" pattern="^[+0-9()\-.\s]{6,20}$"/>
+                    placeholder="8123 4567" pattern="^[0-9]{8}$" inputmode="tel"/>
               <small class="hint">Required. 8 digits.</small>
               <div id="editErr-phone" class="error">Please enter a valid phone number.</div>
             </div>
@@ -325,7 +328,7 @@
 
           <div class="modal-actions">
             <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
-            <button type="submit" class="btn-primary" onclick="saveEditModal()">Save</button>
+            <button type="submit" class="btn-primary">Save</button>
           </div>
         </form>
       </div>
@@ -366,7 +369,7 @@
     const PROFILES_API = `${API_URL}/user-profiles`;
 
     const STATUS = { ACTIVE : "ACTIVE", SUSPENDED : "SUSPENDED" }
-    const CURRENT_USERNAME = (window.CURRENT_USERNAME ?? localStorage.getItem("username") ?? "").trim(); // who am I? 
+    const CURRENT_USERNAME = (localStorage.getItem("username") ?? "").trim(); // who am I? 
 
     // =========================
     // DOM
@@ -423,8 +426,14 @@
     // =========================
     const log = (...args) => { if (DEBUG) console.log("[accounts]", ...args); };
 
-    const collapseSpaces = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-    const nonEmpty       = (s) => collapseSpaces(s).length > 0;
+    // used to normalize inputs
+    const nonEmpty   = (s) => String(s ?? "").trim().length > 0;
+    const collapse   = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
+    const lowerTrim  = (s) => collapse(s).toLowerCase();
+    const digitsOnly = (s) => String(s ?? "").replace(/\D+/g, "");
+
+    // used for field validations 
+    const show = (el, on) => { if (el) el.style.display = on ? "block" : "none"; };
 
     const escapeHTML = (s) =>
       String(s ?? "")
@@ -450,6 +459,30 @@
         hour: "2-digit", minute: "2-digit"
       }).format(d);
     };
+
+    function attachEditLiveValidation(fields, validateFn, debounceMs = 200) {
+      let timer = null;
+      fields.forEach((field) => {
+        field.addEventListener("input", () => {
+          if (!editHasSubmitted) return; // only live-validate after first submit
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            validateFn();
+          }, debounceMs);
+        });
+      });
+    }
+
+    attachEditLiveValidation(
+      [els.editFullname, els.editUsername, els.editEmail, els.editPhone, els.editAddress],
+      validateEditForm
+    );
+
+    ["editDob", "editProfile"].forEach(id => {
+      $(id)?.addEventListener("change", () => {
+        if (editHasSubmitted) validateEditForm();
+      });
+    });
 
     // =========================
     // Helpers
@@ -496,7 +529,7 @@
 
     function actionButtonHTML(user) {
       const username       = String(user.username || "");
-      const isSelf         = username === CURRENT_USERNAME;
+      const isSelf         = sameUser(username, CURRENT_USERNAME);
       const status         = String(user.status || "").toUpperCase();
       const profileSuspend = String(user.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED;
 
@@ -599,17 +632,20 @@
     // =========================
     // State
     // =========================
-    let userProfilesStatusDict = {};
     let allUsers               = [];
     let allProfiles            = [];
-    let currentRow             = null; // editing
-    let pendingSuspendRow      = null;
-    let pendingReactRow        = null;
+    let userProfilesStatusDict = {};
+
+    let currentRow        = null; // editing
+    let pendingSuspendRow = null;
+    let pendingReactRow   = null;
 
     // Request guards
-    let editing      = false;
-    let suspending   = false;
-    let reactivating = false;
+    let editing      = false; // editing user info (PUT/users/:id)
+    let suspending   = false; // suspending an account (POST /users/:id/suspend)
+    let reactivating = false; // reactivating an account (POST /users/:id/reinstate)
+
+    let editHasSubmitted = false;
 
     // =========================
     // Load
@@ -673,7 +709,7 @@
       // If editing yourself, render just your current profile and return early
       if (locked && preselect) {
         const label = String(preselect);
-        select.innerHTML = `<option value="${label}">${label}</option`;
+        select.innerHTML = `<option value="${label}">${label}</option>`;
         select.value = label;
         select.disabled = true;
         select.setAttribute("aria-disabled", "true");
@@ -740,7 +776,10 @@
       const curProfile       = row.querySelector(".profile")?.textContent.trim()  || "";
 
       // Reset field errors
-      Object.values(els.editErr).forEach(el => el && (el.style.display = "none"));
+      Object.values(els.editErr).forEach(el => show(el, false));
+      [els.editFullname, els.editUsername, els.editEmail, els.editPhone, els.editAddress, els.editDob, els.editProfile]
+        .forEach(f => f?.removeAttribute("aria-invalid"));
+      editHasSubmitted = false;
 
       // --- Lock Profile change when editing yourself ---
       const rowUser = getRowUsername(row);
@@ -755,63 +794,78 @@
     function closeEditModal() {
       els.editModal.style.display = "none";
       currentRow = null;
-      // Reset errors
-      Object.values(els.editErr).forEach(el => el && (el.style.display = "none"));
+      Object.values(els.editErr).forEach(el => show(el, false));
+      [els.editFullname, els.editUsername, els.editEmail, els.editPhone, els.editAddress, els.editDob, els.editProfile]
+        .forEach(f => f?.removeAttribute("aria-invalid"));
+      editHasSubmitted = false;
     }
-    window.closeEditModal = closeEditModal; // keep inline hook
 
     // =========================
     // Edit Modal — Validation & Save
     // =========================
     function validateEditForm() {
-      const vName  = collapseSpaces(els.editFullname.value);
-      const vUser  = collapseSpaces(els.editUsername.value);
-      const vEmail = collapseSpaces(els.editEmail.value);
-      const vPhone = collapseSpaces(els.editPhone.value);
-      const vAddr  = collapseSpaces(els.editAddress.value);
-      const vDob   = els.editDob.value;
-      const vProf  = collapseSpaces(els.editProfile.value);
+      let valid = true;
 
-      // Apply normalized text back (for consistent comparisons)
+      // Normalize values
+      const vName  = collapse(els.editFullname.value);
+      const vLogin = collapse(els.editUsername.value);
+      const vEmail = lowerTrim(els.editEmail.value);
+      const vPhone = digitsOnly(els.editPhone.value);
+      const vAddr  = collapse(els.editAddress.value);
+      const vDob   = els.editDob.value;
+      const vProf  = collapse(els.editProfile.value);
+
+      // write back normalized values
       els.editFullname.value = vName;
-      els.editUsername.value = vUser;
+      els.editUsername.value = vLogin;
       els.editEmail.value    = vEmail;
       els.editPhone.value    = vPhone;
       els.editAddress.value  = vAddr;
 
-      let ok = true;
-
       // Full name: required, <= 64
-      const okName = vName.length > 0 && vName.length <= 64;
-      els.editErr.fullname.style.display = okName ? "none" : "block"; ok &&= okName;
+      const okName = nonEmpty(vName) && vName.length <= 64;
+      show(els.editErr.fullname, !okName);
+      els.editFullname.toggleAttribute("aria-invalid", !okName);
+      valid &&= okName;
 
-      // Username: 3–32 [A-Za-z0-9._-]
-      const okUser = /^[A-Za-z0-9._-]{3,32}$/.test(vUser);
-      els.editErr.username.style.display = okUser ? "none" : "block"; ok &&= okUser;
+      // Login ID: required, 3–32 allowed chars
+      const okLogin = /^[A-Za-z0-9._-]{3,32}$/.test(vLogin);
+      show(els.editErr.username, !okLogin);
+      els.editUsername.toggleAttribute("aria-invalid", !okLogin);
+      valid &&= okLogin;
 
-      // Email: basic pattern + <=254
+      // Email: required, <= 254 and simple pattern
       const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
-      els.editErr.email.style.display = okEmail ? "none" : "block"; ok &&= okEmail;
+      show(els.editErr.email, !okEmail);
+      els.editEmail.toggleAttribute("aria-invalid", !okEmail);
+      valid &&= okEmail;
 
-      // Phone: exactly 8 digits
+      // Phone: exactly 8 digits (SG style)
       const okPhone = /^\d{8}$/.test(vPhone);
-      els.editErr.phone.style.display = okPhone ? "none" : "block"; ok &&= okPhone;
+      show(els.editErr.phone, !okPhone);
+      els.editPhone.toggleAttribute("aria-invalid", !okPhone);
+      valid &&= okPhone;
 
       // Address: required, <= 255
-      const okAddr = vAddr.length > 0 && vAddr.length <= 255;
-      els.editErr.address.style.display = okAddr ? "none" : "block"; ok &&= okAddr;
+      const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
+      show(els.editErr.address, !okAddr);
+      els.editAddress.toggleAttribute("aria-invalid", !okAddr);
+      valid &&= okAddr;
 
-      // DOB: required and must be in the past
-      const okDob = vDob.length > 0 && pastDateOnly(vDob);
-      els.editErr.dob.style.display = okDob ? "none" : "block"; ok &&= okDob;
+      // DOB: required, past
+      const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
+      show(els.editErr.dob, !okDob);
+      els.editDob.toggleAttribute("aria-invalid", !okDob);
+      valid &&= okDob;
 
       // Profile: required unless the control is locked / disabled
       const profileLocked = els.editProfile.disabled || els.editProfile.dataset.locked === "true";
-      const okProf = profileLocked ? true : (collapseSpaces(els.editProfile.value).length > 0);
-      els.editErr.profile.style.display = okProf ? "none" : "block"; 
-      ok &&= okProf;
+      const okProf = profileLocked ? true : (collapse(els.editProfile.value).length > 0);
+      show(els.editErr.profile, !okProf);
+      els.editProfile.toggleAttribute("aria-invalid", !okProf);
+      valid &&= okProf;
 
-      return ok;
+      return valid;
     }
 
     async function saveEditModal() {
@@ -953,13 +1007,9 @@
     // Hook up form submit & inputs live-validate 
     els.editForm?.addEventListener("submit", (e) => {
       e.preventDefault();
+      editHasSubmitted = true;
+      if (!validateEditForm()) return;
       saveEditModal();
-    });
-    ["editFullname","editUsername","editEmail","editPhone","editAddress"].forEach(id => {
-      $(id)?.addEventListener("input", () => validateEditForm());
-    });
-    ["editDob","editProfile"].forEach(id => {
-      $(id)?.addEventListener("change", () => validateEditForm());
     });
 
     // =========================
