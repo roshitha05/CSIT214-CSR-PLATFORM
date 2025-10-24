@@ -276,7 +276,7 @@
       <div class="actions">
         <button class="btn-primary" type="submit" id="submitBtn">Submit</button>
         <button class="btn-secondary" type="reset">Clear</button>
-        <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
+        <button class="btn-secondary" type="button" onclick="returnToDashboard()">Return to Dashboard</button>
       </div>
 
       <!-- Status Bar (success / failed) -->
@@ -338,7 +338,6 @@
       success.style.color = "#991b1b";
       success.setAttribute("aria-live", "assertive");
       success.textContent = message;
-      formCompletedRef.value = true;
     }
 
     function clearStatus() {
@@ -367,11 +366,12 @@
     const collapse = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
     const nonEmpty = (s) => collapse(s).length > 0;
 
-    let hasSubmitted  = false;  // used for live validation after submit
-    let submitting    = false;  // used for safeguard to prevent double submission
+    let hasSubmitted  = false;  // enable live validation after first submit attempt
+    let submitting    = false;  // prevent double submission
     let allCategories = [];
     const formCompletedRef = { value: false };  // use as a ref object shared across helpers
 
+    // Focus first invalid input
     function focusFirstInvalid() {
       const order = [ input.title, input.description, input.category ];
       for (const el of order) {
@@ -382,9 +382,7 @@
       }
     }
 
-    // =========================
-    // Post-Submit (success) click to clear
-    // =========================
+    // After success, clear form when user focuses on a field
     function attachPostSuccessReset(inputs, form, clearFn, flagRef) {
       Object.values(inputs).forEach((field) => {
         field.addEventListener("focus", () => {
@@ -398,25 +396,6 @@
     }
 
     attachPostSuccessReset(input, form, clearStatus, formCompletedRef);
-
-    // =========================
-    // Live validation
-    // =========================
-    function attachLiveValidation(fields, validateFn, debounceMs = 200) {
-      let timer = null;
-      fields.forEach((field) => {
-        field.addEventListener("input", () => {
-          if (!hasSubmitted) return;
-          clearTimeout(timer);
-          timer = setTimeout(() => {
-            clearStatus();
-            validateFn();
-          }, debounceMs);
-        });
-      });
-    }
-
-    attachLiveValidation([input.title, input.description], validateFields);
 
     // =========================
     // Validation
@@ -453,6 +432,23 @@
 
       return valid;
     }
+
+    // Live validation (on input after first submit)
+    function attachLiveValidation(fields, validateFn, debounceMs = 200) {
+      let timer = null;
+      fields.forEach((field) => {
+        field.addEventListener("input", () => {
+          if (!hasSubmitted) return;
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            clearStatus();
+            validateFn();
+          }, debounceMs);
+        });
+      });
+    }
+
+    attachLiveValidation([input.title, input.description], validateFields);
 
     // =========================
     // Load Categories
@@ -508,6 +504,7 @@
         }
     }
 
+    // Category description preview
     input.category.addEventListener("change", () => {
       const descField = document.getElementById("categoryDesc");
       const selectedName = String(input.category.value || "").trim();
@@ -633,9 +630,7 @@
     // =========================
     // Navigation
     // =========================
-    $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "/pin/pin_dashboard.html";
-    });
+    function returnToDashboard() { window.location.href = "/pin/pin_dashboard.html"; }
   </script>
 </body>
 </html>
