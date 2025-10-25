@@ -403,6 +403,7 @@
       const DEBUG             = false;
       const API_URL           = "http://127.0.0.1:80/api";
       const CATEGORIES_API    = `${API_URL}/categories`;
+      const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
       const STATUS = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
       const TITLE_MAX = 120, DESC_MAX = 255;
 
@@ -502,6 +503,27 @@
           categoriesAllMap.clear();
           categoriesActive = [];
           setCategoryOptions([]); // empty list
+        }
+      }
+
+      async function loadServiceRequests() {
+        try {
+          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}`);
+          if (!ok) throw new Error(`Service requests load failed (${status})`);
+          const serviceRequests = Array.isArray(data) ? data : [];
+
+          await Promise.all(
+            serviceRequests.map(async (request) => {
+              const viewsRequest = await fetchJSON(
+                `${SERVICE_REQUEST_API}/${request.service_request_id}/views`
+              );
+              request.view_count = viewsRequest.data;
+            })
+          );
+
+          return serviceRequests;
+        } catch (e) {
+          console.error(e);
         }
       }
 
@@ -754,7 +776,8 @@
       (async function init(){
         wireStatusButtons();     // hook status buttons
         await loadCategories();  // load categories for the edit modal dropdown
-        renderCards(demoData);   // render initial list, then applyStatusFilter() runs
+        const serviceRequests = await loadServiceRequests();
+        renderCards(serviceRequests);   // render initial list, then applyStatusFilter() runs
         applyStatusFilter();     // ensure UI state & completed-filters visibility are correct
 
         // Wire reset button (only visible in Completed mode)
