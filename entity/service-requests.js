@@ -44,7 +44,7 @@ export default class ServiceRequestsEntity extends Entity {
             serviceRequest.title !== update.title
             && update.title !== undefined
         ) {
-            if (await this.titleExists(update.name)) return false;
+            if (await this.titleExists(update.title)) return false;
         };
 
         const setQuery = {};

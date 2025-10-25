@@ -532,7 +532,7 @@
           `${SERVICE_REQUEST_API}/${service_request_id}`,
           { method: 'DELETE' }
         );
-        if (!ok) throw new Error(`Service requests cancellation failed (${status})`);
+        if (!ok) throw new Error(`Service request cancellation failed (${status})`);
       }
 
       async function restoreServiceRequest(service_request_id) {
@@ -540,11 +540,21 @@
           `${SERVICE_REQUEST_API}/${service_request_id}/restore`,
           { method: 'POST' }
         );
-        if (!ok) throw new Error(`Service requests restoration failed (${status})`);
+        if (!ok) throw new Error(`Service request restoration failed (${status})`);
       }
 
-      async function updateServiceRequest() {
-
+      async function editServiceRequest(service_request_id, payload) {
+        const { ok, status, data } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${service_request_id}`,
+          { 
+            method: 'PUT', 
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          }
+        );
+        if (!ok) throw new Error(`Service request update failed (${status})`);
       }
 
       /* =========================================================
@@ -846,13 +856,19 @@
         const title       = collapse(DOM.editTitle.value);
         const category    = DOM.editCategory.value;
         const description = collapse(DOM.editDescription.value);
+        
+        try {
+          editServiceRequest(id, { title, category, description });
 
-        currentEditCard.querySelector(".card-title").textContent = title || "(Untitled request)";
-        currentEditCard.querySelector('[data-field="category"]').textContent    = category;
-        currentEditCard.querySelector('[data-field="description"]').textContent = description;
+          currentEditCard.querySelector(".card-title").textContent = title || "(Untitled request)";
+          currentEditCard.querySelector('[data-field="category"]').textContent    = category;
+          currentEditCard.querySelector('[data-field="description"]').textContent = description;
 
-        const detail = { service_request_id:Number(id), title, category, description };
-        document.dispatchEvent(new CustomEvent("request:update",{ detail }));
+          const detail = { service_request_id:Number(id), title, category, description };
+          document.dispatchEvent(new CustomEvent("request:update",{ detail }));
+        } catch (e) {
+          console.error(e);
+        }
 
         closeEditModal();
       });
