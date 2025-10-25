@@ -535,6 +535,14 @@
         if (!ok) throw new Error(`Service requests cancellation failed (${status})`);
       }
 
+      async function restoreServiceRequest(service_request_id) {
+        const { ok, status, data } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${service_request_id}/restore`,
+          { method: 'POST' }
+        );
+        if (!ok) throw new Error(`Service requests restoration failed (${status})`);
+      }
+
       async function updateServiceRequest() {
 
       }
@@ -618,12 +626,22 @@
             if (actionBtn.disabled) return;
             const current = card.dataset.status;
             
-            try {
-              await cancelServiceRequest(card.dataset.id);
-              setCardState(card, STATUS.CANCELLED);
-            } catch (e) {
-              setCardState(card, STATUS.ACTIVE);
-            } 
+            if (current === STATUS.ACTIVE) {
+              try {
+                await cancelServiceRequest(card.dataset.id);
+                setCardState(card, STATUS.CANCELLED);
+              } catch (e) {
+                console.error(e)
+              }
+            }
+            if (current === STATUS.CANCELLED) {
+              try {
+                await restoreServiceRequest(card.dataset.id);
+                setCardState(card, STATUS.ACTIVE);
+              } catch (e) {
+                console.error(e)
+              }
+            }
           });
 
           actionSlot.appendChild(actionBtn);

@@ -39,6 +39,7 @@ import GetServiceRequests from './control/service-requests/get-service-requests.
 import SearchPinServiceRequests from './control/service-requests/search-pin-service-requests.js';
 import SearchServiceRequests from './control/service-requests/search-service-requests.js';
 import UpdateServiceRequest from './control/service-requests/update-service-request.js';
+import RestoreServiceRequest from './control/service-requests/restore-service-request.js';
 
 export default class App {
     constructor() {
@@ -131,6 +132,7 @@ export default class App {
 
         serviceRequestsRouter.use('/', new CreateServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new DeleteServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new RestoreServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new GetPinServiceRequests().getRouter());
         serviceRequestsRouter.use('/', new GetServiceRequestViews().getRouter());
         serviceRequestsRouter.use('/', new GetServiceRequests().getRouter());
