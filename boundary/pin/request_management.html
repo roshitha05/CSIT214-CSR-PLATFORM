@@ -527,6 +527,18 @@
         }
       }
 
+      async function cancelServiceRequest(service_request_id) {
+        const { ok, status, data } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${service_request_id}`,
+          { method: 'DELETE' }
+        );
+        if (!ok) throw new Error(`Service requests cancellation failed (${status})`);
+      }
+
+      async function updateServiceRequest() {
+
+      }
+
       /* =========================================================
         6) Rendering
       ========================================================= */
@@ -602,11 +614,16 @@
           });
 
           // Cancel/Restore toggle (no backend yet)
-          actionBtn.addEventListener("click", ()=>{
+          actionBtn.addEventListener("click", async ()=>{
             if (actionBtn.disabled) return;
             const current = card.dataset.status;
-            if (current === STATUS.ACTIVE) setCardState(card, STATUS.CANCELLED);
-            else if (current === STATUS.CANCELLED) setCardState(card, STATUS.ACTIVE);
+            
+            try {
+              await cancelServiceRequest(card.dataset.id);
+              setCardState(card, STATUS.CANCELLED);
+            } catch (e) {
+              setCardState(card, STATUS.ACTIVE);
+            } 
           });
 
           actionSlot.appendChild(actionBtn);

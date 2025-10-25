@@ -39,7 +39,7 @@ export default class ServiceRequestsEntity extends Entity {
         if (Object.keys(update).length == 0) return true;
 
         if (!await this.idExists(service_request_id)) return false;
-        serviceRequest = (await this.getServiceRequests({ service_request_id }))[0];
+        const serviceRequest = (await this.getServiceRequests({ service_request_id }))[0];
         if (
             serviceRequest.title !== update.title
             && update.title !== undefined
@@ -57,7 +57,7 @@ export default class ServiceRequestsEntity extends Entity {
         await this.db
             .update(serviceRequestsTable)
             .set(setQuery)
-            .where(ilike(serviceRequestsTable.service_request_id, service_request_id));
+            .where(eq(serviceRequestsTable.service_request_id, service_request_id));
 
         return true;
     }
