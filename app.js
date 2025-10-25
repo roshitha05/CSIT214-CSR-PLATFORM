@@ -31,6 +31,15 @@ import UpdateCategory from './control/categories/update-category.js';
 import ArchiveCategory from './control/categories/archive-category.js';
 import RestoreCategory from './control/categories/restore-category.js';
 
+import CreateServiceRequest from './control/service-requests/create-service-request.js';
+import DeleteServiceRequest from './control/service-requests/delete-service-request.js';
+import GetPinServiceRequests from './control/service-requests/get-pin-service-requests.js';
+import GetServiceRequestViews from './control/service-requests/get-service-request-views.js';
+import GetServiceRequests from './control/service-requests/get-service-requests.js';
+import SearchPinServiceRequests from './control/service-requests/search-pin-service-requests.js';
+import SearchServiceRequests from './control/service-requests/search-service-requests.js';
+import UpdateServiceRequest from './control/service-requests/update-service-request.js';
+
 export default class App {
     constructor() {
         this.app = express();
@@ -94,6 +103,7 @@ export default class App {
         const userProfilesRouter = express.Router();
         const usersRouter = express.Router();
         const categoriesRouter = express.Router();
+        const serviceRequestsRouter = express.Router();
 
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
@@ -119,9 +129,19 @@ export default class App {
         categoriesRouter.use('/', new ArchiveCategory().getRouter());
         categoriesRouter.use('/', new RestoreCategory().getRouter());
 
+        serviceRequestsRouter.use('/', new CreateServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new DeleteServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new GetPinServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new GetServiceRequestViews().getRouter());
+        serviceRequestsRouter.use('/', new GetServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new SearchPinServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new SearchServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new UpdateServiceRequest().getRouter());
+
         apiRouter.use('/user-profiles', userProfilesRouter);
         apiRouter.use('/users', usersRouter);
         apiRouter.use('/categories', categoriesRouter);
+        apiRouter.use('/service-requests', serviceRequestsRouter);
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('boundary'));
