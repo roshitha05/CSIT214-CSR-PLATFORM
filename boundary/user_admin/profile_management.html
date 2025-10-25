@@ -83,23 +83,17 @@
     }
     td { font-size:.93rem; color:#334155; }
 
-    /* Hint */
-    .hint {
-      margin-top: 6px; font-size: .85rem;
-      color: var(--muted); display: block;
-    }
+    /* Hint text */
+    .hint { margin-top:6px; font-size:.85rem; color:var(--muted); display:block; }
 
     /* Hover and zebra */
     tbody tr:nth-child(odd) td { background:#fcfdff; }
     tbody tr:hover td { background:#f9fafb; }
 
-    td.description { white-space:normal; line-height:1.4; }
+    td.description, td.other { white-space:normal; line-height:1.4; }
     td.status { text-align:center; }
     td.actions { text-align:center; }
-
-    th:nth-child(4), th:nth-child(5) {
-      text-align: center;
-    }
+    th:nth-child(4), th:nth-child(5) { text-align:center; }
 
     /* ===== Status Badges ===== */
     .badge {
@@ -132,11 +126,8 @@
       display:flex; justify-content:center; align-items:center; gap:10px;
     }
 
-    /* --- Protected Roles --- */
-    .btn-suspend[disabled] {
-      cursor: not-allowed;
-      opacity:.55;
-    }
+    /* Protected (suspend disabled) */
+    .btn-suspend[disabled] { cursor:not-allowed; opacity:.55; }
 
     /* ===== Footer ===== */
     .footer {
@@ -175,9 +166,7 @@
     .modal-input:focus, .modal-textarea:focus {
       outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
     }
-    .modal-input[disabled] {
-      cursor: not-allowed; opacity: .8; background: #f1f5f9;
-    }
+    .modal-input[disabled] { cursor:not-allowed; opacity:.8; background:#f1f5f9; }
     .modal-textarea { min-height:110px; resize:vertical; }
 
     .modal-actions {
@@ -200,10 +189,8 @@
     }
     .btn-danger:hover { opacity:.9; transform:translateY(-1px); }
 
-    .error {
-      margin-top: 6px; color: var(--danger);
-      font-size: .9rem; display: none;
-    }
+    .error { margin-top:6px; color:var(--danger); font-size:.9rem; display:none; }
+    #statusMsg { display:none; margin-top:4px; padding:10px 12px; border-radius:8px; }
 
     @keyframes fadeIn { from{opacity:0; transform:scale(.95);} to{opacity:1; transform:scale(1);} }
   </style>
@@ -213,7 +200,7 @@
     <div class="header">
       <h1>Profile Management</h1>
       <div class="header-controls">
-        <button class="btn-dashboard" onclick="returnToDashboard()">Return to Dashboard</button>
+        <button class="btn-dashboard" id="btnBackToDash">Return to Dashboard</button>
         <div class="search-box">
           <input type="text" id="search" placeholder="Search by keyword...">
         </div>
@@ -223,11 +210,11 @@
     <div class="table-wrap">
       <table id="profileTable">
         <colgroup>
-          <col style="width: 20%"> <!-- Name -->
-          <col style="width: 35%"> <!-- Description -->
-          <col style="width: 10%"> <!-- Other -->
-          <col style="width: 15%"> <!-- Status -->
-          <col style="width: 20%"> <!-- Actions -->
+          <col style="width:20%"> <!-- Name -->
+          <col style="width:35%"> <!-- Description -->
+          <col style="width:10%"> <!-- Other -->
+          <col style="width:15%"> <!-- Status -->
+          <col style="width:20%"> <!-- Actions -->
         </colgroup>
         <thead>
           <tr>
@@ -262,28 +249,28 @@
           <label for="editName">Name <span style="color:var(--muted)">*</span></label>
           <input type="text" id="editName" class="modal-input" placeholder="Profile name"/>
           <small class="hint">Required. 1–64 characters.</small>
-          <div id="editErr-name" class="error" style="display:none;">Please enter a valid name (1–64 characters).</div>
+          <div id="editErr-name" class="error">Please enter a valid name (1–64 characters).</div>
         </div>
 
         <div class="form-row">
           <label for="editDesc">Description</label>
           <textarea id="editDesc" class="modal-textarea" placeholder="Short description"></textarea>
           <small class="hint">Optional. Up to 255 characters.</small>
-          <div id="editErr-desc" class="error" style="display:none;">Description must be 255 characters or fewer.</div>
+          <div id="editErr-desc" class="error">Description must be 255 characters or fewer.</div>
         </div>
 
         <div class="form-row">
           <label for="editOther">Other Info</label>
           <textarea id="editOther" class="modal-textarea" placeholder="Additional notes or info"></textarea>
           <small class="hint">Optional. Up to 128 characters.</small>
-          <div id="editErr-other" class="error" style="display:none;">Other info must be 128 characters or fewer.</div>
+          <div id="editErr-other" class="error">Other info must be 128 characters or fewer.</div>
         </div>
 
-        <div id="success" class="success" role="status" aria-live="polite"></div>
+        <div id="statusMsg" class="success" role="status" aria-live="polite"></div>
 
         <div class="modal-actions">
-          <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
-          <button type="button" class="btn-primary" onclick="saveEditModal()">Save</button>
+          <button type="button" class="btn-cancel" id="editModalCancelBtn">Cancel</button>
+          <button type="button" class="btn-primary" id="editModalSaveBtn">Save</button>
         </div>
       </div>
     </div>
@@ -295,8 +282,8 @@
       <h2 id="suspendTitle">Confirm Suspend</h2>
       <p>Are you sure you want to suspend this profile?</p>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeSuspendModal()">Cancel</button>
-        <button class="btn-danger" onclick="confirmSuspendUI()">Suspend</button>
+        <button class="btn-cancel" id="suspendModalCancelBtn">Cancel</button>
+        <button class="btn-danger" id="suspendModalConfirmBtn">Suspend</button>
       </div>
     </div>
   </div>
@@ -307,589 +294,559 @@
       <h2 id="reactivateTitle">Confirm Reactivation</h2>
       <p>Are you sure you want to reactivate this profile?</p>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeReactivateModal()">Cancel</button>
-        <button class="btn-primary" onclick="confirmReactivateUI()">Reactivate</button>
+        <button class="btn-cancel" id="reactivateModalCancelBtn">Cancel</button>
+        <button class="btn-primary" id="reactivateModalConfirmBtn">Reactivate</button>
       </div>
     </div>
   </div>
 
   <script>
-    // =========================
-    // Config 
-    // =========================
-    const DEBUG         = false;
-    const API_URL       = "http://127.0.0.1:80/api";
-    const PROFILES_API  = `${API_URL}/user-profiles`;
+  /* =========================================================
+    1) Config & constants
+  ========================================================= */
+  const DEBUG         = false;
+  const API_URL       = "http://127.0.0.1:80/api";
+  const PROFILES_API  = `${API_URL}/user-profiles`;
 
-    const STATUS = { ACTIVE: "ACTIVE", SUSPENDED: "SUSPENDED" };
+  const STATUS = { ACTIVE:"ACTIVE", SUSPENDED:"SUSPENDED" };
+  const NAME_MAX = 64, DESC_MAX = 255, OTHER_MAX = 128;
 
-    // Policy toggles (case-insensitive names)
-    const RESERVED_NAMES = new Set([
-      "user admin",
-      "csr representative",
-      "person-in-need",
-      "platform management",
-    ]);
+  // Policy toggles (case-insensitive)
+  const RESERVED_NAMES = new Set([
+    "user admin",
+    "csr representative",
+    "person-in-need",
+    "platform management",
+  ]);
+  const PROTECTED_SUSPEND_NAMES = new Set(["user admin"]); // cannot suspend
+  const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES;          // cannot edit name
 
-    const PROTECTED_SUSPEND_NAMES = new Set(["user admin"]); // "User Admin" is suspension-protected
-    const LOCK_NAME_EDIT_NAMES    = RESERVED_NAMES;          // cannot edit name
+  /* =========================================================
+    2) DOM shortcuts
+  ========================================================= */
+  const $  = (id) => document.getElementById(id);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-    // =========================
-    // DOM
-    // =========================
-    const $  = (id) => document.getElementById(id);
-    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const DOM = {
+    // Table
+    table: $("profileTable"),
+    tbody: $("profileTable")?.querySelector("tbody"),
+    noResultsRow: $("noResultsRow"),
+    search: $("search"),
 
-    const els = {
-      table: $("profileTable"),
-      tbody: $("profileTable")?.querySelector("tbody"),
-      noResultsRow: $("noResultsRow"),
-      search: $("search"),
+    // Edit modal
+    editModal: $("editModal"),
+    editName: $("editName"),
+    editDesc: $("editDesc"),
+    editOther: $("editOther"),
+    editErrName: $("editErr-name"),
+    editErrDesc: $("editErr-desc"),
+    editErrOther: $("editErr-other"),
+    statusMsg: $("statusMsg"),
+    editCancel: $("editModalCancelBtn"),
+    editSave: $("editModalSaveBtn"),
 
-      // Edit Modal
-      editModal: $("editModal"),
-      editName: $("editName"),
-      editDesc: $("editDesc"),
-      editOther: $("editOther"),
-      editErrName: $("editErr-name"),
-      editErrDesc: $("editErr-desc"),
-      editErrOther: $("editErr-other"),
-      success: $("success"),
+    // Suspend modal
+    suspendModal: $("suspendModal"),
+    suspendCancel: $("suspendModalCancelBtn"),
+    suspendConfirm: $("suspendModalConfirmBtn"),
 
-      // Suspend / Reactivate modals
-      suspendModal: $("suspendModal"),
-      reactivateModal: $("reactivateModal"),
+    // Reactivate modal
+    reactivateModal: $("reactivateModal"),
+    reactivateCancel: $("reactivateModalCancelBtn"),
+    reactivateConfirm: $("reactivateModalConfirmBtn"),
 
-      // Buttons
-      primaryBtn: {
-        edit: $("editModal")?.querySelector(".btn-primary"),
-        suspend: $("suspendModal")?.querySelector(".btn-danger"),
-        reactivate: $("reactivateModal")?.querySelector(".btn-primary"),
-      },
+    // Nav
+    btnBackToDash: $("btnBackToDash"),
+  };
 
-      cancelBtn: {
-        edit: $("editModal")?.querySelector(".btn-cancel"),
-        suspend: $("suspendModal")?.querySelector(".btn-cancel"),
-        reactivate: $("reactivateModal")?.querySelector(".btn-cancel"),
-      }
+  /* =========================================================
+    3) Utilities
+  ========================================================= */
+  const log = (...a)=>{ if(DEBUG) console.log("[profiles]", ...a); };
+  const norm = (s)=> String(s ?? "").trim().toLowerCase();
+  const collapse = (s)=> String(s ?? "").replace(/\s+/g," ").trim();
+  const hasText = (s)=> collapse(s).length > 0;
+
+  const escapeHTML = (s)=>
+    String(s ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+
+  const isProtectedSuspend = (name)=> PROTECTED_SUSPEND_NAMES.has(norm(name));
+  const isNameLocked       = (name)=> LOCK_NAME_EDIT_NAMES.has(norm(name));
+  const isReservedName     = (name)=> RESERVED_NAMES.has(norm(name));
+
+  // Duplicate name check (ignore current record if provided)
+  function isDuplicateName(newName, profiles, currentName=null){
+    const t = norm(newName), cur = norm(currentName);
+    return profiles.some(p => {
+      const ex = norm(p?.name);
+      return ex === t && ex !== cur;
+    });
+  }
+
+  // Status message helpers
+  function showStatusError(msg){
+    DOM.statusMsg.style.display="block";
+    DOM.statusMsg.style.background="#fee2e2";
+    DOM.statusMsg.style.border="1px solid #fecaca";
+    DOM.statusMsg.style.color="#991b1b";
+    DOM.statusMsg.style.whiteSpace="normal";
+    DOM.statusMsg.textContent = msg;
+  }
+  function showStatusDebug(endpoint, payload){
+    DOM.statusMsg.style.display="block";
+    DOM.statusMsg.style.background="#fef9c3";
+    DOM.statusMsg.style.border="1px solid #fde047";
+    DOM.statusMsg.style.color="#854d0e";
+    DOM.statusMsg.style.whiteSpace="pre-wrap";
+    DOM.statusMsg.textContent = `[DEBUG]\nPUT ${endpoint}\n\n${JSON.stringify(payload,null,2)}`;
+  }
+  function clearStatus(){ DOM.statusMsg.style.display="none"; DOM.statusMsg.textContent=""; }
+
+  /* =========================================================
+    4) State
+  ========================================================= */
+  let allProfiles = [];
+  let currentRow = null;            // <tr> currently being edited
+  let pendingSuspendRow = null;     // <tr> awaiting suspend confirm
+  let pendingReactivateRow = null;  // <tr> awaiting reactivate confirm
+
+  // Request guards
+  let editing=false, suspending=false, reactivating=false;
+
+  /* =========================================================
+    5) API layer
+  ========================================================= */
+  async function fetchJSON(url, options={}){
+    const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
+    const ct  = res.headers.get("content-type") || "";
+    let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  async function loadProfiles(){
+    try{
+      const { ok, status, data } = await fetchJSON(PROFILES_API, { method:"GET" });
+      if(!ok) throw new Error(`Failed to load profiles (${status})`);
+      const list = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
+      allProfiles = list;
+      renderRows(allProfiles);
+    }catch(e){
+      console.error(e);
+      allProfiles = [];
+      renderRows(allProfiles);
+      showStatusError("Unable to load profiles. Please try again later.");
     }
+  }
 
-    // =========================
-    // Utilities / Normalizers
-    // =========================
-    const log = (...args) => { if (DEBUG) console.log("[profiles]", ...args); };
-
-    const norm            = (s) => String(s ?? "").trim().toLowerCase();
-    const collapseSpaces  = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-    const nonEmpty        = (s) => collapseSpaces(s).length > 0;
-
-    const escapeHTML = (s) =>
-      String(s ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-    // Name policy checks
-    const isProtectedSuspend  = (name) => PROTECTED_SUSPEND_NAMES.has(norm(name));
-    const isNameLocked        = (name) => LOCK_NAME_EDIT_NAMES.has(norm(name));
-    const isReservedName      = (name) => RESERVED_NAMES.has(norm(name));
-
-    // Duplicate name check (case-insensitive). Ignores the current record if provided.
-    function isDuplicateName(newName, profiles, currentName = null) {
-      const target = norm(newName);
-      const cur    = norm(currentName);
-      return profiles.some(p => {
-        const existing = norm(p?.name);
-        return existing === target && existing !== cur;
-      });
+  async function loadProfilesBySearch(keyword){
+    try{
+      const { ok, status, data } = await fetchJSON(`${PROFILES_API}/search?keyword=${encodeURIComponent(keyword)}`, { method:"GET" });
+      if(!ok) throw new Error(`Failed to load profiles (${status})`);
+      const list = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
+      allProfiles = list;
+      renderRows(allProfiles);
+    }catch(e){
+      console.error(e);
+      allProfiles = [];
+      renderRows(allProfiles);
+      showStatusError("Unable to load profiles. Please try again later.");
     }
+  }
 
-    // =========================
-    // State
-    // =========================
-    let allProfiles          = [];
-    let currentRow           = null; // row being edited
-    let pendingSuspendRow    = null;
-    let pendingReactivateRow = null;
+  async function updateProfileAPI(key, payload){
+    return fetchJSON(`${PROFILES_API}/${key}`,{
+      method:"PUT",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+  }
 
-    // Request guards to prevent double-submission
-    let editing        = false;
-    let suspending     = false;
-    let reactivating   = false;
+  async function suspendProfileAPI(key){
+    return fetchJSON(`${PROFILES_API}/${key}/suspend`, { method:"POST" });
+  }
 
-    // =========================
-    // UI Status Helpers
-    // =========================
-    function showErr(message) {
-      els.success.style.display = "block";
-      els.success.style.background = "#fee2e2";
-      els.success.style.border = "1px solid #fecaca";
-      els.success.style.color = "#991b1b";
-      els.success.textContent = message;
-    }
+  async function reinstateProfileAPI(key){
+    return fetchJSON(`${PROFILES_API}/${key}/reinstate`, { method:"POST" });
+  }
 
-    function clearStatus() {
-      els.success.style.display = "none";
-      els.success.textContent = "";
-    }
-
-    // Debug Helper
-    function showDebug(endpoint, payload) {
-      els.success.style.display = "block";
-      els.success.style.background = "#fef9c3";   
-      els.success.style.border = "1px solid #fde047";
-      els.success.style.color = "#854d0e";
-      els.success.style.whiteSpace = "pre-wrap";
-      els.success.textContent =
-        `[DEBUG]:\n\n` +
-        `This would PUT to:\n${endpoint}\n\n` +
-        `With values:\n${JSON.stringify(payload, null, 2)}`;
-    }
-
-    // =========================
-    // API
-    // =========================
-    async function fetchJSON(url, options = {}) {
-      const res = await fetch(url, { credentials: "include", mode: "cors", ...options });
-      const ct = res.headers.get("content-type") || "";
-      let data = null;
-      try {
-        data = ct.includes("application/json") ? await res.json() : await res.text();
-      } catch {}
-      return { ok: res.ok, status: res.status, data };
-    }
-
-    // =========================
-    // Rendering
-    // =========================
-
-    // shows the status (visual / UI)
-    function statusBadgeHTML(name, statusStr) {
-      if (isProtectedSuspend(name)) {
-        return `
-          <span class="badge badge-protected" title="Protected role — cannot be suspended">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="12" height="12">
-              <path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 116 0v3H9z"/>
-            </svg>
-            Protected
-          </span>`;
-      }
-      return String(statusStr).toUpperCase() === STATUS.SUSPENDED
-        ? '<span class="badge badge-suspended">Suspended</span>'
-        : '<span class="badge badge-active">Active</span>';
-    }
-
-    // decides which buttons the user can click (UX)
-    function actionButtonHTML(name, statusStr) {
-      if (isProtectedSuspend(name)) {
-        return '<button class="btn-suspend" disabled title="Protected role — cannot be suspended">Suspend</button>';
-      }
-      return String(statusStr).toUpperCase() === STATUS.SUSPENDED
-        ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>'
-        : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
-    }
-
-    function rowHTML(p) {
-      const rawName = String(p?.name ?? "");
-      const status  = (p?.status || STATUS.ACTIVE).toUpperCase();
-      const name    = escapeHTML(p?.name);
-      const desc    = escapeHTML(p?.description);
-      const other   = p?.other ? escapeHTML(p.other) : "";
-      const key     = encodeURIComponent(rawName);
-
+  /* =========================================================
+    6) Rendering
+  ========================================================= */
+  function statusBadgeHTML(name, statusStr){
+    if(isProtectedSuspend(name)){
       return `
-        <tr data-key="${key}" data-user-profile="${name}" data-raw="${rawName}" data-status="${status}">
-          <td class="name">${name}</td>
-          <td class="description">${desc}</td>
-          <td class="other">${other}</td>
-          <td class="status">${statusBadgeHTML(rawName, status)}</td>
-          <td class="actions">
-            <div class="btn-row">
-              <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
-              ${actionButtonHTML(rawName, status)}
-            </div>
-          </td>
-        </tr>
-      `;
+        <span class="badge badge-protected" title="Protected role — cannot be suspended">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="12" height="12">
+            <path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 116 0v3H9z"/>
+          </svg>
+          Protected
+        </span>`;
+    }
+    return String(statusStr).toUpperCase() === STATUS.SUSPENDED
+      ? '<span class="badge badge-suspended">Suspended</span>'
+      : '<span class="badge badge-active">Active</span>';
+  }
+
+  function actionButtonHTML(name, statusStr){
+    if(isProtectedSuspend(name)){
+      return '<button class="btn-suspend" disabled title="Protected role — cannot be suspended">Suspend</button>';
+    }
+    return String(statusStr).toUpperCase() === STATUS.SUSPENDED
+      ? '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reactivate</button>'
+      : '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>';
+  }
+
+  function rowHTML(p){
+    const rawName = String(p?.name ?? "");
+    const status  = (p?.status || STATUS.ACTIVE).toUpperCase();
+    const name    = escapeHTML(p?.name);
+    const desc    = escapeHTML(p?.description);
+    const other   = p?.other ? escapeHTML(p.other) : "";
+    const key     = encodeURIComponent(rawName);
+
+    return `
+      <tr data-key="${key}" data-raw="${rawName}" data-status="${status}">
+        <td class="name">${name}</td>
+        <td class="description">${desc}</td>
+        <td class="other">${other}</td>
+        <td class="status">${statusBadgeHTML(rawName, status)}</td>
+        <td class="actions">
+          <div class="btn-row">
+            <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
+            ${actionButtonHTML(rawName, status)}
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function renderRows(profiles){
+    DOM.tbody.innerHTML = profiles
+      .slice()
+      .sort((a,b)=> String(a.name).localeCompare(String(b.name), undefined, { sensitivity:"base" }))
+      .map(rowHTML)
+      .join("");
+    updateNoResultsRow();
+  }
+
+  function updateNoResultsRow(){
+    const rows = $$("#profileTable tbody tr");
+    const anyVisible = rows.some(r => r.style.display !== "none");
+    DOM.noResultsRow.style.display = anyVisible ? "none" : "";
+  }
+
+  function setRowStatus(tr, nextStatus){
+    const status = (nextStatus || STATUS.ACTIVE).toUpperCase();
+    const rawName = tr.dataset.raw;
+    tr.dataset.status = status;
+    tr.querySelector(".status").innerHTML = statusBadgeHTML(rawName, status);
+
+    const btnRow = tr.querySelector(".actions .btn-row");
+    const curAct = btnRow.querySelector(".btn-suspend, .btn-reactivate");
+    const tmp = document.createElement("div");
+    tmp.innerHTML = actionButtonHTML(rawName, status);
+    const fresh = tmp.firstElementChild;
+    curAct ? curAct.replaceWith(fresh) : btnRow.appendChild(fresh);
+  }
+
+  /* =========================================================
+    7) Modal logic + validation
+  ========================================================= */
+  function openEditModal(tr){
+    currentRow = tr;
+
+    const currentNameRaw = tr.dataset.raw || "";
+    DOM.editName.value  = tr.querySelector(".name")?.textContent?.trim() || "";
+    DOM.editDesc.value  = tr.querySelector(".description")?.textContent?.trim() || "";
+    DOM.editOther.value = tr.querySelector(".other")?.textContent?.trim() || "";
+
+    // lock name if reserved
+    DOM.editName.disabled = isNameLocked(currentNameRaw);
+    DOM.editName.title = DOM.editName.disabled
+      ? "This profile name is reserved; it cannot be changed."
+      : "";
+
+    // reset field errors + status
+    clearStatus();
+    [DOM.editErrName, DOM.editErrDesc, DOM.editErrOther].forEach(el => el.style.display="none");
+    [DOM.editName, DOM.editDesc, DOM.editOther].forEach(el => el.removeAttribute("aria-invalid"));
+
+    DOM.editModal.style.display="flex";
+  }
+  function closeEditModal(){
+    DOM.editModal.style.display="none";
+    DOM.editName.disabled = false;
+    [DOM.editName, DOM.editDesc, DOM.editOther].forEach(el => { el.disabled=false; el.removeAttribute("aria-invalid"); });
+    [DOM.editErrName, DOM.editErrDesc, DOM.editErrOther].forEach(el => el.style.display="none");
+    clearStatus();
+  }
+
+  function validateNameInline(){
+    const el  = DOM.editName;
+    if(el.disabled) { DOM.editErrName.style.display="none"; el.removeAttribute("aria-invalid"); return true; }
+
+    const raw = el.value;
+    const v   = collapse(raw);
+
+    if(!hasText(v) || v.length > NAME_MAX){
+      DOM.editErrName.textContent = `Please enter a valid name (1–${NAME_MAX} characters).`;
+      DOM.editErrName.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    if(isReservedName(v)){
+      DOM.editErrName.textContent = "This name is reserved and cannot be used.";
+      DOM.editErrName.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    if(isDuplicateName(v, allProfiles, currentRow?.dataset?.raw)){
+      DOM.editErrName.textContent = "A profile with that name already exists.";
+      DOM.editErrName.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    DOM.editErrName.style.display="none";
+    el.removeAttribute("aria-invalid");
+    return true;
+  }
+
+  function validateDescInline(){
+    const el = DOM.editDesc;
+    const v  = collapse(el.value);
+    if(v.length > DESC_MAX){
+      DOM.editErrDesc.textContent = `Description must be ${DESC_MAX} characters or fewer.`;
+      DOM.editErrDesc.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    DOM.editErrDesc.style.display="none";
+    el.removeAttribute("aria-invalid");
+    return true;
+  }
+
+  function validateOtherInline(){
+    const el = DOM.editOther;
+    const v  = collapse(el.value);
+    if(v.length > OTHER_MAX){
+      DOM.editErrOther.textContent = `Other info must be ${OTHER_MAX} characters or fewer.`;
+      DOM.editErrOther.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    DOM.editErrOther.style.display="none";
+    el.removeAttribute("aria-invalid");
+    return true;
+  }
+
+  function validateEditForm(){
+    const a = validateNameInline();
+    const b = validateDescInline();
+    const c = validateOtherInline();
+    if(!a && !DOM.editName.disabled){ DOM.editName.focus({preventScroll:true}); return false; }
+    if(!b){ DOM.editDesc.focus({preventScroll:true}); return false; }
+    if(!c){ DOM.editOther.focus({preventScroll:true}); return false; }
+    return true;
+  }
+
+  async function saveEditModal(){
+    if(editing || !currentRow) return;
+    if(!validateEditForm()) return;
+
+    editing = true;
+    clearStatus();
+
+    // read raw, then normalize for persistence
+    const name = DOM.editName.disabled ? currentRow.dataset.raw : collapse(DOM.editName.value);
+    const description = collapse(DOM.editDesc.value);
+    const other = collapse(DOM.editOther.value);
+
+    const curRaw   = currentRow.dataset.raw;
+    const curDesc  = currentRow.querySelector(".description").textContent.trim();
+    const curOther = currentRow.querySelector(".other").textContent.trim();
+    const curKey   = currentRow.dataset.key;
+
+    // lock UI
+    const origText = DOM.editSave.textContent;
+    DOM.editSave.disabled = true;  DOM.editSave.textContent = "Updating...";
+    DOM.editCancel.disabled = true;
+    [DOM.editName, DOM.editDesc, DOM.editOther].forEach(el => el.disabled = true);
+
+    // nothing changed
+    if(name === curRaw && description === curDesc && other === curOther){
+      await new Promise(r => setTimeout(r, 300));
+      DOM.editSave.disabled=false; DOM.editSave.textContent = origText;
+      DOM.editCancel.disabled=false;
+      [DOM.editName, DOM.editDesc, DOM.editOther].forEach(el => el.disabled = false);
+      editing=false;
+      closeEditModal();
+      return;
     }
 
-    function populateTable(profiles) {
-      els.tbody.innerHTML = profiles
-        .slice()
-        .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
-        .map(rowHTML)
-        .join("");
-      updateNoResults();
+    // DEBUG path
+    if(DEBUG){
+      showStatusDebug(`${PROFILES_API}/${curKey}`, { name, description, other });
+      await new Promise(r => setTimeout(r, 400));
+      DOM.editSave.disabled=false; DOM.editSave.textContent = origText;
+      DOM.editCancel.disabled=false;
+      [DOM.editName, DOM.editDesc, DOM.editOther].forEach(el => el.disabled = false);
+      editing=false;
+      return;
     }
 
-    function updateNoResults() {
-      const rows = $$("#profileTable tbody tr");
-      const visible = rows.some((r) => r.style.display !== "none");
-      els.noResultsRow.style.display = visible ? "none" : "";
+    try{
+      const { ok, status } = await updateProfileAPI(curKey, { name, description, other });
+      if(!ok) throw new Error(`Update failed (${status})`);
+
+      // Update row
+      currentRow.querySelector(".name").textContent = name;
+      currentRow.querySelector(".description").textContent = description;
+      currentRow.querySelector(".other").textContent = other;
+      currentRow.dataset.raw = name;
+      currentRow.dataset.key = encodeURIComponent(name);
+
+      // Update cache
+      const i = allProfiles.findIndex(p => norm(p.name) === norm(curRaw));
+      if(i !== -1) allProfiles[i] = { ...allProfiles[i], name, description, other };
+
+      await new Promise(r => setTimeout(r, 500));
+      closeEditModal();
+    }catch(e){
+      console.error(e);
+      showStatusError("Could not save changes. Please try again.");
+    }finally{
+      DOM.editSave.disabled=false; DOM.editSave.textContent = origText;
+      DOM.editCancel.disabled=false;
+      [DOM.editName, DOM.editDesc, DOM.editOther].forEach(el => el.disabled = false);
+      editing=false;
     }
+  }
 
-    function applyStatusToRow(row, statusStr) {
-      const status = (statusStr || STATUS.ACTIVE).toUpperCase();
-      const name   = row.dataset.userProfile;
+  // Suspend modal
+  function openSuspendModal(button){
+    const row = button.closest("tr");
+    const name = row?.dataset?.raw || "";
+    if(isProtectedSuspend(name)) return;
+    pendingSuspendRow = row;
+    DOM.suspendModal.style.display="flex";
+  }
 
-      row.dataset.status = status;
-      row.querySelector(".status").innerHTML = statusBadgeHTML(name, status);
+  function closeSuspendModal(){
+    DOM.suspendModal.style.display="none";
+    pendingSuspendRow = null;
+  }
+  
+  async function confirmSuspend(){
+    if(!pendingSuspendRow || suspending) return;
+    suspending = true;
 
-      const btnRow = row.querySelector(".actions .btn-row");
-      const swapTarget = btnRow.querySelector(".btn-suspend, .btn-reactivate");
+    const key = pendingSuspendRow.dataset.key;
+    const origText = DOM.suspendConfirm.textContent;
+    DOM.suspendConfirm.disabled=true; DOM.suspendConfirm.textContent="Suspending...";
+    DOM.suspendCancel.disabled=true;
 
-      const tmp = document.createElement("div");
-      tmp.innerHTML = actionButtonHTML(name, status);
-      const fresh = tmp.firstElementChild;
-
-      swapTarget ? swapTarget.replaceWith(fresh) : btnRow.appendChild(fresh);
+    try{
+      const { ok, status } = await suspendProfileAPI(key);
+      if(!ok) throw new Error(`Suspend failed (${status})`);
+      setRowStatus(pendingSuspendRow, STATUS.SUSPENDED);
+    }catch(e){
+      console.error(e);
+      showStatusError("Could not suspend. Please try again.");
+    }finally{
+      await new Promise(r => setTimeout(r, 500));
+      DOM.suspendConfirm.disabled=false; DOM.suspendConfirm.textContent=origText;
+      DOM.suspendCancel.disabled=false;
+      suspending=false;
+      closeSuspendModal();
     }
+  }
 
-    async function loadProfiles() {
-      try {
-        const { ok, status, data } = await fetchJSON(PROFILES_API, { method: "GET" });
-        if (!ok) throw new Error(`Failed to load profiles (${status})`);
-        const list = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
-        allProfiles = list;
-        populateTable(allProfiles);
-      } catch (e) {
-        console.error(e);
-        allProfiles = [];
-        populateTable(allProfiles); // shows “No results”
-        showErr("Unable to load profiles. Please try again later.");
-      }
+  // Reactivate modal
+  function openReactivateModal(button){
+    pendingReactivateRow = button.closest("tr");
+    DOM.reactivateModal.style.display="flex";
+  }
+
+  function closeReactivateModal(){
+    DOM.reactivateModal.style.display="none";
+    pendingReactivateRow = null;
+  }
+
+  async function confirmReactivate(){
+    if(!pendingReactivateRow || reactivating) return;
+    reactivating = true;
+
+    const key = pendingReactivateRow.dataset.key;
+    const origText = DOM.reactivateConfirm.textContent;
+    DOM.reactivateConfirm.disabled=true; DOM.reactivateConfirm.textContent="Reactivating...";
+    DOM.reactivateCancel.disabled=true;
+
+    try{
+      const { ok, status } = await reinstateProfileAPI(key);
+      if(!ok) throw new Error(`Reinstate failed (${status})`);
+      setRowStatus(pendingReactivateRow, STATUS.ACTIVE);
+    }catch(e){
+      console.error(e);
+      showStatusError("Could not reactivate. Please try again.");
+    }finally{
+      await new Promise(r => setTimeout(r, 500));
+      DOM.reactivateConfirm.disabled=false; DOM.reactivateConfirm.textContent=origText;
+      DOM.reactivateCancel.disabled=false;
+      reactivating=false;
+      closeReactivateModal();
     }
+  }
 
-    async function searchProfile(keyword) {
-      try {
-        const { ok, status, data } = await fetchJSON(
-          `${PROFILES_API}/search?keyword=${keyword}`, 
-          { method: "GET" }
-        );
-        if (!ok) throw new Error(`Failed to load profiles (${status})`);
-        const list = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
-        allProfiles = list;
-        populateTable(allProfiles);
-      } catch (e) {
-        console.error(e);
-        allProfiles = [];
-        populateTable(allProfiles); // shows “No results”
-        showErr("Unable to load profiles. Please try again later.");
-      }
-    }
+  /* =========================================================
+    8) Search
+  ========================================================= */
+  function handleSearchInput(){
+    const q = DOM.search.value.trim().toLowerCase();
+    loadProfilesBySearch(q);
+    updateNoResultsRow();
+  }
 
-    loadProfiles();
+  /* =========================================================
+    9) Boot
+  ========================================================= */
+  (async function init(){
+    await loadProfiles();
 
-    // =========================
     // Search
-    // =========================
-    els.search.addEventListener("input", function () {
-      const filter = this.value.toLowerCase();
-      searchProfile(filter)
-      // $$("#profileTable tbody tr").forEach((row) => {
-      //   row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-      // });
-      updateNoResults();
-      });
+    DOM.search.addEventListener("input", handleSearchInput);
 
-    // =========================
-    // Modals: Edit
-    // =========================
-    function openEditModal(row) {
-      currentRow = row;
-      const currentName = currentRow.dataset.raw || "";
+    // Edit modal
+    DOM.editSave.addEventListener("click", saveEditModal);
+    DOM.editCancel.addEventListener("click", closeEditModal);
+    DOM.editName.addEventListener("input", validateNameInline);
+    DOM.editName.addEventListener("blur",  validateNameInline);
+    DOM.editDesc.addEventListener("input", validateDescInline);
+    DOM.editDesc.addEventListener("blur",  validateDescInline);
+    DOM.editOther.addEventListener("input", validateOtherInline);
+    DOM.editOther.addEventListener("blur",  validateOtherInline);
 
-      els.editName.value  = currentRow.querySelector(".name").textContent.trim();
-      els.editDesc.value  = currentRow.querySelector(".description").textContent.trim();
-      els.editOther.value = currentRow.querySelector(".other").textContent.trim();
+    // Suspend modal
+    DOM.suspendConfirm.addEventListener("click", confirmSuspend);
+    DOM.suspendCancel.addEventListener("click", closeSuspendModal);
 
-      const protectedSuspend = isProtectedSuspend(currentName);
-      els.editName.disabled = isNameLocked(currentName);
+    // Reactivate modal
+    DOM.reactivateConfirm.addEventListener("click", confirmReactivate);
+    DOM.reactivateCancel.addEventListener("click", closeReactivateModal);
 
-      if (protectedSuspend) {
-        els.editName.title = "This profile is protected; its name cannot be changed.";
-      } else {
-        els.editName.removeAttribute("title");
-      }
+    // Nav
+    DOM.btnBackToDash.addEventListener("click", ()=>{ window.location.href = "admin_dashboard.html"; });
+  })();
 
-      // reset UI
-      els.editErrName.style.display = "none";
-      els.editErrDesc.style.display = "none";
-      els.editErrOther.style.display = "none";
-      [els.editName, els.editDesc, els.editOther].forEach(el => el.removeAttribute("aria-invalid"));
-      clearStatus();
-
-      els.editModal.style.display = "flex";
-    }
-
-    function closeEditModal() {
-      els.editModal.style.display = "none";
-      els.editName.disabled = false;
-
-      // reset UI (field-level)
-      els.editErrName.style.display = "none";
-      els.editErrDesc.style.display = "none";
-      els.editErrOther.style.display = "none";
-      [els.editName, els.editDesc, els.editOther].forEach(el => el.removeAttribute("aria-invalid"));
-
-      clearStatus();
-    }
-
-    function validateEditForm() {
-      const nameEl  = els.editName;
-      const descEl  = els.editDesc;
-      const otherEl = els.editOther;
-
-      const vName  = collapseSpaces(nameEl.value);
-      const vDesc  = collapseSpaces(descEl.value);
-      const vOther = collapseSpaces(otherEl.value);
-
-      nameEl.value  = vName;
-      descEl.value  = vDesc;
-      otherEl.value = vOther;
-
-      let ok = true;
-
-      // Name: required (1–64), not reserved, not duplicate (case-insensitive)
-      if (!nameEl.disabled) {
-        if (!nonEmpty(vName) || vName.length > 64) {
-          els.editErrName.textContent = "Please enter a valid name (1–64 characters).";
-          els.editErrName.style.display = "block";
-          nameEl.setAttribute("aria-invalid", "true");
-          ok = false;
-        } else if (isReservedName(vName)) {
-          els.editErrName.textContent = "This name is reserved and cannot be used.";
-          els.editErrName.style.display = "block";
-          nameEl.setAttribute("aria-invalid", "true");
-          ok = false;
-        } else if (isDuplicateName(vName, allProfiles, currentRow?.dataset?.raw)) {
-          els.editErrName.textContent = "A profile with that name already exists.";
-          els.editErrName.style.display = "block";
-          nameEl.setAttribute("aria-invalid", "true");
-          ok = false;
-        }
-      }
-
-      // Description: optional, <= 255
-      if (vDesc.length > 255) {
-        els.editErrDesc.style.display = "block";
-        descEl.setAttribute("aria-invalid", "true");
-        ok = false;
-      }
-
-      // Other: optional, <= 128
-      if (vOther.length > 128) {
-        els.editErrOther.style.display = "block";
-        otherEl.setAttribute("aria-invalid", "true");
-        ok = false;
-      }
-
-      // Focus first invalid
-      if (!ok) {
-        if (!nameEl.disabled && nameEl.hasAttribute("aria-invalid")) {
-          nameEl.focus({ preventScroll: true });
-        } else if (descEl.hasAttribute("aria-invalid")) {
-          descEl.focus({ preventScroll: true });
-        } else if (otherEl.hasAttribute("aria-invalid")) {
-          otherEl.focus({ preventScroll: true });
-        }
-      }
-      
-      return ok;
-    }
-
-    async function saveEditModal() {
-      if (editing) return;
-      if (!validateEditForm()) return;
-      if (!currentRow) return;
-
-      editing = true;
-
-      const name = els.editName.value.trim();
-      const description = els.editDesc.value.trim();
-      const other = els.editOther.value.trim();
-
-      const curKey   = currentRow.dataset.key;
-      const curRaw  = currentRow.dataset.raw;
-      const curDesc  = currentRow.querySelector(".description").textContent.trim();
-      const curOther = currentRow.querySelector(".other").textContent.trim();
-
-      const payload = { name, description, other }
-
-      const saveBtn   = els.primaryBtn.edit;
-      const cancelBtn = els.cancelBtn.edit;
-      const origText  = saveBtn?.textContent;
-
-      if (saveBtn)   { saveBtn.disabled = true;   saveBtn.textContent = "Updating..."; }
-      if (cancelBtn) { cancelBtn.disabled = true; }
-
-      // Freeze fields during submit
-      const fields = [els.editName, els.editDesc, els.editOther].filter(Boolean);
-      fields.forEach(el => el.disabled = true);
-
-      // nothing changed
-      if (name === curRaw && description === curDesc && other === curOther) {
-        await new Promise(r => setTimeout(r, 100));
-        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
-        if (cancelBtn) { cancelBtn.disabled = false; }
-        fields.forEach(el => el.disabled = false);
-        editing = false;
-        closeEditModal();
-        return;
-      }
-
-      // DEBUG mode
-      if (DEBUG) {
-        showDebug(`${PROFILES_API}/${curKey}`, payload);
-        await new Promise(r => setTimeout(r, 400));
-        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
-        if (cancelBtn) { cancelBtn.disabled = false; }
-        fields.forEach(el => el.disabled = false);
-        editing = false;
-        return;
-      }
-
-      let updated = false;
-
-      try {
-        const { ok, status } = await fetchJSON(`${PROFILES_API}/${curKey}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (!ok) throw new Error(`Update failed (${status})`);
-
-        // Update row in place
-        currentRow.querySelector(".name").textContent        = name;
-        currentRow.querySelector(".description").textContent = description;
-        currentRow.querySelector(".other").textContent       = other;
-
-        currentRow.dataset.raw = name;
-        currentRow.dataset.key = encodeURIComponent(name);
-
-        // Update cache
-        const i = allProfiles.findIndex(p => norm(p.name) === norm(curRaw));
-        if (i !== -1) allProfiles[i] = { ...allProfiles[i], ...payload };
-
-        updated = true;
-      } 
-      catch (e) {
-        console.error(e);
-        showErr("Could not save changes. Please try again.");
-      } 
-      finally {
-        await new Promise(r => setTimeout(r, 1000));
-
-        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
-        if (cancelBtn) { cancelBtn.disabled = false; }
-        fields.forEach(el => el.disabled = false);
-
-        editing = false;
-
-        if (updated) closeEditModal();
-      }
-    }
-
-    // =========================
-    // Modals: Suspend
-    // =========================
-    function openSuspendModal(button) {
-      const row  = button.closest("tr");
-      const name = row.dataset.userProfile;
-      if (isProtectedSuspend(name)) return;
-      pendingSuspendRow = row;
-      $("suspendModal").style.display = "flex";
-    }
-    
-    function closeSuspendModal() {
-      $("suspendModal").style.display = "none";
-      pendingSuspendRow = null;
-    }
-
-    async function confirmSuspendUI() {
-      if (!pendingSuspendRow || suspending) return;
-      suspending = true;
-
-      const key = pendingSuspendRow.dataset.key;
-      const suspendBtn = els.primaryBtn.suspend;
-      const cancelBtn = els.cancelBtn.suspend;
-      const original = suspendBtn?.textContent;
-
-      if (suspendBtn) { suspendBtn.disabled = true; suspendBtn.textContent = "Suspending..."; }
-      if (cancelBtn)  { cancelBtn.disabled = true; }
-
-      try {
-        const { ok, status, data } = await fetchJSON(`${PROFILES_API}/${key}/suspend`, { method: "POST" });
-        if (!ok) throw new Error(`Suspend failed (${status})`);
-        applyStatusToRow(pendingSuspendRow, STATUS.SUSPENDED);
-      } 
-      catch (e) {
-        console.error(e);
-        showErr("Could not suspend. Please try again.");
-      } 
-      finally {
-        suspending = false;
-        await new Promise(r => setTimeout(r, 1000));
-
-        if (suspendBtn) { suspendBtn.disabled = false; suspendBtn.textContent = original || "Suspend"; }
-        if (cancelBtn)  { cancelBtn.disabled = false; }
-
-        closeSuspendModal();
-      }
-    }
-
-    // =========================
-    // Modals: Reactivate / Reinstate
-    // =========================
-    function openReactivateModal(button) {
-      pendingReactivateRow = button.closest("tr");
-      $("reactivateModal").style.display = "flex";
-    }
-
-    function closeReactivateModal() {
-      $("reactivateModal").style.display = "none";
-      pendingReactivateRow = null;
-    }
-
-    async function confirmReactivateUI() {
-      if (!pendingReactivateRow || reactivating) return;
-      reactivating = true;
-
-      const key = pendingReactivateRow.dataset.key;
-      const reactivateBtn = els.primaryBtn?.reactivate;
-      const cancelBtn = els.cancelBtn?.reactivate;
-      const original = reactivateBtn.textContent;
-
-      if (reactivateBtn) { reactivateBtn.disabled = true; reactivateBtn.textContent = "Reactivating..."; }
-      if (cancelBtn)     { cancelBtn.disabled = true; };
-
-      try {
-        const { ok, status } = await fetchJSON(`${PROFILES_API}/${key}/reinstate`, { method: "POST" });
-        if (!ok) throw new Error(`Reinstate failed (${status})`);
-        applyStatusToRow(pendingReactivateRow, STATUS.ACTIVE);
-      } 
-      catch (e) {
-        console.error(e);
-        showErr("Could not reactivate. Please try again.");
-      } 
-      finally {
-        reactivating = false;
-        await new Promise(r => setTimeout(r, 1000));
-
-        // Re-enable both buttons
-        if (reactivateBtn) { reactivateBtn.disabled = false; reactivateBtn.textContent = original || "Reactivate"; }
-        if (cancelBtn)     { cancelBtn.disabled = false; }
-
-        closeReactivateModal();
-      }
-    }
-
-    // =========================
-    // Navigation
-    // =========================
-    function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
+  // Expose modal openers like category page
+  window.openEditModal = openEditModal;
+  window.openSuspendModal = openSuspendModal;
+  window.openReactivateModal = openReactivateModal;
   </script>
 </body>
 </html>
