@@ -294,7 +294,7 @@
     // =========================
     const DEBUG          = false;  // toggle as needed
     const API_URL        = "http://127.0.0.1:80/api";
-    const REQUESTS_API   = `${API_URL}/requests`;
+    const REQUESTS_API   = `${API_URL}/service-requests`;
     const CATEGORIES_API = `${API_URL}/categories`;
 
     // =========================
@@ -582,6 +582,7 @@
         title       : collapse(input.title.value),
         description : collapse(input.description.value),
         category    : collapse(input.category.value),
+        created_by  : localStorage.getItem('user_id')
       };
 
       if (DEBUG) {
