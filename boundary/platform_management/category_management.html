@@ -213,7 +213,7 @@
     <div class="header">
       <h1>Category Management</h1>
       <div class="header-controls">
-        <button class="btn-dashboard" onclick="returnToDashboard()">Return to Dashboard</button>
+        <button class="btn-dashboard" id="btnBackToDash">Return to Dashboard</button>
         <div class="search-box">
           <input type="text" id="search" placeholder="Search by keyword...">
         </div>
@@ -221,7 +221,7 @@
     </div>
 
     <div class="table-wrap">
-      <table id="profileTable">
+      <table id="categoryTable">
         <colgroup>
           <col style="width: 20%"> <!-- Name -->
           <col style="width: 40%"> <!-- Description -->
@@ -260,21 +260,21 @@
           <label for="editName">Name <span style="color:var(--muted)">*</span></label>
           <input type="text" id="editName" class="modal-input" placeholder="Category name"/>
           <small class="hint">Required. 1–64 characters.</small>
-          <div id="editErr-name" class="error" style="display:none;">Please enter a valid name (1–64 characters).</div>
+          <div id="editErr-name" class="error">Please enter a valid name (1–64 characters).</div>
         </div>
 
         <div class="form-row">
           <label for="editDesc">Description <span style="color:var(--muted)">*</span></label>
           <textarea id="editDesc" class="modal-textarea" placeholder="Short description"></textarea>
           <small class="hint">Required. Up to 255 characters.</small>
-          <div id="editErr-desc" class="error" style="display:none;">Description must be 255 characters or fewer.</div>
+          <div id="editErr-desc" class="error">Description must be 255 characters or fewer.</div>
         </div>
 
-        <div id="success" class="success" role="status" aria-live="polite"></div>
+        <div id="statusMsg" class="success" role="status" aria-live="polite" style="display:none;"></div>
 
         <div class="modal-actions">
-          <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
-          <button type="button" class="btn-primary" onclick="saveEditModal()">Save</button>
+          <button type="button" class="btn-cancel" id="editModalCancelBtn">Cancel</button>
+          <button type="button" class="btn-primary" id="editModalSaveBtn">Save</button>
         </div>
       </div>
     </div>
@@ -286,515 +286,502 @@
       <h2 id="archiveTitle">Confirm Archive</h2>
       <p>Are you sure you want to archive this category?</p>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeArchiveModal()">Cancel</button>
-        <button class="btn-danger" onclick="confirmArchiveUI()">Archive</button>
+        <button class="btn-cancel" id="archiveModalCancelBtn">Cancel</button>
+        <button class="btn-danger" id="archiveModalConfirmBtn">Archive</button>
       </div>
     </div>
   </div>
 
-  <!-- Reactivate Modal -->
+  <!-- Restore Modal -->
   <div class="modal" id="restoreModal" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
     <div class="modal-content">
       <h2 id="restoreTitle">Confirm Restore</h2>
       <p>Are you sure you want to restore this category?</p>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeRestoreModal()">Cancel</button>
-        <button class="btn-primary" onclick="confirmRestoreUI()">Restore</button>
+        <button class="btn-cancel" id="restoreModalCancelBtn">Cancel</button>
+        <button class="btn-primary" id="restoreModalConfirmBtn">Restore</button>
       </div>
     </div>
   </div>
 
   <script>
-    // =========================
-    // Config 
-    // =========================
-    const DEBUG           = false;
-    const API_URL         = "http://127.0.0.1:80/api";
-    const CATEGORIES_API  = `${API_URL}/categories`;
+  /* =========================================================
+    1) Config & constants
+  ========================================================= */
+  const DEBUG          = false;
+  const API_URL        = "http://127.0.0.1:80/api";
+  const CATEGORIES_API = `${API_URL}/categories`;
 
-    const STATUS = { ACTIVE: "ACTIVE", ARCHIVED: "ARCHIVED" };
+  const STATUS = { ACTIVE:"ACTIVE", ARCHIVED:"ARCHIVED" };
+  const NAME_MAX = 64, DESC_MAX = 255;
 
-    // =========================
-    // DOM
-    // =========================
-    const $  = (id) => document.getElementById(id);
-    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  /* =========================================================
+    2) DOM shortcuts
+  ========================================================= */
+  const $  = (id) => document.getElementById(id);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-    const els = {
-      table: $("profileTable"),
-      tbody: $("profileTable")?.querySelector("tbody"),
-      noResultsRow: $("noResultsRow"),
-      search: $("search"),
+  const DOM = {
+    // Table
+    table: $("categoryTable"),
+    tbody: $("categoryTable")?.querySelector("tbody"),
+    noResultsRow: $("noResultsRow"),
+    search: $("search"),
 
-      editModal: $("editModal"),
-      editName: $("editName"),
-      editDesc: $("editDesc"),
-      editErrName: $("editErr-name"),
-      editErrDesc: $("editErr-desc"),
-      success: $("success"),
+    // Edit modal
+    editModal: $("editModal"),
+    editName: $("editName"),
+    editDesc: $("editDesc"),
+    editErrName: $("editErr-name"),
+    editErrDesc: $("editErr-desc"),
+    statusMsg: $("statusMsg"),
+    editCancel: $("editModalCancelBtn"),
+    editSave: $("editModalSaveBtn"),
 
-      primaryBtn: {
-        edit: $("editModal")?.querySelector(".btn-primary"),
-        archive: $("archiveModal")?.querySelector(".btn-danger"),
-        restore: $("restoreModal")?.querySelector(".btn-primary"),
-      },
+    // Archive modal
+    archiveModal: $("archiveModal"),
+    archiveCancel: $("archiveModalCancelBtn"),
+    archiveConfirm: $("archiveModalConfirmBtn"),
 
-      cancelBtn: {
-        edit: document.querySelector("#editModal .btn-cancel"),
-        archive: document.querySelector("#archiveModal .btn-cancel"),
-        restore: document.querySelector("#restoreModal .btn-cancel"),
-      }
+    // Restore modal
+    restoreModal: $("restoreModal"),
+    restoreCancel: $("restoreModalCancelBtn"),
+    restoreConfirm: $("restoreModalConfirmBtn"),
+
+    // Nav
+    btnBackToDash: $("btnBackToDash"),
+  };
+
+  /* =========================================================
+    3) Utilities
+  ========================================================= */
+  const log = (...a)=>{ if(DEBUG) console.log("[categories]", ...a); };
+  const norm = (s)=> String(s ?? "").trim().toLowerCase();
+  const collapse = (s)=> String(s ?? "").replace(/\s+/g," ").trim();
+  const hasText = (s)=> collapse(s).length > 0;
+
+  const escapeHTML = (s)=>
+    String(s ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+
+  function isDuplicateName(newName, profiles, currentName=null){
+    const t = norm(newName), cur = norm(currentName);
+    return profiles.some(p => {
+      const ex = norm(p?.name);
+      return ex === t && ex !== cur;
+    });
+  }
+
+  // Status message helpers
+  function showStatusError(msg){
+    DOM.statusMsg.style.display="block";
+    DOM.statusMsg.style.background="#fee2e2";
+    DOM.statusMsg.style.border="1px solid #fecaca";
+    DOM.statusMsg.style.color="#991b1b";
+    DOM.statusMsg.style.whiteSpace="normal";
+    DOM.statusMsg.textContent = msg;
+  }
+  function showStatusDebug(endpoint, payload){
+    DOM.statusMsg.style.display="block";
+    DOM.statusMsg.style.background="#fef9c3";
+    DOM.statusMsg.style.border="1px solid #fde047";
+    DOM.statusMsg.style.color="#854d0e";
+    DOM.statusMsg.style.whiteSpace="pre-wrap";
+    DOM.statusMsg.textContent = `[DEBUG]\nPUT ${endpoint}\n\n${JSON.stringify(payload,null,2)}`;
+  }
+  function clearStatus(){ DOM.statusMsg.style.display="none"; DOM.statusMsg.textContent=""; }
+
+  /* =========================================================
+    4) State
+  ========================================================= */
+  let allCategories = [];
+  let currentRow = null;          // <tr> currently being edited
+  let pendingArchiveRow = null;   // <tr> awaiting archive confirm
+  let pendingRestoreRow = null;   // <tr> awaiting restore confirm
+
+  // Request guards
+  let editing=false, archiving=false, restoring=false;
+
+  /* =========================================================
+    5) API layer
+  ========================================================= */
+  async function fetchJSON(url, options={}){
+    const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
+    const ct  = res.headers.get("content-type") || "";
+    let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  async function loadCategories(){
+    try{
+      const { ok, status, data } = await fetchJSON(CATEGORIES_API, { method:"GET" });
+      if(!ok) throw new Error(`Failed to load categories (${status})`);
+      const list = Array.isArray(data?.categories) ? data.categories : [];
+      allCategories = list;
+      renderRows(allCategories);
+    }catch(e){
+      console.error(e);
+      allCategories = [];
+      renderRows(allCategories);
+      showStatusError("Unable to load categories. Please try again later.");
+    }
+  }
+
+  async function loadCategoriesBySearch(keyword){
+    try{
+      const { ok, status, data } = await fetchJSON(`${CATEGORIES_API}/search?keyword=${encodeURIComponent(keyword)}`, { method:"GET" });
+      if(!ok) throw new Error(`Failed to load categories (${status})`);
+      const list = Array.isArray(data?.categories) ? data.categories : [];
+      allCategories = list;
+      renderRows(allCategories);
+    }catch(e){
+      console.error(e);
+      allCategories = [];
+      renderRows(allCategories);
+      showStatusError("Unable to load categories. Please try again later.");
+    }
+  }
+
+  async function updateCategoryAPI(key, payload){
+    return fetchJSON(`${CATEGORIES_API}/${key}`,{
+      method:"PUT",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function archiveCategoryAPI(key){
+    return fetchJSON(`${CATEGORIES_API}/${key}/archive`, { method:"POST" });
+  }
+
+  async function restoreCategoryAPI(key){
+    return fetchJSON(`${CATEGORIES_API}/${key}/restore`, { method:"POST" });
+  }
+
+  /* =========================================================
+    6) Rendering
+  ========================================================= */
+  function getStatusBadgeHTML(statusStr){
+    return String(statusStr).toUpperCase() === STATUS.ARCHIVED
+      ? '<span class="badge badge-suspended">Archived</span>'
+      : '<span class="badge badge-active">Active</span>';
+  }
+
+  function getActionButtonHTML(statusStr){
+    return String(statusStr).toUpperCase() === STATUS.ARCHIVED
+      ? '<button class="btn-reactivate" onclick="openRestoreModal(this)">Restore</button>'
+      : '<button class="btn-suspend" onclick="openArchiveModal(this)">Archive</button>';
+  }
+
+  function rowHTML(cat){
+    const rawName = String(cat?.name ?? "");
+    const status  = (cat?.status || STATUS.ACTIVE).toUpperCase();
+    const name    = escapeHTML(cat?.name);
+    const desc    = escapeHTML(cat?.description);
+    const key     = encodeURIComponent(rawName);
+
+    return `
+      <tr data-key="${key}" data-raw="${rawName}" data-status="${status}">
+        <td class="name">${name}</td>
+        <td class="description">${desc}</td>
+        <td class="status">${getStatusBadgeHTML(status)}</td>
+        <td class="actions">
+          <div class="btn-row">
+            <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
+            ${getActionButtonHTML(status)}
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function renderRows(categories){
+    DOM.tbody.innerHTML = categories
+      .slice()
+      .sort((a,b)=> String(a.name).localeCompare(String(b.name), undefined, { sensitivity:"base" }))
+      .map(rowHTML)
+      .join("");
+    updateNoResultsRow();
+  }
+
+  function updateNoResultsRow(){
+    const rows = $$("#categoryTable tbody tr");
+    const anyVisible = rows.some(r => r.style.display !== "none");
+    DOM.noResultsRow.style.display = anyVisible ? "none" : "";
+  }
+
+  function setRowState(tr, nextStatus){
+    const status = (nextStatus || STATUS.ACTIVE).toUpperCase();
+    tr.dataset.status = status;
+    tr.querySelector(".status").innerHTML = getStatusBadgeHTML(status);
+
+    const btnRow = tr.querySelector(".actions .btn-row");
+    const curAct = btnRow.querySelector(".btn-suspend, .btn-reactivate");
+    const tmp = document.createElement("div");
+    tmp.innerHTML = getActionButtonHTML(status);
+    const fresh = tmp.firstElementChild;
+    curAct ? curAct.replaceWith(fresh) : btnRow.appendChild(fresh);
+  }
+
+  /* =========================================================
+    7) Modal logic + validation
+  ========================================================= */
+  function openEditModal(tr){
+    currentRow = tr;
+    DOM.editName.value = tr.querySelector(".name")?.textContent?.trim() || "";
+    DOM.editDesc.value = tr.querySelector(".description")?.textContent?.trim() || "";
+
+    // reset field errors + status
+    clearStatus();
+    [DOM.editErrName, DOM.editErrDesc].forEach(el => el.style.display="none");
+    [DOM.editName, DOM.editDesc].forEach(el => el.removeAttribute("aria-invalid"));
+
+    DOM.editModal.style.display="flex";
+  }
+  function closeEditModal(){
+    DOM.editModal.style.display="none";
+    [DOM.editName, DOM.editDesc].forEach(el => { el.disabled=false; el.removeAttribute("aria-invalid"); });
+    [DOM.editErrName, DOM.editErrDesc].forEach(el => el.style.display="none");
+    clearStatus();
+  }
+
+  function validateNameInline(){
+    const el  = DOM.editName;
+    const raw = el.value;   // keep what user typed
+    const v   = raw.trim(); // use trimmed for checks
+
+    if(!hasText(v) || v.length > NAME_MAX){
+      DOM.editErrName.textContent = `Please enter a valid name (1–${NAME_MAX} characters).`;
+      DOM.editErrName.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    if(isDuplicateName(v, allCategories, currentRow?.dataset?.raw)){
+      DOM.editErrName.textContent = "A category with that name already exists.";
+      DOM.editErrName.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    DOM.editErrName.style.display="none";
+    el.removeAttribute("aria-invalid");
+    return true;
+  }
+
+  function validateDescInline(){
+    const el = DOM.editDesc;
+    const v  = el.value.trim();
+
+    if(!hasText(v) || v.length > DESC_MAX){
+      DOM.editErrDesc.textContent = `Description must be ${DESC_MAX} characters or fewer.`;
+      DOM.editErrDesc.style.display="block";
+      el.setAttribute("aria-invalid","true");
+      return false;
+    }
+    DOM.editErrDesc.style.display="none";
+    el.removeAttribute("aria-invalid");
+    return true;
+  }
+
+  function validateEditForm(){
+    const a = validateNameInline();
+    const b = validateDescInline();
+    if(!a){ DOM.editName.focus({preventScroll:true}); return false; }
+    if(!b){ DOM.editDesc.focus({preventScroll:true}); return false; }
+    return true;
+  }
+
+  async function saveEditModal(){
+    if(editing || !currentRow) return;
+    if(!validateEditForm()) return;
+
+    editing = true;
+    clearStatus();
+
+    // read what the user typed
+    const nameRaw = DOM.editName.value;
+    const descRaw = DOM.editDesc.value;
+
+    // normalize for persistence
+    const name        = collapse(nameRaw);
+    const description = collapse(descRaw);
+
+    // current values from row
+    const curRaw  = currentRow.dataset.raw;
+    const curDesc = currentRow.querySelector(".description").textContent.trim();
+    const curKey  = currentRow.dataset.key;
+
+    // lock UI
+    const origText = DOM.editSave.textContent;
+    DOM.editSave.disabled = true;  DOM.editSave.textContent = "Updating...";
+    DOM.editCancel.disabled = true;
+    [DOM.editName, DOM.editDesc].forEach(el => el.disabled = true);
+
+    // nothing changed
+    if(name === curRaw && description === curDesc){
+      await new Promise(r => setTimeout(r, 300));
+      DOM.editSave.disabled=false; DOM.editSave.textContent = origText;
+      DOM.editCancel.disabled=false;
+      [DOM.editName, DOM.editDesc].forEach(el => el.disabled = false);
+      editing=false;
+      closeEditModal();
+      return;
     }
 
-    // =========================
-    // Utilities / Normalizers
-    // =========================
-    const log = (...args) => { if (DEBUG) console.log("[categories]", ...args); };
-
-    const norm            = (s) => String(s ?? "").trim().toLowerCase();
-    const collapseSpaces  = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-    const nonEmpty        = (s) => collapseSpaces(s).length > 0;
-
-    const escapeHTML = (s) =>
-      String(s ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-    // Duplicate name check (case-insensitive). Ignores the current record if provided.
-    function isDuplicateName(newName, profiles, currentName = null) {
-      const target = norm(newName);
-      const cur    = norm(currentName);
-      return profiles.some(p => {
-        const existing = norm(p?.name);
-        return existing === target && existing !== cur;
-      });
+    // DEBUG path
+    if(DEBUG){
+      showStatusDebug(`${CATEGORIES_API}/${curKey}`, { name, description });
+      await new Promise(r => setTimeout(r, 400));
+      DOM.editSave.disabled=false; DOM.editSave.textContent = origText;
+      DOM.editCancel.disabled=false;
+      [DOM.editName, DOM.editDesc].forEach(el => el.disabled = false);
+      editing=false;
+      return;
     }
 
-    // =========================
-    // State
-    // =========================
-    let allCategories     = [];
-    let currentRow        = null; // row being edited
-    let pendingArchiveRow = null;
-    let pendingRestoreRow = null;
+    try{
+      const { ok, status } = await updateCategoryAPI(curKey, { name, description });
+      if(!ok) throw new Error(`Update failed (${status})`);
 
-    // Request guards to prevent double-submission
-    let editing   = false;
-    let archiving = false;
-    let restoring = false;
+      // Update row
+      currentRow.querySelector(".name").textContent = name;
+      currentRow.querySelector(".description").textContent = description;
+      currentRow.dataset.raw = name;
+      currentRow.dataset.key = encodeURIComponent(name);
 
-    // =========================
-    // UI Status Helpers
-    // =========================
-    function showErr(message) {
-      els.success.style.display = "block";
-      els.success.style.background = "#fee2e2";
-      els.success.style.border = "1px solid #fecaca";
-      els.success.style.color = "#991b1b";
-      els.success.textContent = message;
+      // Update cache
+      const i = allCategories.findIndex(p => norm(p.name) === norm(curRaw));
+      if(i !== -1) allCategories[i] = { ...allCategories[i], name, description };
+
+      await new Promise(r => setTimeout(r, 500));
+      closeEditModal();
+    }catch(e){
+      console.error(e);
+      showStatusError("Could not save changes. Please try again.");
+    }finally{
+      DOM.editSave.disabled=false; DOM.editSave.textContent = origText;
+      DOM.editCancel.disabled=false;
+      [DOM.editName, DOM.editDesc].forEach(el => el.disabled = false);
+      editing=false;
     }
+  }
 
-    function clearStatus() {
-      els.success.style.display = "none";
-      els.success.textContent = "";
+  // Archive modal
+  function openArchiveModal(button){
+    pendingArchiveRow = button.closest("tr");
+    DOM.archiveModal.style.display="flex";
+  }
+
+  function closeArchiveModal(){
+    DOM.archiveModal.style.display="none";
+    pendingArchiveRow = null;
+  }
+
+  async function confirmArchive(){
+    if(!pendingArchiveRow || archiving) return;
+    archiving = true;
+
+    const key = pendingArchiveRow.dataset.key;
+    const origText = DOM.archiveConfirm.textContent;
+    DOM.archiveConfirm.disabled=true; DOM.archiveConfirm.textContent="Archiving...";
+    DOM.archiveCancel.disabled=true;
+
+    try{
+      const { ok, status } = await archiveCategoryAPI(key);
+      if(!ok) throw new Error(`Archive failed (${status})`);
+      setRowState(pendingArchiveRow, STATUS.ARCHIVED);
+    }catch(e){
+      console.error(e);
+      showStatusError("Could not archive the category. Please try again.");
+    }finally{
+      await new Promise(r => setTimeout(r, 500));
+      DOM.archiveConfirm.disabled=false; DOM.archiveConfirm.textContent=origText;
+      DOM.archiveCancel.disabled=false;
+      archiving=false;
+      closeArchiveModal();
     }
+  }
 
-    // Debug Helper
-    function showDebug(endpoint, payload) {
-      els.success.style.display = "block";
-      els.success.style.background = "#fef9c3";   
-      els.success.style.border = "1px solid #fde047";
-      els.success.style.color = "#854d0e";
-      els.success.style.whiteSpace = "pre-wrap";
-      els.success.textContent =
-        `[DEBUG]:\n\n` +
-        `This would PUT to:\n${endpoint}\n\n` +
-        `With values:\n${JSON.stringify(payload, null, 2)}`;
+  // Restore modal
+  function openRestoreModal(button){
+    pendingRestoreRow = button.closest("tr");
+    DOM.restoreModal.style.display="flex";
+  }
+
+  function closeRestoreModal(){
+    DOM.restoreModal.style.display="none";
+    pendingRestoreRow = null;
+  }
+
+  async function confirmRestore(){
+    if(!pendingRestoreRow || restoring) return;
+    restoring = true;
+
+    const key = pendingRestoreRow.dataset.key;
+    const origText = DOM.restoreConfirm.textContent;
+    DOM.restoreConfirm.disabled=true; DOM.restoreConfirm.textContent="Restoring...";
+    DOM.restoreCancel.disabled=true;
+
+    try{
+      const { ok, status } = await restoreCategoryAPI(key);
+      if(!ok) throw new Error(`Restore failed (${status})`);
+      setRowState(pendingRestoreRow, STATUS.ACTIVE);
+    }catch(e){
+      console.error(e);
+      showStatusError("Could not restore the category. Please try again.");
+    }finally{
+      await new Promise(r => setTimeout(r, 500));
+      DOM.restoreConfirm.disabled=false; DOM.restoreConfirm.textContent=origText;
+      DOM.restoreCancel.disabled=false;
+      restoring=false;
+      closeRestoreModal();
     }
+  }
 
-    // =========================
-    // API
-    // =========================
-    async function fetchJSON(url, options = {}) {
-      const res = await fetch(url, { credentials: "include", mode: "cors", ...options });
-      const ct = res.headers.get("content-type") || "";
-      let data = null;
-      try {
-        data = ct.includes("application/json") ? await res.json() : await res.text();
-      } catch {}
-      return { ok: res.ok, status: res.status, data };
-    }
+  /* =========================================================
+    8) Search
+  ========================================================= */
+  function handleSearchInput(){
+    const q = DOM.search.value.trim().toLowerCase();
+    loadCategoriesBySearch(q);
+    updateNoResultsRow();
+  }
 
-    // =========================
-    // Rendering
-    // =========================
-    function statusBadgeHTML(statusStr) {
-        return String(statusStr).toUpperCase() === STATUS.ARCHIVED
-            ? '<span class="badge badge-suspended">Archived</span>'
-            : '<span class="badge badge-active">Active</span>';
-    }
+  /* =========================================================
+    9) Boot
+  ========================================================= */
+  (async function init(){
+    await loadCategories();
 
-    function actionButtonHTML(statusStr) {
-        return String(statusStr).toUpperCase() === STATUS.ARCHIVED
-            ? '<button class="btn-reactivate" onclick="openRestoreModal(this)">Restore</button>'
-            : '<button class="btn-suspend" onclick="openArchiveModal(this)">Archive</button>';
-    }
-
-    function rowHTML(p) {
-      const rawName = String(p?.name ?? "");
-      const status  = (p?.status || STATUS.ACTIVE).toUpperCase();
-      const name    = escapeHTML(p?.name);
-      const desc    = escapeHTML(p?.description);
-      const key     = encodeURIComponent(rawName);
-
-      return `
-        <tr data-key="${key}" data-category="${name}" data-raw="${rawName}" data-status="${status}">
-          <td class="name">${name}</td>
-          <td class="description">${desc}</td>
-          <td class="status">${statusBadgeHTML(status)}</td>
-          <td class="actions">
-            <div class="btn-row">
-              <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
-              ${actionButtonHTML(status)}
-            </div>
-          </td>
-        </tr>
-      `;
-    }
-
-    function populateTable(categories) {
-      els.tbody.innerHTML = categories
-        .slice()
-        .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }))
-        .map(rowHTML)
-        .join("");
-      updateNoResults();
-    }
-
-    function updateNoResults() {
-      const rows = $$("#profileTable tbody tr");
-      const visible = rows.some((r) => r.style.display !== "none");
-      els.noResultsRow.style.display = visible ? "none" : "";
-    }
-
-    function applyStatusToRow(row, statusStr) {
-      const status = (statusStr || STATUS.ACTIVE).toUpperCase();
-      row.dataset.status = status;
-      row.querySelector(".status").innerHTML = statusBadgeHTML(status);
-
-      const btnRow = row.querySelector(".actions .btn-row");
-      const swapTarget = btnRow.querySelector(".btn-suspend, .btn-reactivate");
-
-      const tmp = document.createElement("div");
-      tmp.innerHTML = actionButtonHTML(status);
-      const fresh = tmp.firstElementChild;
-
-      swapTarget ? swapTarget.replaceWith(fresh) : btnRow.appendChild(fresh);
-    }
-
-    async function loadCategories() {
-      try {
-        const { ok, status, data } = await fetchJSON(CATEGORIES_API, { method: "GET" });
-        if (!ok) throw new Error(`Failed to load categories (${status})`);
-        const list = Array.isArray(data?.categories) ? data.categories : [];
-        allCategories = list;
-        populateTable(allCategories);
-      } catch (e) {
-        console.error(e);
-        allCategories = [];
-        populateTable(allCategories); // shows “No results”
-        showErr("Unable to load categories. Please try again later.");
-      }
-    }
-
-    async function searchCategories(keyword) {
-      try {
-        const { ok, status, data } = await fetchJSON(
-          `${CATEGORIES_API}/search?keyword=${keyword}`, 
-          { method: "GET" }
-        );
-        if (!ok) throw new Error(`Failed to load categories (${status})`);
-        const list = Array.isArray(data?.categories) ? data.categories : [];
-        allCategories = list;
-        populateTable(allCategories);
-      } catch (e) {
-        console.error(e);
-        allCategories = [];
-        populateTable(allCategories); // shows “No results”
-        showErr("Unable to load categories. Please try again later.");
-      }
-    }
-
-    loadCategories();
-
-    // =========================
     // Search
-    // =========================
-    els.search.addEventListener("input", function () {
-      const filter = this.value.toLowerCase();
-      searchCategories(filter);
-      // $$("#profileTable tbody tr").forEach((row) => {
-      //   row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-      // });
-      updateNoResults();
-      });
+    DOM.search.addEventListener("input", handleSearchInput);
 
-    // =========================
-    // Modals: Edit
-    // =========================
-    function openEditModal(row) {
-      currentRow = row;
-      const currentName = currentRow.dataset.raw || "";
+    // Edit modal events
+    DOM.editSave.addEventListener("click", saveEditModal);
+    DOM.editCancel.addEventListener("click", closeEditModal);
+    DOM.editName.addEventListener("input", validateNameInline);
+    DOM.editName.addEventListener("blur",  validateNameInline);
+    DOM.editDesc.addEventListener("input", validateDescInline);
+    DOM.editDesc.addEventListener("blur",  validateDescInline);
 
-      els.editName.value  = currentRow.querySelector(".name").textContent.trim();
-      els.editDesc.value  = currentRow.querySelector(".description").textContent.trim();
+    // Archive modal events
+    DOM.archiveConfirm.addEventListener("click", confirmArchive);
+    DOM.archiveCancel.addEventListener("click", closeArchiveModal);
 
-      // reset UI
-      els.editErrName.style.display = "none";
-      els.editErrDesc.style.display = "none";
-      [els.editName, els.editDesc].forEach(el => el.removeAttribute("aria-invalid"));
-      clearStatus();
+    // Restore modal events
+    DOM.restoreConfirm.addEventListener("click", confirmRestore);
+    DOM.restoreCancel.addEventListener("click", closeRestoreModal);
 
-      els.editModal.style.display = "flex";
-    }
+    // Nav
+    DOM.btnBackToDash.addEventListener("click", ()=>{ window.location.href = "platform_dashboard.html"; });
+  })();
 
-    function closeEditModal() {
-      els.editModal.style.display = "none";
-      els.editName.disabled = false;
-
-      // reset UI (field-level)
-      els.editErrName.style.display = "none";
-      els.editErrDesc.style.display = "none";
-
-      [els.editName, els.editDesc].forEach(el => el.removeAttribute("aria-invalid"));
-
-      clearStatus();
-    }
-
-    function validateEditForm() {
-      const nameEl  = els.editName;
-      const descEl  = els.editDesc;
-
-      const vName  = collapseSpaces(nameEl.value);
-      const vDesc  = collapseSpaces(descEl.value);
-
-      nameEl.value  = vName;
-      descEl.value  = vDesc;
-
-      let ok = true;
-
-      // Name: required (1–64), not duplicate (case-insensitive)
-      if (!nonEmpty(vName) || vName.length > 64) {
-        els.editErrName.textContent = "Please enter a valid name (1–64 characters).";
-        els.editErrName.style.display = "block";
-        nameEl.setAttribute("aria-invalid", "true");
-        ok = false;
-      } 
-      else if (isDuplicateName(vName, allCategories, currentRow?.dataset?.raw)) {
-        els.editErrName.textContent = "A category with that name already exists.";
-        els.editErrName.style.display = "block";
-        nameEl.setAttribute("aria-invalid", "true");
-        ok = false;
-      }
-
-      // Description: required, <= 255
-      if (!nonEmpty(vDesc) || vDesc.length > 255) {
-        els.editErrDesc.textContent = "Description must be 255 characters or fewer.";
-        els.editErrDesc.style.display = "block";
-        descEl.setAttribute("aria-invalid", "true");
-        ok = false;
-      }
-
-      // Focus first invalid
-      if (!ok) {
-        if (nameEl.hasAttribute("aria-invalid")) nameEl.focus({ preventScroll: true });
-        else if (descEl.hasAttribute("aria-invalid")) descEl.focus({ preventScroll: true });
-      }
-      
-      return ok;
-    }
-
-    async function saveEditModal() {
-      if (editing) return;
-      if (!validateEditForm()) return;
-      if (!currentRow) return;
-
-      editing = true;
-
-      const name = els.editName.value.trim();
-      const description = els.editDesc.value.trim();
-
-      const curKey   = currentRow.dataset.key;
-      const curRaw   = currentRow.dataset.raw;
-      const curDesc  = currentRow.querySelector(".description").textContent.trim();
-
-      const payload = { name, description }
-
-      // Lock UI
-      const saveBtn   = els.primaryBtn.edit;
-      const cancelBtn = els.cancelBtn.edit;
-      const origText  = saveBtn?.textContent;
-
-      if (saveBtn)   { saveBtn.disabled = true;   saveBtn.textContent = "Updating..."; }
-      if (cancelBtn) { cancelBtn.disabled = true; }
-
-      const fields = [els.editName, els.editDesc].filter(Boolean);
-      fields.forEach(el => el.disabled = true);
-
-      // nothing changed
-      if (name === curRaw && description === curDesc) {
-        await new Promise(r => setTimeout(r, 300));
-        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
-        if (cancelBtn) { cancelBtn.disabled = false; }
-        fields.forEach(el => el.disabled = false);
-        editing = false;
-        closeEditModal();
-        return;
-      }
-
-      // DEBUG mode
-      if (DEBUG) {
-        showDebug(`${CATEGORIES_API}/${curKey}`, payload);
-        await new Promise(r => setTimeout(r, 400));
-        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
-        if (cancelBtn) { cancelBtn.disabled = false; }
-        fields.forEach(el => el.disabled = false);
-        editing = false;
-        return;
-      }
-
-      let updated = false;
-
-      try {
-        const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${curKey}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (!ok) throw new Error(`Update failed (${status})`);
-
-        // Update row in place
-        currentRow.querySelector(".name").textContent        = name;
-        currentRow.querySelector(".description").textContent = description;
-
-        currentRow.dataset.raw = name;
-        currentRow.dataset.key = encodeURIComponent(name);
-
-        // Update cache
-        const i = allCategories.findIndex(p => norm(p.name) === norm(curRaw));
-        if (i !== -1) allCategories[i] = { ...allCategories[i], ...payload };
-
-        updated = true;
-      } 
-      catch (e) {
-        console.error(e);
-        showErr("Could not save changes. Please try again.");
-      } 
-      finally {
-        await new Promise(r => setTimeout(r, 1000)); // brief hold
-        if (saveBtn)   { saveBtn.disabled = false;   saveBtn.textContent = origText || "Save"; }
-        if (cancelBtn) { cancelBtn.disabled = false; }
-        fields.forEach(el => el.disabled = false);
-        editing = false;
-        if (updated) closeEditModal();
-      }
-    }
-
-    // =========================
-    // Modals: Archive
-    // =========================
-    function openArchiveModal(button) {
-      pendingArchiveRow = button.closest("tr");
-      $("archiveModal").style.display = "flex";
-    }
-
-    function closeArchiveModal() {
-      $("archiveModal").style.display = "none";
-      pendingArchiveRow = null;
-    }
-
-    async function confirmArchiveUI() {
-      if (!pendingArchiveRow || archiving) return;
-      archiving = true;
-
-      const key = pendingArchiveRow.dataset.key;
-      const archiveBtn   = els.primaryBtn.archive;
-      const cancelBtn  = els.cancelBtn.archive;
-      const original   = archiveBtn?.textContent;
-
-      if (archiveBtn) { archiveBtn.disabled = true;   archiveBtn.textContent = "Archiving..."; }
-      if (cancelBtn)  { cancelBtn.disabled = true; }
-
-      try {
-        const { ok, status, data } = await fetchJSON(`${CATEGORIES_API}/${key}/archive`, { method: "POST" });
-        if (!ok) throw new Error(`Archive failed (${status})`);
-        applyStatusToRow(pendingArchiveRow, STATUS.ARCHIVED);
-      } 
-      catch (e) {
-        console.error(e);
-        showErr("Could not archive the category. Please try again.");
-      } 
-      finally {
-        await new Promise(r => setTimeout(r, 800));
-        if (archiveBtn)   { archiveBtn.disabled = false;   archiveBtn.textContent = original || "Archive"; }
-        if (cancelBtn)  { cancelBtn.disabled = false; }
-        archiving = false;
-        closeArchiveModal();
-      }
-    }
-
-    // =========================
-    // Modals: Restore
-    // =========================
-    function openRestoreModal(button) {
-      pendingRestoreRow = button.closest("tr");
-      $("restoreModal").style.display = "flex";
-    }
-
-    function closeRestoreModal() {
-      $("restoreModal").style.display = "none";
-      pendingRestoreRow = null;
-    }
-
-    async function confirmRestoreUI() {
-      if (!pendingRestoreRow || restoring) return;
-      restoring = true;
-
-      const key = pendingRestoreRow.dataset.key;
-      const restoreBtn   = els.primaryBtn.restore;
-      const cancelBtn  = els.cancelBtn.restore;
-      const original   = restoreBtn?.textContent;
-
-      if (restoreBtn) { restoreBtn.disabled = true;   restoreBtn.textContent = "Restoring..."; }
-      if (cancelBtn)  { cancelBtn.disabled = true; }
-
-      try {
-        const { ok, status } = await fetchJSON(`${CATEGORIES_API}/${key}/restore`, {
-          method: "POST"
-        });
-        if (!ok) throw new Error(`Restore failed (${status})`);
-        applyStatusToRow(pendingRestoreRow, STATUS.ACTIVE);
-      } 
-      catch (e) {
-        console.error(e);
-        showErr("Could not restore the category. Please try again.");
-      } 
-      finally {
-        await new Promise(r => setTimeout(r, 800));
-        if (restoreBtn)   { restoreBtn.disabled = false;   restoreBtn.textContent = original || "Restore"; }
-        if (cancelBtn)  { cancelBtn.disabled = false; }
-        restoring = false;
-        closeRestoreModal();
-      }
-    }
-
-    // =========================
-    // Navigation
-    // =========================
-    function returnToDashboard() { window.location.href = "platform_dashboard.html"; }
+  window.openEditModal = openEditModal;
+  window.openArchiveModal = openArchiveModal;
+  window.openRestoreModal = openRestoreModal;
   </script>
 </body>
 </html>

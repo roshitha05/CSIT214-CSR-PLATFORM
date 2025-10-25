@@ -400,10 +400,11 @@
       /* =========================================================
         1) Config & constants
       ========================================================= */
-      const DEBUG             = false;
-      const API_URL           = "http://127.0.0.1:80/api";
-      const CATEGORIES_API    = `${API_URL}/categories`;
+      const DEBUG               = false;
+      const API_URL             = "http://127.0.0.1:80/api";
+      const CATEGORIES_API      = `${API_URL}/categories`;
       const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
+      
       const STATUS = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
       const TITLE_MAX = 120, DESC_MAX = 255;
 
@@ -455,12 +456,6 @@
 
       // Current status selection for filtering UI
       let currentStatus = "ALL";          // "ALL" | "ACTIVE" | "CANCELLED" | "COMPLETED"
-
-      // TEMP data until connected to backend
-      const demoData = [
-        { service_request_id:1, title:"Need grocery shopping assistance", description:"Elderly person unable to shop for groceries due to mobility issues.", category:"Food Support", status:"ACTIVE", view_count:3, date_created:"2025-10-24 04:52:14.360+00", date_completed:null, shortlisted_by_count:2 },
-        { service_request_id:2, title:"Ride to medical appointment", description:"Single mother needs transportation to clinic for child’s checkup.", category:"Transportation", status:"COMPLETED", view_count:7, date_created:"2025-10-24 04:52:14.360+00", date_completed:"2025-10-26 08:15:00.000+00", shortlisted_by_count:5 }
-      ];
 
       /* =========================================================
         5) API layer
@@ -712,6 +707,7 @@
         if (err){ err.textContent = msg; err.style.display = "block"; }
         DOM.editCategory?.setAttribute("aria-invalid","true");
       }
+      
       function clearCategoryLoadError(){
         const err = $("editErr-category");
         if (err){ err.style.display = "none"; }
@@ -725,12 +721,14 @@
         if (v.length===0 || v.length>TITLE_MAX){ setError(el,err,`Please enter a valid title (1–${TITLE_MAX} characters).`); return false; }
         clearError(el,err); return true;
       }
+
       function validateCategoryInline(){
         const el = DOM.editCategory, err = $("editErr-category");
         const v = (el.value||"").trim();
         if (!v){ setError(el,err,"Please select a category."); return false; }
         clearError(el,err); return true;
       }
+
       function validateDescriptionInline(){
         const el = DOM.editDescription, err = $("editErr-description");
         const v = collapse(el.value);
@@ -738,7 +736,8 @@
         if (v.length===0 || v.length>DESC_MAX){ setError(el,err,`Description must be 1–${DESC_MAX} characters.`); return false; }
         clearError(el,err); return true;
       }
-      function validateEditFormAll(){
+
+      function validateEditForm(){
         const a=validateTitleInline(), b=validateCategoryInline(), c=validateDescriptionInline();
         if(!a){ DOM.editTitle.focus({preventScroll:true}); return false; }
         if(!b){ DOM.editCategory.focus({preventScroll:true}); return false; }
@@ -846,11 +845,11 @@
       DOM.editDescription.addEventListener("input", validateDescriptionInline);
       DOM.editDescription.addEventListener("blur",  validateDescriptionInline);
 
-      // Submit (works with novalidate)
+      // Submit
       DOM.editForm.addEventListener("submit",(e)=>{
         e.preventDefault();
         if (!currentEditCard) return;
-        if (!validateEditFormAll()) return;
+        if (!validateEditForm()) return;
 
         const id          = DOM.editId.value;
         const title       = collapse(DOM.editTitle.value);
