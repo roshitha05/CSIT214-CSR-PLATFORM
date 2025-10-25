@@ -8,7 +8,7 @@ export default class SearchUserProfiles extends Control {
     createController() {
         this.router.get('/search', this.requireAuth('User Admin'), async (req, res) => {
             const userProfiles = await this.userProfileEntity
-                .getUserProfiles(req.query);
+                .searchUserProfiles(req.query.keyword);
 
             userProfiles.map(userProfile => 
                 delete userProfile.password

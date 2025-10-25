@@ -562,6 +562,24 @@
       }
     }
 
+    async function searchProfile(keyword) {
+      try {
+        const { ok, status, data } = await fetchJSON(
+          `${PROFILES_API}/search?keyword=${keyword}`, 
+          { method: "GET" }
+        );
+        if (!ok) throw new Error(`Failed to load profiles (${status})`);
+        const list = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
+        allProfiles = list;
+        populateTable(allProfiles);
+      } catch (e) {
+        console.error(e);
+        allProfiles = [];
+        populateTable(allProfiles); // shows “No results”
+        showErr("Unable to load profiles. Please try again later.");
+      }
+    }
+
     loadProfiles();
 
     // =========================
@@ -569,9 +587,10 @@
     // =========================
     els.search.addEventListener("input", function () {
       const filter = this.value.toLowerCase();
-      $$("#profileTable tbody tr").forEach((row) => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-      });
+      searchProfile(filter)
+      // $$("#profileTable tbody tr").forEach((row) => {
+      //   row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+      // });
       updateNoResults();
       });
 
