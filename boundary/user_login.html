@@ -450,6 +450,10 @@
           if (user.username)  {
             localStorage.setItem("username", user.username);
           }
+
+          if (user.user_id)  {
+            localStorage.setItem("user_id", user.user_id);
+          }
           
           // Find redirect target by role
           const target = ROLE_REDIRECT[role];

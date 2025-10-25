@@ -508,7 +508,7 @@
 
       async function loadServiceRequests() {
         try {
-          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}`);
+          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}/${localStorage.getItem('user_id')}`);
           if (!ok) throw new Error(`Service requests load failed (${status})`);
           const serviceRequests = Array.isArray(data) ? data : [];
 
