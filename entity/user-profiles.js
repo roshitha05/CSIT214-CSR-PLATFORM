@@ -38,7 +38,8 @@ export default class UserProfilesEntity extends Entity {
                 or(
                     ilike(userProfilesTable.name, searchPattern),
                     ilike(userProfilesTable.description, searchPattern),
-                    ilike(userProfilesTable.status, searchPattern)
+                    ilike(userProfilesTable.status, searchPattern),
+                    ilike(userProfilesTable.other, searchPattern),
                 )
             );
     }

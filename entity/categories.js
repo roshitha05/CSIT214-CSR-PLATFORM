@@ -1,4 +1,4 @@
-import { eq, and, ilike } from 'drizzle-orm';
+import { eq, and, ilike, or } from 'drizzle-orm';
 import { categoriesTable, usersTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -25,6 +25,21 @@ export default class CategoriesEntity extends Entity {
         }
 
         return await query;
+    }
+
+    async searchCategories(filter) {
+        const searchPattern = `%${filter}%`;
+        
+        return await this.db
+            .select()
+            .from(categoriesTable)
+            .where(
+                or(
+                    ilike(categoriesTable.name, searchPattern),
+                    ilike(categoriesTable.description, searchPattern),
+                    ilike(categoriesTable.status, searchPattern)
+                )
+            );
     }
 
     async insertCategory(category) {

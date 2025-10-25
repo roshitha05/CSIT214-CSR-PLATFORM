@@ -681,7 +681,10 @@
     async function searchUsers(keyword) {
       els.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Loading users…</td></tr>`;
       try {
-        const { ok, status, data } = await fetchJSON(`${USERS_API}/search?keyword=${keyword}`, { method: "GET" });
+        const { ok, status, data } = await fetchJSON(
+          `${USERS_API}/search?keyword=${keyword}`, 
+          { method: "GET" }
+        );
         if (!ok) throw new Error(`Failed to load users (${status})`);
 
         let profile_res = await fetchJSON(PROFILES_API, { method: "GET" });

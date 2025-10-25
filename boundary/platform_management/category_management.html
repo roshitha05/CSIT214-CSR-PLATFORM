@@ -510,6 +510,24 @@
       }
     }
 
+    async function searchCategories(keyword) {
+      try {
+        const { ok, status, data } = await fetchJSON(
+          `${CATEGORIES_API}/search?keyword=${keyword}`, 
+          { method: "GET" }
+        );
+        if (!ok) throw new Error(`Failed to load categories (${status})`);
+        const list = Array.isArray(data?.categories) ? data.categories : [];
+        allCategories = list;
+        populateTable(allCategories);
+      } catch (e) {
+        console.error(e);
+        allCategories = [];
+        populateTable(allCategories); // shows “No results”
+        showErr("Unable to load categories. Please try again later.");
+      }
+    }
+
     loadCategories();
 
     // =========================
@@ -517,9 +535,10 @@
     // =========================
     els.search.addEventListener("input", function () {
       const filter = this.value.toLowerCase();
-      $$("#profileTable tbody tr").forEach((row) => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-      });
+      searchCategories(filter);
+      // $$("#profileTable tbody tr").forEach((row) => {
+      //   row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+      // });
       updateNoResults();
       });
 
