@@ -672,7 +672,34 @@
         });
 
         populateTable(allUsers);
-        applyFilter();
+      } catch (e) {
+        console.error(e);
+        els.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Failed to load users.</td></tr>`;
+      }
+    }
+
+    async function searchUsers(keyword) {
+      els.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Loading users…</td></tr>`;
+      try {
+        const { ok, status, data } = await fetchJSON(`${USERS_API}/search?keyword=${keyword}`, { method: "GET" });
+        if (!ok) throw new Error(`Failed to load users (${status})`);
+
+        let profile_res = await fetchJSON(PROFILES_API, { method: "GET" });
+        if (!profile_res.ok) throw new Error(`Failed to load user profiles (${profile_res.status})`);
+
+        allProfiles = Array.isArray(profile_res.data?.userProfiles) ? profile_res.data.userProfiles : [];
+        
+        userProfilesStatusDict = {}
+        allProfiles.forEach( profile => {
+          userProfilesStatusDict[profile.name] = profile.status;
+        });
+
+        allUsers = Array.isArray(data?.users) ? data.users : [];
+        allUsers.forEach( user => {
+          user.user_profile_status = userProfilesStatusDict[user.user_profile];
+        });
+
+        populateTable(allUsers);
       } catch (e) {
         console.error(e);
         els.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Failed to load users.</td></tr>`;
@@ -690,9 +717,10 @@
 
     function applyFilter() {
       const q = els.search?.value.toLowerCase().trim() || "";
-      $$("#profileTable tbody tr").forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(q) ? "" : "none";
-      });
+      searchUsers(q);
+      // $$("#profileTable tbody tr").forEach(row => {
+      //   row.style.display = row.innerText.toLowerCase().includes(q) ? "" : "none";
+      // });
       updateNoResults();
     }
 
