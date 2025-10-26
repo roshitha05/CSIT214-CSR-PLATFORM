@@ -19,248 +19,129 @@
       --success-bg: #dcfce7;
       --success-text: #166534;
       --radius: 16px;
-      --ring: rgba(14,165,233,0.3);
+      --ring: rgba(14,165,233,.3);
     }
 
     /* =========================
       Base / Layout
     ========================== */
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { min-height: 100svh; }
     body {
       margin: 0;
       font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: linear-gradient(180deg, #e0f2fe, var(--bg));
       color: var(--text);
-      display: grid;
-      place-items: center;
-      padding: 24px;
+      display: grid; place-items: start center;
+      padding: 24px; overflow: auto;
     }
 
     /* =========================
-      Card 
+      Card
     ========================== */
     .card {
-      width: 100%;
-      max-width: 720px;
-      background: var(--card);
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius);
-      box-shadow: 0 8px 24px rgba(0,0,0,.08);
-      overflow: hidden;
+      width: 100%; max-width: 720px;
+      background: var(--card); border: 1px solid #e2e8f0; border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,.08); overflow: visible;
     }
 
     /* =========================
       Header
     ========================== */
     .header {
-      padding: 12px 20px;
-      border-bottom: 1px solid #e2e8f0;
+      padding: 20px 24px; border-bottom: 1px solid #e2e8f0;
       background: linear-gradient(180deg, #e0f2fe, #f8fafc);
     }
-    .header h1 {
-      margin: 0 0 4px;
-      font-size: 1.4rem;
-      color: var(--accent-2);
-    }
-    .header p {
-      margin: 0;
-      color: var(--muted);
-      font-size: .95rem;
-    }
+    .header h1 { margin: 0 0 4px; font-size: 1.4rem; color: var(--accent-2); }
+    .header p  { margin: 0; color: var(--muted); font-size: .95rem; }
 
     /* =========================
       Form & Fields
     ========================== */
-    form { padding: 12px 20px; }
-    .row { margin-bottom: 18px; }
+    form { padding: 16px 20px 8px; }
+    .row { display: flex; flex-direction: column; margin-bottom: 18px; }
+    label { margin-bottom: 8px; font-weight: 600; color: var(--text); }
 
-    label {
-      display: inline-block;
-      margin-bottom: 6px;
-      font-weight: 600;
+    input, textarea {
+      width: 100%; padding: 12px 14px; border-radius: 12px;
+      background: #f8fafc; border: 1px solid #cbd5e1; color: var(--text);
+      font-size: .98rem; transition: border-color .2s, box-shadow .2s;
     }
 
-    select,
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid #cbd5e1;
-      background: #f8fafc;
-      color: var(--text);
-      transition: border-color .2s, box-shadow .2s;
-      font-size: .98rem;
+    input:focus, textarea:focus {
+      outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 3px var(--ring);
     }
-
-    /* Focus */
-    select:focus,
-    input:focus,
-    textarea:focus {
-      border-color: var(--accent-2);
-      box-shadow: 0 0 0 3px var(--ring);
-      outline: none;
-    }
-
-    /* Textarea specifics */
     textarea { min-height: 100px; resize: vertical; }
 
-    /* Helper text */
-    .hint {
-      margin-top: 6px;
-      font-size: .85rem;
-      color: var(--muted);
-      display: block;
-    }
+    /* Helper text / errors */
+    .hint  { margin-top: 6px; font-size: .85rem; color: var(--muted); display: block; }
+    .error { margin-top: 6px; color: var(--danger); font-size: .9rem; display: none; }
 
     /* =========================
       Actions & Buttons
     ========================== */
-    .actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 8px;
-    }
-
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .2s, transform .1s;
-    }
-
-    .btn-primary {
-      background: linear-gradient(180deg, var(--accent), var(--accent-2));
-      color: white;
-    }
+    .actions { display: flex; gap: 12px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+    button { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 600; cursor: pointer; transition: transform .1s; }
+    .btn-primary   { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #fff; }
     .btn-primary:hover { transform: scale(1.02); }
-
-    .btn-secondary {
-      background: #f1f5f9;
-      color: var(--text);
-      border: 1px solid #cbd5e1;
-    }
+    .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid #cbd5e1; }
     .btn-secondary:hover { background: #e2e8f0; }
 
     /* =========================
-      Status Banners
+      Status Banner
     ========================== */
-    .error {
-      margin-top: 6px;
-      color: var(--danger);
-      font-size: .9rem;
-      display: none;
-    }
-
-    .success {
-      display: none;
-      padding: 12px 14px;
-      margin-top: 10px;
-      border-radius: 12px;
-      background: var(--success-bg);
-      border: 1px solid #bbf7d0;
-      color: var(--success-text);
-      font-size: .95rem;
-    }
+    .success { display: none; padding: 12px 14px; margin-top: 14px; border-radius: 12px; background: var(--success-bg); border: 1px solid #bbf7d0; color: var(--success-text); font-size: .95rem; }
 
     /* =========================
       Footer
     ========================== */
-    .footer {
-      padding: 12px 20px;
-      border-top: 1px solid #e2e8f0;
-      color: var(--muted);
-      font-size: .9rem;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
+    .footer { padding: 18px 24px; border-top: 1px solid #e2e8f0; color: var(--muted); font-size: .9rem; display: flex; justify-content: space-between; flex-wrap: wrap; }
 
     /* =========================
       Responsive
     ========================== */
-    @media (max-width: 420px) {
-      .header,
-      form,
-      .footer { padding: 12px 20px; }
-    }
+    @media (max-width: 640px) { .header, form, .footer { padding: 18px; } }
   </style>
 </head>
 <body>
-
-  <!-- Header -->
   <div class="card" role="region">
     <div class="header">
       <h1>Create User Profile</h1>
       <p>Fill in the details below to add a new profile or role.</p>
     </div>
 
-    <!-- Form -->
     <form id="profileForm" novalidate>
-
       <!-- Name (Required) -->
       <div class="row">
         <label for="name">Name <span style="color:var(--muted)">*</span></label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          placeholder="e.g., User Admin, CSR Representative, Person In Need, Platform Management"
-          required
-          maxlength="64"
-          aria-describedby="name-hint err-name"
-          autofocus
-        />
-        <small id="name-hint" class="hint">Required. 1–64 characters. Must be unique.</small>
-        <div id="err-name" class="error">
-          Please enter a profile name.
-        </div>
-    </div>
+        <input id="name" name="name" type="text" placeholder="e.g., User Admin, CSR Representative" required aria-describedby="name-hint err-name" autofocus />
+        <small id="name-hint" class="hint">Required. 1–64 characters.</small>
+        <div id="err-name" class="error">Please enter a valid, unique profile name.</div>
+      </div>
 
       <!-- Description (optional) -->
       <div class="row">
         <label for="description">Description</label>
-        <textarea 
-          id="description" 
-          name="description" 
-          placeholder="Optional. Short description of this role's responsibilities." 
-          maxlength="255"
-          aria-describedby="desc-hint err-desc"
-        ></textarea>
+        <textarea id="description" name="description" placeholder="Optional. Short description of this role." aria-describedby="desc-hint err-desc"></textarea>
         <small id="desc-hint" class="hint">Optional. Up to 255 characters.</small>
-        <div id="err-desc" class="error">
-          Please enter a valid description (max 255 characters).
-        </div>
+        <div id="err-desc" class="error">Description must be 255 characters or fewer.</div>
       </div>
 
       <!-- Other (optional) -->
       <div class="row">
         <label for="other">Other</label>
-        <input id="other" 
-          name="other" 
-          type="text" 
-          placeholder="Optional. Notes or additional details." 
-          maxlength="128" 
-          aria-describedby="oth-hint err-oth"
-        />
+        <input id="other" name="other" type="text" placeholder="Optional notes or extra details." aria-describedby="oth-hint err-oth" />
         <small id="oth-hint" class="hint">Examples: “Emergency Contact”, “Case Manager”, “Senior Volunteer”.</small>
-        <div id="err-oth" class="error">
-          Please enter a valid information (max 128 characters).
-        </div>
+        <div id="err-oth" class="error">Other info must be 128 characters or fewer.</div>
       </div>
 
-      <!-- Buttons -->
       <div class="actions">
         <button class="btn-primary" type="submit" id="submitBtn">Submit</button>
         <button class="btn-secondary" type="reset">Clear</button>
         <button class="btn-secondary" type="button" onclick="returnToDashboard()">Return to Dashboard</button>
       </div>
 
-      <!-- Status Bar (success / failed) -->
-      <div id="success" class="success" role="status" aria-live="polite"></div>
+      <div id="status" class="success" role="status" aria-live="polite"></div>
     </form>
 
     <div class="footer">
@@ -269,279 +150,242 @@
   </div>
 
   <script>
-    // =========================
-    // Config
-    // =========================
-    const DEBUG        = false;  // toggle as needed
+    /* =========================================================
+      1) Config & constants
+    ========================================================= */
+    const DEBUG        = false;
     const API_URL      = "http://127.0.0.1:80/api";
     const PROFILES_API = `${API_URL}/user-profiles`;
 
-    // =========================
-    // DOM
-    // =========================
-    const $ = (id) => document.getElementById(id);
+    // Limits
+    const NAME_MAX = 64, DESC_MAX = 255, OTHER_MAX = 128;
 
+    // Used to track whether a form was successfully submitted once
+    const formCompletedRef = { value:false };
+
+    /* =========================================================
+      2) DOM
+    ========================================================= */
+    const $ = (id) => document.getElementById(id);
     const form      = $("profileForm");
-    const success   = $("success");
     const submitBtn = $("submitBtn");
+    const statusEl  = $("status");
 
     const input = {
-      name        : $("name"),
-      description : $("description"),
-      other       : $("other"),
-    }
-
+      name:        $("name"),
+      description: $("description"),
+      other:       $("other"),
+    };
     const err = {
-      name        : $("err-name"),
-      description : $("err-desc"),
-      other       : $("err-oth"),
-    }
+      name:        $("err-name"),
+      description: $("err-desc"),
+      other:       $("err-oth"),
+    };
 
-    // =========================
-    // UI Status Helpers
-    // =========================
-    function showOk(message) {
-      success.style.display = "block";
-      success.style.background = "#dcfce7";
-      success.style.border = "1px solid #bbf7d0";
-      success.style.color = "#166534";
-      success.setAttribute("aria-live", "polite");
-      success.textContent = message;
+    /* =========================================================
+      3) Utils & status helpers
+    ========================================================= */
+    const collapse = (s)=> String(s ?? "").replace(/\s+/g, " ").trim();
+    const nonEmpty = (s)=> collapse(s).length > 0;
+
+    let hasSubmitted = false;
+    let submitting   = false;
+
+    function showOk(msg){
+      statusEl.style.display = "block";
+      statusEl.style.background = "#dcfce7";
+      statusEl.style.border = "1px solid #bbf7d0";
+      statusEl.style.color = "#166534";
+      statusEl.style.marginTop = "14px"; // a little breathing room
+      statusEl.setAttribute("aria-live", "polite");
+      statusEl.textContent = msg;
       formCompletedRef.value = true;
     }
-
-    function showErr(message) {
-      success.style.display = "block";
-      success.style.background = "#fee2e2";
-      success.style.border = "1px solid #fecaca";
-      success.style.color = "#991b1b";
-      success.setAttribute("aria-live", "assertive");
-      success.textContent = message;
+    function showErr(msg){
+      statusEl.style.display = "block";
+      statusEl.style.background = "#fee2e2";
+      statusEl.style.border = "1px solid #fecaca";
+      statusEl.style.color = "#991b1b";
+      statusEl.style.marginTop = "14px";
+      statusEl.setAttribute("aria-live", "assertive");
+      statusEl.textContent = msg;
+    }
+    function showDebug(payload){
+      statusEl.style.display = "block";
+      statusEl.style.background = "#fef9c3";
+      statusEl.style.border = "1px solid #fde047";
+      statusEl.style.color = "#854d0e";
+      statusEl.style.whiteSpace = "pre-wrap";
+      statusEl.textContent = `[DEBUG]\nPOST ${PROFILES_API}\n\n${JSON.stringify(payload, null, 2)}`;
+    }
+    function clearStatus(){
+      statusEl.style.display = "none";
+      statusEl.textContent = "";
+      statusEl.setAttribute("aria-live", "polite");
     }
 
-    function clearStatus() {
-      success.style.display = "none";
-      success.textContent = "";
-      success.setAttribute("aria-live", "polite");
-    }
+    // Apply input constraints from constants (avoid drift)
+    (function applyRuntimeConstraints(){
+      const set = (el, prop, val) => { if (el && val != null) el[prop] = val; };
 
-    // Debug Helper
-    function showDebug(payload) {
-      success.style.display = "block";
-      success.style.background = "#fef9c3";   
-      success.style.border = "1px solid #fde047";
-      success.style.color = "#854d0e";
-      success.style.whiteSpace = "pre-wrap";
-      success.textContent =
-        `[DEBUG]:\n\n` +
-        `This would POST to:\n${PROFILES_API}\n\n` +
-        `With values:\n${JSON.stringify(payload, null, 2)}`;
-    }
+      set(input.name,        "maxLength", NAME_MAX);
+      set(input.description, "maxLength", DESC_MAX);
+      set(input.other,       "maxLength", OTHER_MAX);
+    })();
 
-    // =========================
-    // Utils
-    // =========================
-    const show     = (el, on)        => { el.style.display = on ? "block" : "none"; };
-    const collapse = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-
-    let hasSubmitted = false;                   // used for live validation after submit
-    let submitting   = false;                   // used for safeguard to prevent double submission
-    const formCompletedRef = { value: false };  // use as a ref object shared across helpers
-
-    function focusFirstInvalid() {
-      const order = [ input.name, input.description, input.other ];
-      for (const el of order) {
-        if (el.hasAttribute("aria-invalid")) {
-          el.focus({ preventScroll: true });
-          return;
-        }
-      }
-    }
-
-    // =========================
-    // Post-Submit (success) click to clear
-    // =========================
-    function attachPostSuccessReset(inputs, form, clearFn, flagRef) {
-      Object.values(inputs).forEach((field) => {
-        field.addEventListener("focus", () => {
-          if (!flagRef.value) return;
+    // After success, focus in any field resets the form once
+    function attachPostSuccessReset(inputs, form, clearFn, flagRef){
+      Object.values(inputs).forEach((f)=>{
+        f.addEventListener("focus", ()=>{
+          if(!flagRef.value) return;
           form.reset();
           clearFn();
-          Object.values(inputs).forEach((f) => f.removeAttribute("aria-invalid"));
+          Object.values(inputs).forEach(el=> el.removeAttribute("aria-invalid"));
           flagRef.value = false;
         });
       });
     }
 
-    attachPostSuccessReset(input, form, clearStatus, formCompletedRef);
+    /* =========================================================
+      4) Validation (inline + on submit)
+    ========================================================= */
+    function validateName(){
+      const v = collapse(input.name.value);
+      const ok = nonEmpty(v) && v.length <= NAME_MAX;
+      err.name.style.display = ok ? "none" : "block";
+      input.name.toggleAttribute("aria-invalid", !ok);
+      return ok;
+    }
 
-    // =========================
-    // Live validation
-    // =========================
-    function attachLiveValidation(fields, validateFn, debounceMs = 200) {
-      let timer = null;
-      fields.forEach((field) => {
-        field.addEventListener("input", () => {
+    function validateDesc(){
+      const v = collapse(input.description.value);
+      const ok = v.length <= DESC_MAX; // optional
+      err.description.style.display = ok ? "none" : "block";
+      input.description.toggleAttribute("aria-invalid", !ok);
+      return ok;
+    }
+
+    function validateOther(){
+      const v = collapse(input.other.value);
+      const ok = v.length <= OTHER_MAX; // optional
+      err.other.style.display = ok ? "none" : "block";
+      input.other.toggleAttribute("aria-invalid", !ok);
+      return ok;
+    }
+
+    function validateForm(){
+      const a = validateName();
+      const b = validateDesc();
+      const c = validateOther();
+      if(!a){ input.name.focus({preventScroll:true}); return false; }
+      if(!b){ input.description.focus({preventScroll:true}); return false; }
+      if(!c){ input.other.focus({preventScroll:true}); return false; }
+      return true;
+    }
+
+    // Gentle live validation after first submit
+    function attachLiveValidation(){
+      const map = new Map([
+        [input.name,        validateName],
+        [input.description, validateDesc],
+        [input.other,       validateOther],
+      ]);
+
+      let timer;
+      
+      map.forEach((fn, el) => {
+        if (!el) return;
+        
+        el.addEventListener("input", () => {
           if (!hasSubmitted) return;
           clearTimeout(timer);
-          timer = setTimeout(() => {
-            clearStatus();
-            validateFn();
-          }, debounceMs);
+          timer = setTimeout(() => { clearStatus(); fn(); }, 300);
+        });
+
+        el.addEventListener("blur", () => {
+          if (!hasSubmitted) return;
+          clearTimeout(timer); clearStatus(); fn();
         });
       });
     }
 
-    attachLiveValidation([input.name, input.description, input.other], validateFields);
-
-    // =========================
-    // Validation
-    // =========================
-    function validateFields() {
-      let valid = true;
-
-      // Normalize field values
-      const vName  = collapse(input.name.value);
-      const vDesc  = collapse(input.description.value);
-      const vOther = collapse(input.other.value);
-
-      // Name: required, length ≤ 64
-      const okName = vName.length > 0 && vName.length <= 64;
-      show(err.name, !okName);
-      input.name.toggleAttribute("aria-invalid", !okName);
-      valid &&= okName;
-
-      // Description: optional, length ≤ 255
-      const okDesc = vDesc.length <= 255;
-      show(err.description, !okDesc); 
-      input.description.toggleAttribute("aria-invalid", !okDesc);
-      valid &&= okDesc;
-
-      // Other: optional, length ≤ 128
-      const okOther = vOther.length <= 128;
-      input.other.toggleAttribute("aria-invalid", !okOther);
-      show(err.other, !okOther);
-      valid &&= okOther;
-
-      // write back normalized values
-      input.name.value        = vName;
-      input.description.value = vDesc;
-      input.other.value       = vOther;
-
-      return valid;
-    }
-
-    // =========================
-    // Server Message Display (Boundary)
-    // =========================
-    async function displayServerMessage(response, { onSuccess } = {}) {
-      let body = null;
-      let serverMsg = "";
-
-      try {
-        body = await response.clone().json();
-        if (body && typeof body === "object" && "message" in body) {
-          serverMsg = String(body.message || "").trim();
+    /* =========================================================
+      5) Server boundary
+    ========================================================= */
+    async function displayServerMessage(response, { onSuccess } = {}){
+      let body=null, serverMsg="";
+      try{
+        const ct = response.headers.get("content-type") || "";
+        if(ct.includes("application/json")){
+          body = await response.clone().json();
+          serverMsg = body?.message || body?.error || "";
+        }else{
+          serverMsg = (await response.clone().text()).trim();
         }
-      } catch {
-        try { serverMsg = (await response.clone().text()).trim(); } catch {}
-      }
+      }catch{}
 
-      // Success
-      if (response.status === 200) {
-        const okFlag = body === true || body === "true";
-        if (okFlag) {
-          showOk(serverMsg || "Profile created successfully!");
-          if (typeof onSuccess === "function") onSuccess(body);
-          else formCompletedRef.value = true;
-          return;
-        }
-        showErr(serverMsg || "Unexpected response from server (expected true).");
-        return;
+      if(response.status === 201 || response.status === 200){
+        const okFlag = body === true || body === "true" || !body; // accept boolean true or empty
+        if(okFlag){ showOk(serverMsg || "Profile created successfully!"); onSuccess?.(body); return; }
+        showErr(serverMsg || "Unexpected response from server (expected true). "); return;
       }
-      
-      // --- Common Error Branches ---
-      if (response.status === 400) { showErr(serverMsg || "Failed to create User Profile. Name already exists."); return; }
-      if (response.status === 401) { showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
-      if (response.status === 403) { showErr(serverMsg || "Forbidden. You do not have permission to perform this action."); return; }
+      if(response.status === 400){ showErr(serverMsg || "Failed to create profile. Please check the inputs."); return; }
+      if(response.status === 401){ showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
+      if(response.status === 403){ showErr(serverMsg || "Forbidden. You do not have permission for this action."); return; }
+      if(response.status === 409){ showErr(serverMsg || "A profile with that name already exists."); return; }
 
-      // --- Fallback ---
       showErr(serverMsg || `Unexpected Error: ${response.status}`);
     }
 
-    // =========================
-    // Submit
-    // =========================
-    form.addEventListener('submit', async (e) => {
+    /* =========================================================
+      6) Submit / Reset / Nav
+    ========================================================= */
+    form.addEventListener("submit", async (e)=>{
       e.preventDefault();
+      if(submitting) return;
+      submitting = true; hasSubmitted = true; clearStatus();
 
-      if (submitting) return; // safeguard to prevent double submit
-      submitting = true;
-      hasSubmitted = true;
-      clearStatus();
-
-      if (!validateFields()) {
-        focusFirstInvalid();
-        submitting = false;
-        return;
-      }
+      if(!validateForm()){ submitting=false; return; }
 
       submitBtn.disabled = true;
-
-      // Build payload (normalized)
       const payload = {
-        name        : collapse(input.name.value),
-        description : collapse(input.description.value),
-        other       : collapse(input.other.value),
+        name:        collapse(input.name.value),
+        description: collapse(input.description.value),
+        other:       collapse(input.other.value),
       };
 
-      if (DEBUG) {
-        showDebug(payload);
-        submitBtn.disabled = false;
-        submitting = false;
-        hasSubmitted = false;
-        return; // break early (don't go into fetch block)
-      }
+      if(DEBUG){ showDebug(payload); submitBtn.disabled=false; submitting=false; hasSubmitted=false; return; }
 
-      try {
-        const response = await fetch(PROFILES_API, {
-          method : "POST",
-          mode : "cors",
-          credentials: "include",
-          headers : { "Content-Type" : "application/json", },
-          body : JSON.stringify(payload)
+      try{
+        const res = await fetch(PROFILES_API, {
+          method: "POST", mode: "cors", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
-
-        await displayServerMessage(response, {
-          onSuccess() {
-            formCompletedRef.value = true;
-          }
-        });
-      }
-      catch (error) {
-        console.error("Network Error: ", error);
+        await displayServerMessage(res, { onSuccess: ()=>{ formCompletedRef.value = true; } });
+      }catch(err){
+        console.error("Network error:", err);
         showErr("Network error. Please ensure the server is running.");
-      }
-      finally {
-        setTimeout(() => { submitBtn.disabled = false; submitting = false; }, 800);
+      }finally{
+        setTimeout(()=>{ submitBtn.disabled = false; submitting=false; }, 700);
       }
     });
 
-    // =========================
-    // Reset
-    // =========================
-    form.addEventListener("reset", () => {
-      Object.values(err).forEach(el => (el.style.display = "none"));
-      Object.values(input).forEach(field => field.removeAttribute("aria-invalid"));
-      clearStatus();
-      hasSubmitted = false;
-      formCompletedRef.value = false;
+    form.addEventListener("reset", ()=>{
+      Object.values(err).forEach(el => el.style.display = "none");
+      Object.values(input).forEach(f => f.removeAttribute("aria-invalid"));
+      clearStatus(); hasSubmitted = false; formCompletedRef.value = false;
     });
 
-    // =========================
-    // Navigation
-    // =========================
-    function returnToDashboard() { window.location.href = "admin_dashboard.html"; }
+    function returnToDashboard(){ window.location.href = "admin_dashboard.html"; }
+
+    /* =========================================================
+      7) Boot
+    ========================================================= */
+    (async function init(){
+      attachLiveValidation();
+      attachPostSuccessReset(input, form, clearStatus, formCompletedRef);
+    })();
   </script>
 </body>
 </html>

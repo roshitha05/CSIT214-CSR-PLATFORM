@@ -259,10 +259,10 @@
 
             <!-- Username -->
             <div class="row">
-              <label for="editUsername">Login ID <span style="color:var(--muted)">*</span></label>
+              <label for="editUsername">Username <span style="color:var(--muted)">*</span></label>
               <input id="editUsername" type="text" class="modal-input" maxlength="32" placeholder="e.g., janedoe123" pattern="^[A-Za-z0-9._-]{3,32}$"/>
               <small class="hint">Required. 3–32 chars: letters, numbers, dot, underscore, hyphen.</small>
-              <div id="editErr-username" class="error">Please enter a valid Login ID (3–32 allowed chars).</div>
+              <div id="editErr-username" class="error">Please enter a valid Username (3–32 allowed chars).</div>
             </div>
 
             <!-- Email -->
@@ -312,7 +312,7 @@
 
           <div class="modal-actions">
             <button type="button" class="btn-cancel" id="editModalCancelBtn">Cancel</button>
-            <button type="submit" class="btn-primary" id="editModalSaveBtn">Save</button>
+            <button type="button" class="btn-primary" id="editModalSaveBtn">Save</button>
           </div>
         </form>
       </div>
@@ -353,7 +353,7 @@
   const PROFILES_API = `${API_URL}/user-profiles`;
 
   const STATUS = { ACTIVE:"ACTIVE", SUSPENDED:"SUSPENDED" };
-  const CURRENT_USERNAME = (localStorage.getItem("username") ?? "").trim();
+  const CURRENT_USER_ID = (localStorage.getItem("user_id") ?? "").trim();
 
   // Field validation
   const NAME_MAX     = 64;
@@ -565,8 +565,7 @@
   }
 
   function actionButtonHTML(user){
-    const username = String(user.username || "");
-    const isSelf   = username.trim().toLowerCase() === CURRENT_USERNAME.trim().toLowerCase();
+    const isSelf   = String(user.user_id ?? "") === CURRENT_USER_ID;
     const status   = String(user.status || "").toUpperCase();
     const profileSusp = String(user.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED;
 
@@ -602,7 +601,7 @@
         data-key="${key}" 
         data-user-id="${escapeHTML(String(u.user_id ?? ""))}" 
         data-username="${escapeHTML(String(u.username ?? ""))}"
-        data-profile-suspended="${String(u.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED}"
+        data-profile-suspended="${String(u.user_profile_status || '').toUpperCase() === STATUS.SUSPENDED ? 'true' : 'false'}"
         data-status="${effective}"
       >
         <td class="fullname">${fullname}</td>
@@ -617,7 +616,11 @@
         <td class="actions">
           <div class="btn-row">
             <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
-            ${actionButtonHTML(u)}
+            ${actionButtonHTML({
+              user_id: u.user_id,
+              status: u.status,
+              user_profile_status: u.user_profile_status
+            })}
           </div>
         </td>
       </tr>
@@ -652,7 +655,7 @@
     const curAct = btnRow.querySelector(".btn-suspend, .btn-reactivate");
 
     const userForButtons = {
-      username: tr.dataset.username || tr.querySelector(".username")?.textContent.trim() || "",
+      user_id: tr.dataset.userId,
       status: status === "SUSPENDED_PROFILE" ? STATUS.ACTIVE : status, // to render correct action label
       user_profile_status: (tr.dataset.profileSuspended === "true" ? STATUS.SUSPENDED : STATUS.ACTIVE)
     };
@@ -737,8 +740,7 @@
     editHasSubmitted = false;
 
     // Lock profile if editing self
-    const rowUser = tr.dataset.username || tr.querySelector(".username")?.textContent.trim() || "";
-    const isSelf  = rowUser.trim().toLowerCase() === CURRENT_USERNAME.trim().toLowerCase();
+    const isSelf = String(tr.dataset.userId || "") === CURRENT_USER_ID;
 
     setDobMaxToday();
     DOM.editModal.style.display = "flex";
@@ -760,7 +762,7 @@
 
     // normalize
     const vName  = collapse(DOM.editFullname.value);
-    const vLogin = collapse(DOM.editUsername.value);
+    const vUsername = collapse(DOM.editUsername.value);
     const vEmail = lowerTrim(DOM.editEmail.value);
     const vPhone = digitsOnly(DOM.editPhone.value);
     const vAddr  = collapse(DOM.editAddress.value);
@@ -769,7 +771,7 @@
 
     // write back
     DOM.editFullname.value = vName;
-    DOM.editUsername.value = vLogin;
+    DOM.editUsername.value = vUsername;
     DOM.editEmail.value    = vEmail;
     DOM.editPhone.value    = vPhone;
     DOM.editAddress.value  = vAddr;
@@ -781,7 +783,7 @@
     valid &&= okName;
 
     // Login ID
-    const okLogin = nonEmpty(vLogin) && USERNAME_RE.test(vLogin) && vLogin.length >= USERNAME_MIN && vLogin.length <= USERNAME_MAX;
+    const okLogin = nonEmpty(vUsername) && USERNAME_RE.test(vUsername) && vUsername.length >= USERNAME_MIN && vUsername.length <= USERNAME_MAX;
     DOM.editErr.username.style.display = okLogin ? "none" : "block";
     DOM.editUsername.toggleAttribute("aria-invalid", !okLogin);
     valid &&= okLogin;
@@ -865,9 +867,7 @@
     };
 
     // Prevent changing your own profile
-    const rowUser = currentRow.dataset.username || "";
-    if (rowUser.trim().toLowerCase() === CURRENT_USERNAME.trim().toLowerCase() &&
-        payload.user_profile !== cur.user_profile) {
+    if (String(id) === CURRENT_USER_ID && payload.user_profile !== cur.user_profile) {
       showStatusError("You cannot change your own profile.");
       editBtn.disabled=false; editBtn.textContent = origText || "Save";
       cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
@@ -877,7 +877,7 @@
     // Early exit if no changes
     const changed = Object.keys(payload).some(k => String(payload[k] ?? "") !== String(cur[k] ?? ""));
     if (!changed) {
-      await new Promise(r => setTimeout(r, 120));
+      await new Promise(r => setTimeout(r, 300));
       editBtn.disabled=false; editBtn.textContent = origText || "Save";
       cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
       editing=false; closeEditModal(); return;
@@ -903,6 +903,14 @@
       if (payload.address       != null) currentRow.querySelector(".address").textContent  = payload.address       || cur.address       || "—";
       if (payload.date_of_birth != null) currentRow.querySelector(".dob").textContent      = payload.date_of_birth || cur.date_of_birth || "—";
       if (payload.user_profile  != null) currentRow.querySelector(".profile").textContent  = payload.user_profile  || cur.user_profile  || "—";
+
+      if (payload.username != null) currentRow.dataset.username = payload.username;
+
+      // If editing yourself, refresh localStorage display fields (never change user_id)
+      if (String(id) === CURRENT_USER_ID) {
+        if (payload.username) localStorage.setItem("username", payload.username);
+        if (payload.fullname) localStorage.setItem("fullname", payload.fullname);
+      }
 
       // Refresh profile-suspension state
       const newProfile = (payload.user_profile || cur.user_profile || "").trim();
@@ -930,8 +938,7 @@
   // Suspend modal
   function openSuspendModal(button){
     const row = button.closest("tr");
-    const rowUser = row?.dataset.username || "";
-    if (rowUser.trim().toLowerCase() === CURRENT_USERNAME.trim().toLowerCase()){
+    if (String(row?.dataset.userId || "") === CURRENT_USER_ID){
       showStatusError("You cannot suspend your own account.");
       return;
     }
@@ -949,6 +956,12 @@
     suspending=true;
 
     const key = pendingSuspendRow.dataset.key;
+    if (!key) {
+      showStatusError("Internal Error: Missing user key.");
+      suspending = false;
+      return;
+    }
+
     const orig = DOM.suspendConfirm.textContent;
     DOM.suspendConfirm.disabled=true; DOM.suspendConfirm.textContent="Suspending...";
     DOM.suspendCancel.disabled=true;
@@ -985,6 +998,12 @@
     reactivating=true;
 
     const key = pendingReactRow.dataset.key;
+    if (!key) {
+      showStatusError("Internal Error: Missing user key.");
+      reactivating = false;
+      return;
+    }
+    
     const orig = DOM.reactivateConfirm.textContent;
     DOM.reactivateConfirm.disabled=true; DOM.reactivateConfirm.textContent="Reactivating...";
     DOM.reactivateCancel.disabled=true;
@@ -1026,6 +1045,8 @@
     DOM.search.addEventListener("input", handleSearchInput);
 
     // Edit modal
+    DOM.editSave.addEventListener("click",     saveEditModal);
+    DOM.editCancel.addEventListener("click",   closeEditModal);
     DOM.editFullname.addEventListener("input", validateEditForm);
     DOM.editFullname.addEventListener("blur",  validateEditForm);
     DOM.editUsername.addEventListener("input", validateEditForm);
@@ -1038,7 +1059,6 @@
     DOM.editAddress.addEventListener("blur",   validateEditForm);
     DOM.editDob.addEventListener("change",     validateEditForm);
     DOM.editProfile.addEventListener("change", validateEditForm);
-    DOM.editCancel.addEventListener("click", closeEditModal);
 
     // Suspend modal
     DOM.suspendConfirm.addEventListener("click", confirmSuspend);

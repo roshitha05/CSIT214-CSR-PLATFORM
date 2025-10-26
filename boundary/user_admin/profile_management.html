@@ -747,6 +747,12 @@
     suspending = true;
 
     const key = pendingSuspendRow.dataset.key;
+    if (!key) {
+      showStatusError("Internal Error: Missing profile key.");
+      suspending = false;
+      return;
+    }
+
     const origText = DOM.suspendConfirm.textContent;
     DOM.suspendConfirm.disabled=true; DOM.suspendConfirm.textContent="Suspending...";
     DOM.suspendCancel.disabled=true;
@@ -783,6 +789,12 @@
     reactivating = true;
 
     const key = pendingReactivateRow.dataset.key;
+    if (!key) {
+      showStatusError("Internal Error: Missing profile key.");
+      reactivating = false;
+      return;
+    }
+    
     const origText = DOM.reactivateConfirm.textContent;
     DOM.reactivateConfirm.disabled=true; DOM.reactivateConfirm.textContent="Reactivating...";
     DOM.reactivateCancel.disabled=true;
