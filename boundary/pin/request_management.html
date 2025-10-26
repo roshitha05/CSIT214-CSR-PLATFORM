@@ -6,15 +6,10 @@
     <title>Manage Requests</title>
 
     <!-- Font Awesome Icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css" />
+    
     <!-- Google Font -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 
     <style>
       :root{
@@ -185,12 +180,12 @@
         display:none;align-items:center;justify-content:center;
         padding:1.5rem;z-index:1000;
       }
-      .modal{width:100%;max-width:560px;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
+      .modal{width:100%;max-width:680px;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
       .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:#f7fbff}
       .modal-title{font-size:1.05rem;font-weight:700;margin:0;color:var(--secondary)}
       .modal-close{background:transparent;border:none;font-size:1.2rem;cursor:pointer;line-height:1;padding:.25rem;color:#666}
-      .modal-body{padding:1rem 1.25rem;display:grid;gap:14px;margin-top:2px}
-      .modal-footer{display:flex;justify-content:flex-end;gap:.5rem;padding:1rem 1.25rem;border-top:1px solid var(--border);background:#fbfcff}
+      .modal-body{padding:1rem 1.25rem;display:grid;gap:18px;margin-top:2px;max-height:65vh;overflow:auto;}
+      .modal-footer{display:flex;justify-content:flex-end;gap:.5rem;padding:1.25rem 1.5rem;border-top:1px solid var(--border);background:#fbfcff}
 
       /* Inputs + validation in modal */
       .input,.select,.textarea{
@@ -404,12 +399,13 @@
       const API_URL             = "http://127.0.0.1:80/api";
       const CATEGORIES_API      = `${API_URL}/categories`;
       const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
-      
-      const STATUS = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
-      const TITLE_MAX = 120, DESC_MAX = 255;
+
+      const STATUS    = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
+      const TITLE_MAX = 120;
+      const DESC_MAX  = 255;
 
       /* =========================================================
-        2) DOM shortcuts
+        2) DOM helpers & references
       ========================================================= */
       const $  = (id) => document.getElementById(id);
       const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
@@ -439,27 +435,43 @@
         editClose: $("editModalClose"),
         editCancel: $("editModalCancelBtn"),
         editSave: $("editModalSaveBtn"),
+
+        // Cancel modal
+        cancelBackdrop: $("cancelModalBackdrop"),
+        cancelClose: $("cancelModalClose"),
+        cancelCancel: $("cancelModalCancelBtn"),
+        cancelConfirm: $("cancelModalConfirmBtn"),
+
+        // Restore modal
+        restoreBackdrop: $("restoreModalBackdrop"),
+        restoreClose: $("restoreModalClose"),
+        restoreCancel: $("restoreModalCancelBtn"),
+        restoreConfirm: $("restoreModalConfirmBtn"),
+
+        // Nav
+        backToDashBtn: $("btnBackToDash"),
       };
 
       /* =========================================================
-        3) Utilities
+        3) State
       ========================================================= */
-      const log = (...a)=>{ if(DEBUG) console.log("[requests]", ...a); };
-      const collapse = (s)=>String(s ?? "").replace(/\s+/g," ").trim();
-
-      /* =========================================================
-        4) State
-      ========================================================= */
-      let categoriesActive = [];          // active names (sorted)
+      let categoriesActive = [];          // ACTIVE names (sorted)
       let categoriesAllMap = new Map();   // name -> status (ACTIVE/ARCHIVED)
       let currentEditCard  = null;
 
-      // Current status selection for filtering UI
+      // confirmation modals
+      let pendingCancelCard  = null;
+      let pendingRestoreCard = null;
+
+      // current filter tab
       let currentStatus = "ALL";          // "ALL" | "ACTIVE" | "CANCELLED" | "COMPLETED"
 
       /* =========================================================
-        5) API layer
+        4) Utilities
       ========================================================= */
+      const log = (...a)=>{ if (DEBUG) console.log("[requests]", ...a); };
+      const collapse = (s)=>String(s ?? "").replace(/\s+/g," ").trim();
+
       async function fetchJSON(url, options={}) {
         const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
         const ct  = res.headers.get("content-type") || "";
@@ -467,6 +479,70 @@
         return { ok: res.ok, status: res.status, data };
       }
 
+      // field error helpers
+      function setError(el, errEl, msg){ if(!el||!errEl)return; errEl.textContent=msg; errEl.style.display="block"; el.setAttribute("aria-invalid","true"); }
+      function clearError(el, errEl){ if(!el||!errEl)return; errEl.style.display="none"; el.removeAttribute("aria-invalid"); }
+
+      // edit modal: category load error helpers
+      function showCategoryLoadError(msg){
+        const err = $("editErr-category");
+        if (err){ err.textContent = msg; err.style.display = "block"; }
+        DOM.editCategory?.setAttribute("aria-invalid","true");
+      }
+      function clearCategoryLoadError(){
+        const err = $("editErr-category");
+        if (err){ err.style.display = "none"; }
+        DOM.editCategory?.removeAttribute("aria-invalid");
+      }
+
+      function applyStatusBadge(badgeEl, status) {
+        badgeEl.className = "status-badge";
+        const s = String(status||"").toUpperCase();
+        badgeEl.classList.add(`status-${s}`);
+        badgeEl.textContent = s.charAt(0) + s.slice(1).toLowerCase();
+      }
+
+      function setCategoryOptions(activeNames, currentValue = "") {
+        // Populate dropdown with ACTIVE categories (sorted)
+        DOM.editCategory.innerHTML = "";
+        activeNames.forEach(name=>{
+          const o = document.createElement("option");
+          o.value = name; o.textContent = name;
+          DOM.editCategory.appendChild(o);
+        });
+
+        // If current value is archived, include it as "(Archived)" once
+        if (currentValue && !activeNames.includes(currentValue)) {
+          const status = categoriesAllMap.get(currentValue);
+          if (status && status !== "ACTIVE") {
+            const o = document.createElement("option");
+            o.value = currentValue;
+            o.textContent = `${currentValue} (Archived)`;
+            o.dataset.archived = "true";
+            DOM.editCategory.appendChild(o);
+          }
+        }
+
+        // Select current if present; otherwise select first
+        if (currentValue && [...DOM.editCategory.options].some(o=>o.value===currentValue)) {
+          DOM.editCategory.value = currentValue;
+        } else if (DOM.editCategory.options.length) {
+          DOM.editCategory.value = DOM.editCategory.options[0].value;
+        }
+      }
+
+      function formatLocalDate(isoString) {
+        if (!isoString) return "—";
+        const date = new Date(isoString);
+        return date.toLocaleString("en-SG", {
+            dateStyle: "medium",
+            timeStyle: "short",
+        });
+      }
+
+      /* =========================================================
+        5) API layer
+      ========================================================= */
       async function loadCategories() {
         try {
           const { ok, status, data } = await fetchJSON(CATEGORIES_API);
@@ -484,7 +560,6 @@
             .map(([name]) => name)
             .sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
 
-          // Clear any error state if previously shown
           clearCategoryLoadError();
           setCategoryOptions(categoriesActive);
           DOM.editCategory.disabled = false;
@@ -503,15 +578,14 @@
 
       async function loadServiceRequests() {
         try {
-          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}/${localStorage.getItem('user_id')}`);
+          const uid = localStorage.getItem('user_id');
+          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}/${encodeURIComponent(uid)}`); // fetch requests by user ID
           if (!ok) throw new Error(`Service requests load failed (${status})`);
           const serviceRequests = Array.isArray(data) ? data : [];
 
           await Promise.all(
             serviceRequests.map(async (request) => {
-              const viewsRequest = await fetchJSON(
-                `${SERVICE_REQUEST_API}/${request.service_request_id}/views`
-              );
+              const viewsRequest = await fetchJSON(`${SERVICE_REQUEST_API}/${request.service_request_id}/views`);
               request.view_count = viewsRequest.data;
             })
           );
@@ -519,11 +593,12 @@
           return serviceRequests;
         } catch (e) {
           console.error(e);
+          return [];
         }
       }
 
       async function cancelServiceRequest(service_request_id) {
-        const { ok, status, data } = await fetchJSON(
+        const { ok, status } = await fetchJSON(
           `${SERVICE_REQUEST_API}/${service_request_id}`,
           { method: 'DELETE' }
         );
@@ -531,7 +606,7 @@
       }
 
       async function restoreServiceRequest(service_request_id) {
-        const { ok, status, data } = await fetchJSON(
+        const { ok, status } = await fetchJSON(
           `${SERVICE_REQUEST_API}/${service_request_id}/restore`,
           { method: 'POST' }
         );
@@ -539,13 +614,11 @@
       }
 
       async function editServiceRequest(service_request_id, payload) {
-        const { ok, status, data } = await fetchJSON(
+        const { ok, status } = await fetchJSON(
           `${SERVICE_REQUEST_API}/${service_request_id}`,
           { 
             method: 'PUT', 
-            headers: {
-              "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           }
         );
@@ -553,112 +626,90 @@
       }
 
       /* =========================================================
-        6) Rendering
+        6) Edit modal (open/close, populate, validation)
       ========================================================= */
-      function setCategoryOptions(activeNames, currentValue = "") {
-        // Populate dropdown with ACTIVE categories (sorted)
-        DOM.editCategory.innerHTML = "";
-        activeNames.forEach(name=>{
-          const o = document.createElement("option");
-          o.value = name; o.textContent = name;
-          DOM.editCategory.appendChild(o);
-        });
-
-        // If current value is archived, include it as "(Archived)" once
-        if (currentValue && !activeNames.includes(currentValue)) {
-          const status = categoriesAllMap.get(currentValue);
-          if (status && status !== "ACTIVE") {
-            const o = document.createElement("option");
-            o.value = currentValue;
-            o.textContent = `${currentValue} (Archived)`;
-            o.dataset.archived = "true"; // informational
-            DOM.editCategory.appendChild(o);
-          }
-        }
-
-        // Select current if present; otherwise select first
-        if (currentValue && [...DOM.editCategory.options].some(o=>o.value===currentValue)) {
-          DOM.editCategory.value = currentValue;
-        } else if (DOM.editCategory.options.length) {
-          DOM.editCategory.value = DOM.editCategory.options[0].value;
-        }
+      function openEditModal(){
+        DOM.editModalBackdrop.style.display="flex";
+        clearError(DOM.editTitle, $("editErr-title"));
+        clearError(DOM.editCategory, $("editErr-category"));
+        clearError(DOM.editDescription, $("editErr-description"));
+      }
+      function closeEditModal(){
+        DOM.editModalBackdrop.style.display="none";
+        DOM.editForm.reset();
       }
 
-      function applyStatusBadge(badgeEl, status) {
-        badgeEl.className = "status-badge";
-        const s = String(status||"").toUpperCase();
-        badgeEl.classList.add(`status-${s}`);
-        badgeEl.textContent = s.charAt(0) + s.slice(1).toLowerCase();
+      function populateEditModalFromCard(cardEl){
+        const id          = cardEl.dataset.id;
+        const title       = cardEl.querySelector(".card-title")?.textContent?.trim() || "";
+        const category    = cardEl.querySelector('[data-field="category"]')?.textContent?.trim() || "";
+        const description = cardEl.querySelector('[data-field="description"]')?.textContent?.trim() || "";
+
+        DOM.editId.value          = id;
+        DOM.editTitle.value       = title;
+        DOM.editDescription.value = description;
+
+        // Build options from ACTIVE; if current is archived, include `(Archived)`
+        setCategoryOptions(categoriesActive, category);
       }
 
-      function renderCards(items=[]) {
-        DOM.cardsWrap.innerHTML = "";
-        items.forEach((item)=>{
-          const node = DOM.tpl.content.cloneNode(true);
-          const card = node.querySelector(".card");
-
-          card.dataset.id     = item.service_request_id;
-          card.dataset.status = item.status;
-
-          node.querySelector(".card-title").textContent = item.title || "(Untitled request)";
-          node.querySelector('[data-field="service_request_id"]').textContent = `#${item.service_request_id}`;
-          applyStatusBadge(node.querySelector(".status-badge"), item.status);
-
-          node.querySelector('[data-field="category"]').textContent     = item.category ?? "";
-          node.querySelector('[data-field="description"]').textContent  = item.description ?? "";
-          node.querySelector('[data-field="date_created"]').textContent = item.date_created ?? "";
-          node.querySelector('[data-field="date_completed"]').textContent = item.date_completed ?? "—";
-
-          node.querySelector('[data-field="view_count"]').textContent           = item.view_count ?? 0;
-          node.querySelector('[data-field="shortlisted_by_count"]').textContent = item.shortlisted_by_count ?? 0;
-
-          const editBtn    = node.querySelector(".btn.edit");
-          const actionSlot = node.querySelector(".actions");
-          const actionBtn  = document.createElement("button");
-          actionBtn.className = "btn-cancel-request";
-          actionBtn.textContent = "Cancel Request";
-
-          // Edit modal
-          editBtn.addEventListener("click", ()=>{
-            if (editBtn.disabled) return;
-            currentEditCard = card;
-            populateEditModalFromCard(card);
-            openEditModal();
-          });
-
-          // Cancel/Restore toggle (no backend yet)
-          actionBtn.addEventListener("click", async ()=>{
-            if (actionBtn.disabled) return;
-            const current = card.dataset.status;
-            
-            if (current === STATUS.ACTIVE) {
-              try {
-                await cancelServiceRequest(card.dataset.id);
-                setCardState(card, STATUS.CANCELLED);
-              } catch (e) {
-                console.error(e)
-              }
-            }
-            if (current === STATUS.CANCELLED) {
-              try {
-                await restoreServiceRequest(card.dataset.id);
-                setCardState(card, STATUS.ACTIVE);
-              } catch (e) {
-                console.error(e)
-              }
-            }
-          });
-
-          actionSlot.appendChild(actionBtn);
-          refreshFooterActionsForState(card, { editBtn, actionBtn });
-
-          DOM.cardsWrap.appendChild(node);
-        });
-
-        // Apply current status filter to the freshly rendered cards
-        applyStatusFilter();
+      function validateTitleInline(){
+        const el = DOM.editTitle, err = $("editErr-title");
+        const v = collapse(el.value);
+        if (v.length===0 || v.length>TITLE_MAX){ setError(el,err,`Please enter a valid title (1–${TITLE_MAX} characters).`); return false; }
+        clearError(el,err); return true;
+      }
+      function validateCategoryInline(){
+        const el = DOM.editCategory, err = $("editErr-category");
+        const v = (el.value||"").trim();
+        if (!v){ setError(el,err,"Please select a category."); return false; }
+        clearError(el,err); return true;
+      }
+      function validateDescriptionInline(){
+        const el = DOM.editDescription, err = $("editErr-description");
+        const v = collapse(el.value);
+        DOM.editDescription.value = v;
+        if (v.length===0 || v.length>DESC_MAX){ setError(el,err,`Description must be 1–${DESC_MAX} characters.`); return false; }
+        clearError(el,err); return true;
+      }
+      function validateEditForm(){
+        const a=validateTitleInline(), b=validateCategoryInline(), c=validateDescriptionInline();
+        if(!a){ DOM.editTitle.focus({preventScroll:true}); return false; }
+        if(!b){ DOM.editCategory.focus({preventScroll:true}); return false; }
+        if(!c){ DOM.editDescription.focus({preventScroll:true}); return false; }
+        return true;
       }
 
+      /* =========================================================
+        7) Cancel / Restore confirmation modals
+      ========================================================= */
+      function openCancelModal(card){
+        pendingCancelCard = card;
+        DOM.cancelBackdrop.style.display = "flex";
+        document.body.style.overflow = "hidden";
+        DOM.cancelConfirm?.focus({ preventScroll:true });
+      }
+      function closeCancelModal(){
+        DOM.cancelBackdrop.style.display = "none";
+        document.body.style.overflow = "";
+        pendingCancelCard = null;
+      }
+
+      function openRestoreModal(card){
+        pendingRestoreCard = card;
+        DOM.restoreBackdrop.style.display = "flex";
+        document.body.style.overflow = "hidden";
+        DOM.restoreConfirm?.focus({ preventScroll:true });
+      }
+      function closeRestoreModal(){
+        DOM.restoreBackdrop.style.display = "none";
+        document.body.style.overflow = "";
+        pendingRestoreCard = null;
+      }
+
+      /* =========================================================
+        8) Rendering (cards & footer actions)
+      ========================================================= */
       function refreshFooterActionsForState(card, { editBtn, actionBtn }) {
         const st = card.dataset.status;
         editBtn.style.display = "";
@@ -694,94 +745,71 @@
         applyStatusFilter();
       }
 
-      /* =========================================================
-        7) Modal logic + validation
-      ========================================================= */
-      // Error helpers
-      function setError(el, errEl, msg){ if(!el||!errEl)return; errEl.textContent=msg; errEl.style.display="block"; el.setAttribute("aria-invalid","true"); }
-      function clearError(el, errEl){ if(!el||!errEl)return; errEl.style.display="none"; el.removeAttribute("aria-invalid"); }
+      function renderCards(items=[]) {
+        DOM.cardsWrap.innerHTML = "";
+        items.forEach((item)=>{
+          const node = DOM.tpl.content.cloneNode(true);
+          const card = node.querySelector(".card");
 
-      // Category load error in modal
-      function showCategoryLoadError(msg){
-        const err = $("editErr-category");
-        if (err){ err.textContent = msg; err.style.display = "block"; }
-        DOM.editCategory?.setAttribute("aria-invalid","true");
-      }
-      
-      function clearCategoryLoadError(){
-        const err = $("editErr-category");
-        if (err){ err.style.display = "none"; }
-        DOM.editCategory?.removeAttribute("aria-invalid");
-      }
+          card.dataset.id     = item.service_request_id;
+          card.dataset.status = item.status;
 
-      // Field validators
-      function validateTitleInline(){
-        const el = DOM.editTitle, err = $("editErr-title");
-        const v = collapse(el.value);
-        if (v.length===0 || v.length>TITLE_MAX){ setError(el,err,`Please enter a valid title (1–${TITLE_MAX} characters).`); return false; }
-        clearError(el,err); return true;
-      }
+          node.querySelector(".card-title").textContent = item.title || "(Untitled request)";
+          node.querySelector('[data-field="service_request_id"]').textContent = `#${item.service_request_id}`;
+          applyStatusBadge(node.querySelector(".status-badge"), item.status);
 
-      function validateCategoryInline(){
-        const el = DOM.editCategory, err = $("editErr-category");
-        const v = (el.value||"").trim();
-        if (!v){ setError(el,err,"Please select a category."); return false; }
-        clearError(el,err); return true;
-      }
+          node.querySelector('[data-field="category"]').textContent        = item.category ?? "";
+          node.querySelector('[data-field="description"]').textContent     = item.description ?? "";
+          node.querySelector('[data-field="date_created"]').textContent    = formatLocalDate(item.date_created);
+          node.querySelector('[data-field="date_completed"]').textContent  = 
+            item.status === "COMPLETED"
+              ? formatLocalDate(item.date_completed)
+              : "—";
+              
+          node.querySelector('[data-field="view_count"]').textContent      = item.view_count ?? 0;
+          node.querySelector('[data-field="shortlisted_by_count"]').textContent = item.shortlisted_by_count ?? 0;
 
-      function validateDescriptionInline(){
-        const el = DOM.editDescription, err = $("editErr-description");
-        const v = collapse(el.value);
-        DOM.editDescription.value = v;
-        if (v.length===0 || v.length>DESC_MAX){ setError(el,err,`Description must be 1–${DESC_MAX} characters.`); return false; }
-        clearError(el,err); return true;
-      }
+          const editBtn    = node.querySelector(".btn.edit");
+          const actionSlot = node.querySelector(".actions");
+          const actionBtn  = document.createElement("button");
+          actionBtn.className   = "btn-cancel-request";
+          actionBtn.textContent = "Cancel Request";
 
-      function validateEditForm(){
-        const a=validateTitleInline(), b=validateCategoryInline(), c=validateDescriptionInline();
-        if(!a){ DOM.editTitle.focus({preventScroll:true}); return false; }
-        if(!b){ DOM.editCategory.focus({preventScroll:true}); return false; }
-        if(!c){ DOM.editDescription.focus({preventScroll:true}); return false; }
-        return true;
-      }
+          // Edit modal
+          editBtn.addEventListener("click", ()=>{
+            if (editBtn.disabled) return;
+            currentEditCard = card;
+            populateEditModalFromCard(card);
+            openEditModal();
+          });
 
-      function openEditModal(){
-        DOM.editModalBackdrop.style.display="flex";
-        clearError(DOM.editTitle, $("editErr-title"));
-        clearError(DOM.editCategory, $("editErr-category"));
-        clearError(DOM.editDescription, $("editErr-description"));
-      }
-      function closeEditModal(){
-        DOM.editModalBackdrop.style.display="none";
-        DOM.editForm.reset();
-      }
+          // Cancel/Restore with confirmation modals
+          actionBtn.addEventListener("click", ()=>{
+            if (actionBtn.disabled) return;
+            const current = card.dataset.status;
+            if (current === STATUS.ACTIVE) {
+              openCancelModal(card);
+            } else if (current === STATUS.CANCELLED) {
+              openRestoreModal(card);
+            }
+          });
 
-      function populateEditModalFromCard(cardEl){
-        const id          = cardEl.dataset.id;
-        const title       = cardEl.querySelector(".card-title")?.textContent?.trim() || "";
-        const category    = cardEl.querySelector('[data-field="category"]')?.textContent?.trim() || "";
-        const description = cardEl.querySelector('[data-field="description"]')?.textContent?.trim() || "";
+          actionSlot.appendChild(actionBtn);
+          refreshFooterActionsForState(card, { editBtn, actionBtn });
+          DOM.cardsWrap.appendChild(node);
+        });
 
-        DOM.editId.value          = id;
-        DOM.editTitle.value       = title;
-        DOM.editDescription.value = description;
-
-        // Build options from ACTIVE; if current is archived, include `(Archived)`
-        setCategoryOptions(categoriesActive, category);
+        applyStatusFilter();
       }
 
       /* =========================================================
-        8) Filters (status segmented control + Completed-only UI)
+        9) Filters (status segmented control + Completed-only UI)
       ========================================================= */
       function applyStatusFilter(){
         // Show/hide cards by data-status
         $$("#cards .card").forEach((card)=>{
           const st = String(card.dataset.status || "");
-          if (currentStatus === "ALL") {
-            card.style.display = "";
-          } else {
-            card.style.display = (st === currentStatus) ? "" : "none";
-          }
+          card.style.display = (currentStatus === "ALL" || st === currentStatus) ? "" : "none";
         });
 
         // Show the extended filters + reset only for COMPLETED
@@ -802,79 +830,128 @@
         });
       }
 
-      // Reset of completed-only inputs (stay in Completed view)
       function resetCompletedFilters(){
         if (DOM.svc) DOM.svc.value = "";
         if (DOM.dateFrom) DOM.dateFrom.value = "";
         if (DOM.dateTo) DOM.dateTo.value = "";
-        // Re-apply status filter (remains on Completed, shows all completed items)
         applyStatusFilter();
-        // Optional: clear any summary text if you add it later
         const summary = $("resultSummary");
         if (summary) summary.textContent = "";
       }
 
       /* =========================================================
-        9) Boot
+        10) Init & event bindings
       ========================================================= */
       (async function init(){
         wireStatusButtons();     // hook status buttons
         await loadCategories();  // load categories for the edit modal dropdown
         const serviceRequests = await loadServiceRequests();
-        renderCards(serviceRequests);   // render initial list, then applyStatusFilter() runs
-        applyStatusFilter();     // ensure UI state & completed-filters visibility are correct
+        renderCards(serviceRequests);   // render initial list
+        applyStatusFilter();            // ensure UI state & completed-filters visibility are correct
 
-        // Wire reset button (only visible in Completed mode)
+        // Reset button (only visible in Completed mode)
         if (DOM.resetBtn) {
           DOM.resetBtn.addEventListener("click", (e)=>{
             e.preventDefault();
             resetCompletedFilters();
           });
         }
+
+        // Edit modal close
+        DOM.editClose.addEventListener("click", closeEditModal);
+        DOM.editCancel.addEventListener("click", closeEditModal);
+
+        // Live validation
+        DOM.editTitle.addEventListener("input",  validateTitleInline);
+        DOM.editTitle.addEventListener("blur",   validateTitleInline);
+        DOM.editCategory.addEventListener("change", validateCategoryInline);
+        DOM.editCategory.addEventListener("blur",   validateCategoryInline);
+        DOM.editDescription.addEventListener("input", validateDescriptionInline);
+        DOM.editDescription.addEventListener("blur",  validateDescriptionInline);
+
+        // Submit edit
+        DOM.editForm.addEventListener("submit", async (e)=>{
+          e.preventDefault();
+          if (!currentEditCard) return;
+          if (!validateEditForm()) return;
+
+          const id          = DOM.editId.value;
+          const title       = collapse(DOM.editTitle.value);
+          const category    = DOM.editCategory.value;
+          const description = collapse(DOM.editDescription.value);
+
+          try {
+            await editServiceRequest(id, { title, category, description });
+
+            currentEditCard.querySelector(".card-title").textContent = title || "(Untitled request)";
+            currentEditCard.querySelector('[data-field="category"]').textContent    = category;
+            currentEditCard.querySelector('[data-field="description"]').textContent = description;
+
+            const detail = { service_request_id:Number(id), title, category, description };
+            document.dispatchEvent(new CustomEvent("request:update",{ detail }));
+          } catch (e) {
+            console.error(e);
+            alert("Failed to save changes. Please try again.");
+            return;
+          }
+
+          closeEditModal();
+        });
+
+        // Cancel Modal
+        DOM.cancelClose.addEventListener("click", closeCancelModal);
+        DOM.cancelCancel.addEventListener("click", closeCancelModal);
+        DOM.cancelBackdrop.addEventListener("click", (e)=>{ if(e.target === DOM.cancelBackdrop) closeCancelModal(); });
+        document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && DOM.cancelBackdrop.style.display==="flex") closeCancelModal(); });
+        DOM.cancelConfirm.addEventListener("click", async ()=>{
+          if(!pendingCancelCard) return;
+          const card = pendingCancelCard;
+          DOM.cancelConfirm.disabled = true;
+          const original = DOM.cancelConfirm.textContent;
+          DOM.cancelConfirm.textContent = "Cancelling…";
+          try{
+            await cancelServiceRequest(card.dataset.id);
+            setCardState(card, STATUS.CANCELLED);
+          }catch(err){
+            console.error(err);
+            alert("Failed to cancel request. Please try again.");
+          }finally{
+            DOM.cancelConfirm.disabled = false;
+            DOM.cancelConfirm.textContent = original;
+            closeCancelModal();
+          }
+        });
+
+        // Restore Modal
+        DOM.restoreClose.addEventListener("click", closeRestoreModal);
+        DOM.restoreCancel.addEventListener("click", closeRestoreModal);
+        DOM.restoreBackdrop.addEventListener("click", (e)=>{ if(e.target === DOM.restoreBackdrop) closeRestoreModal(); });
+        document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && DOM.restoreBackdrop.style.display==="flex") closeRestoreModal(); });
+        DOM.restoreConfirm.addEventListener("click", async ()=>{
+          if(!pendingRestoreCard) return;
+          const card = pendingRestoreCard;
+          DOM.restoreConfirm.disabled = true;
+          const original = DOM.restoreConfirm.textContent;
+          DOM.restoreConfirm.textContent = "Restoring…";
+          try{
+            await restoreServiceRequest(card.dataset.id);
+            setCardState(card, STATUS.ACTIVE);
+          }catch(err){
+            console.error(err);
+            alert("Failed to restore request. Please try again.");
+          }finally{
+            DOM.restoreConfirm.disabled = false;
+            DOM.restoreConfirm.textContent = original;
+            closeRestoreModal();
+          }
+        });
+
+        // Nav
+        DOM.backToDashBtn.addEventListener("click", () => {
+          window.location.href = "/pin/pin_dashboard.html";
+        });
       })();
-
-      // Modal close
-      DOM.editClose.addEventListener("click", closeEditModal);
-      DOM.editCancel.addEventListener("click", closeEditModal);
-
-      // Live validation
-      DOM.editTitle.addEventListener("input",  validateTitleInline);
-      DOM.editTitle.addEventListener("blur",   validateTitleInline);
-      DOM.editCategory.addEventListener("change", validateCategoryInline);
-      DOM.editCategory.addEventListener("blur",   validateCategoryInline);
-      DOM.editDescription.addEventListener("input", validateDescriptionInline);
-      DOM.editDescription.addEventListener("blur",  validateDescriptionInline);
-
-      // Submit
-      DOM.editForm.addEventListener("submit",(e)=>{
-        e.preventDefault();
-        if (!currentEditCard) return;
-        if (!validateEditForm()) return;
-
-        const id          = DOM.editId.value;
-        const title       = collapse(DOM.editTitle.value);
-        const category    = DOM.editCategory.value;
-        const description = collapse(DOM.editDescription.value);
-        
-        try {
-          editServiceRequest(id, { title, category, description });
-
-          currentEditCard.querySelector(".card-title").textContent = title || "(Untitled request)";
-          currentEditCard.querySelector('[data-field="category"]').textContent    = category;
-          currentEditCard.querySelector('[data-field="description"]').textContent = description;
-
-          const detail = { service_request_id:Number(id), title, category, description };
-          document.dispatchEvent(new CustomEvent("request:update",{ detail }));
-        } catch (e) {
-          console.error(e);
-        }
-
-        closeEditModal();
-      });
-
-      document.getElementById("btnBackToDash").addEventListener("click", () => {
-        window.location.href = "/pin/pin_dashboard.html";
-      });
     </script>
+
   </body>
 </html>

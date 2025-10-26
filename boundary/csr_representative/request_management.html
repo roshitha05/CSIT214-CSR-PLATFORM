@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Requests</title>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"/>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+
+    <style>
+      :root{
+        --bg-light:#f7f9fc; --primary:#34495e; --secondary:#2c3e50;
+        --accent:#3498db; --accent-2:#2980b9; --text-dark:#2c3e50; --text-light:#fff;
+        --shadow:0 4px 10px rgba(0,0,0,.1); --border:#eef2f7;
+        --danger:#ef4444; --ring:rgba(14,165,233,.3);
+        --tray-max: 760px;
+      }
+
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{margin:0;font-family:"Poppins",sans-serif;background:var(--bg-light);color:var(--text-dark)}
+
+      .main{min-height:100%; display:flex; flex-direction:column; gap:1.5rem; padding:2rem}
+
+      .topbar{display:flex; justify-content:space-between; align-items:center}
+      .topbar h1{font-size:1.6rem; font-weight:600; margin:0}
+      .search-bar input{padding:.6rem 1rem;border:1px solid #ccc;border-radius:8px;width:260px;outline:none}
+      .btn.outline{
+        background:#fff; border:1px solid #cbd5e1; color:var(--secondary);
+        padding:.55rem .9rem; border-radius:10px; display:inline-flex; align-items:center;
+        gap:.45rem; box-shadow:0 1px 2px rgba(0,0,0,.03); cursor:pointer;
+      }
+      .btn.outline:hover{ background:#f8fafc; }
+      .controls-tray{
+        display:flex; align-items:center; gap:.6rem;
+        width:min(100%, var(--tray-max)); margin-left:auto;
+      }
+      .controls-tray .search-bar{ flex:1 1 auto; }
+      .controls-tray .search-bar input{ width:100%; height:40px; }
+      .btn.outline{ height:40px; }
+
+      .filters{display:flex; align-items:center; gap:1rem}
+      .segmented{display:flex; gap:.5rem; align-items:center}
+      .grow{flex:1 1 auto; min-width:12px}
+      .filters-actions{display:flex; align-items:center; gap:.75rem}
+
+      .filter-btn{
+        padding:.5rem 1rem; background:#fff; border:1px solid var(--accent); border-radius:999px;
+        color:var(--accent); cursor:pointer; transition:.25s
+      }
+      .filter-btn.active,.filter-btn:hover{background:var(--accent); color:#fff; box-shadow:0 0 0 3px var(--ring); border-color:var(--accent)}
+
+      .completed-filters{
+        display:flex; align-items:center; gap:.75rem;
+        background:#fff; border:1px solid var(--border); border-radius:10px;
+        padding:.6rem .8rem; box-shadow:0 2px 8px rgba(0,0,0,.04)
+      }
+      .filter-label{font-size:.85rem;color:#64748b;margin-right:.25rem;white-space:nowrap}
+      .date-group{display:flex;align-items:center;gap:.5rem}
+      .range-sep{display:inline-block;width:14px;text-align:center;color:#94a3b8}
+      .completed-filters .select,.completed-filters .input{
+        height:36px;padding:0 12px;border-radius:8px;font-size:.92rem;
+        border:1px solid #cbd5e1;background:#f8fafc;color:var(--text-dark);
+        transition:border-color .2s, box-shadow .2s
+      }
+      .completed-filters .select:focus,.completed-filters .input:focus{outline:none;border-color:var(--accent-2);box-shadow:0 0 0 3px var(--ring)}
+      .completed-filters[hidden]{ display:none !important; }
+      #filtersBar.show-completed .completed-filters{ display:flex; }
+
+      .cards{
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+        gap:1.5rem; align-items:stretch;
+      }
+
+      .card{
+        background:#fff;border-radius:12px;box-shadow:var(--shadow);
+        transition:transform .3s, box-shadow .3s;display:flex;flex-direction:column;height:100%;
+      }
+      .card:hover{transform:translateY(-5px);box-shadow:0 6px 15px rgba(0,0,0,.15)}
+
+      .card-header{
+        display:flex;justify-content:space-between;align-items:center;
+        padding:1rem 1.25rem;border-bottom:1px solid var(--border);
+        border-top-left-radius:12px;border-top-right-radius:12px;background:#f3f8ff;
+      }
+      .card-head-left{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+      .card-title{font-size:1.1rem;font-weight:700;color:var(--accent-2);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .card-meta{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+      .id-pill{
+        font-size:.72rem;line-height:1;padding:.25rem .5rem;border-radius:999px;
+        background:#eef4ff;color:#476099;border:1px solid #dfe8ff;white-space:nowrap
+      }
+      .category-chip{
+        font-size:.72rem;line-height:1;padding:.25rem .5rem;border-radius:999px;
+        background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;white-space:nowrap
+      }
+      .meta-bullet{ color:#94a3b8; user-select:none; }
+
+      .status-badge{
+        font-size:.75rem;padding:.25rem .6rem;border-radius:999px;font-weight:600;border:1px solid #e6eef8
+      }
+      .status-ACTIVE{background:#ecf5ff;color:#1f6fba;border-color:#d6e9ff}
+      .status-COMPLETED{background:#edf9f0;color:#1f8a4d;border-color:#d9f2e0}
+      .status-CANCELLED{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+
+      .card-body{padding:1rem 1.25rem 0;background:#fff;flex:1 1 auto}
+      .card-row{display:flex;gap:.5rem;margin:.35rem 0;flex-wrap:wrap}
+      .card-label{font-weight:600;color:var(--secondary)}
+      .muted{color:#666}
+
+      .card-footer{
+        display:flex;justify-content:flex-end;align-items:center;gap:1rem;
+        padding:.9rem 1.25rem;border-top:1px solid var(--border);margin-top:auto;background:#fbfcff;
+      }
+
+      .actions{display:flex;gap:.5rem}
+      .btn{padding:.45rem .9rem;border-radius:8px;border:none;cursor:pointer;font-size:.85rem;font-weight:500}
+      .btn.primary{background:var(--accent);color:#fff}
+      .btn.primary:hover{background:var(--accent-2)}
+      .btn.ghost{background:#eef2f7;color:#34495e}
+
+      button:disabled,.btn:disabled,.btn.is-disabled{opacity:.55 !important; cursor:not-allowed !important;}
+      button:disabled *, .btn:disabled *{ cursor:not-allowed !important; }
+
+      @media (max-width: 720px){
+        #filtersBar{gap:.6rem}
+        .completed-filters{flex-wrap:wrap;width:100%}
+        .date-group{width:100%}
+        .date-group .input{flex:1 1 0;min-width:120px}
+        .filters-actions{width:100%;justify-content:space-between;margin-top:.25rem}
+      }
+      @media (max-width:480px){
+        .search-bar input{width:100%}
+        .card-footer{flex-direction:column;align-items:flex-start}
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="main">
+      <div class="topbar">
+        <h1>Manage Requests</h1>
+
+        <div class="controls-tray">
+          <div class="search-bar">
+            <input type="text" placeholder="Search requests..." />
+          </div>
+
+          <button type="button" class="btn outline" id="btnBackToDash">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            <span>Return to Dashboard</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filters" id="filtersBar" style="flex-wrap:wrap;row-gap:.5rem">Filters:
+        <div class="segmented" role="tablist" aria-label="Status">
+          <button class="filter-btn active" data-status="ALL" role="tab" aria-selected="true">All</button>
+          <button class="filter-btn" data-status="ACTIVE" role="tab">Active</button>
+          <button class="filter-btn" data-status="CANCELLED" role="tab">Cancelled</button>
+          <button class="filter-btn" data-status="COMPLETED" role="tab">Completed</button>
+        </div>
+
+        <div class="grow"></div>
+
+        <!-- Completed-only filters -->
+        <div id="completedFilters" class="completed-filters" hidden>
+          <label class="filter-label" for="svc">Service</label>
+          <select id="svc" class="select">
+            <option value="">All services</option>
+            <!-- populated from /categories -->
+          </select>
+
+          <div class="date-group" aria-label="Completed date range">
+            <label class="filter-label" for="from">From</label>
+            <input type="date" id="from" class="input" />
+            <span class="range-sep" aria-hidden="true">–</span>
+            <label class="filter-label" for="to">To</label>
+            <input type="date" id="to" class="input" />
+          </div>
+
+          <div class="grow"></div>
+          <button class="btn ghost" id="resetFilters">Reset</button>
+          <span id="resultSummary" class="muted"></span>
+        </div>
+      </div>
+
+      <div class="cards" id="cards"></div>
+
+      <!-- Template used to render cards -->
+      <template id="card-template">
+        <article class="card" data-status="">
+          <header class="card-header">
+            <div class="card-head-left">
+              <h3 class="card-title"></h3>
+              <div class="card-meta">
+                <span class="id-pill" data-field="service_request_id"></span>
+                <span class="meta-bullet" aria-hidden="true">•</span>
+                <span class="category-chip" data-field="category_chip"></span>
+              </div>
+            </div>
+            <span class="status-badge"></span>
+          </header>
+
+          <div class="card-body">
+            <p class="card-row"><span class="card-label">Created by:</span> <span data-field="created_by" class="muted"></span></p>
+            <p class="card-row"><span class="card-label">Location:</span> <span data-field="location" class="muted"></span></p>
+            <p class="card-row"><span class="card-label">Description:</span> <span data-field="description" class="muted"></span></p>
+            <p class="card-row"><span class="card-label">Date created:</span> <span data-field="date_created" class="muted"></span></p>
+            <p class="card-row"><span class="card-label">Date completed:</span> <span data-field="date_completed" class="muted"></span></p>
+          </div>
+
+          <footer class="card-footer">
+            <div class="actions">
+              <button class="btn primary">View</button>
+            </div>
+          </footer>
+        </article>
+      </template>
+
+    </main>
+
+    <script>
+      const DEBUG = false;
+      const API_URL = "http://127.0.0.1:80/api";
+      const CATEGORIES_API = `${API_URL}/categories`;
+      const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
+      const STATUS = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
+
+      const $  = (id) => document.getElementById(id);
+      const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+      const DOM = {
+        cardsWrap: $("cards"),
+        tpl: $("card-template"),
+        filterBtns: $$(".segmented .filter-btn"),
+        filtersBar: $("filtersBar"),
+        completedFilters: $("completedFilters"),
+        svc: $("svc"),
+        dateFrom: $("from"),
+        dateTo: $("to"),
+        resetBtn: $("resetFilters"),
+        backToDashBtn: $("btnBackToDash"),
+      };
+
+      let categoriesActive = [];
+      let categoriesAllMap = new Map();
+      let currentStatus = "ALL";
+
+      const log = (...a)=>{ if (DEBUG) console.log("[requests]", ...a); };
+
+      async function fetchJSON(url, options={}) {
+        const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
+        const ct  = res.headers.get("content-type") || "";
+        let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
+        return { ok: res.ok, status: res.status, data };
+      }
+
+      function applyStatusBadge(badgeEl, status) {
+        badgeEl.className = "status-badge";
+        const s = String(status||"").toUpperCase();
+        badgeEl.classList.add(`status-${s}`);
+        badgeEl.textContent = s.charAt(0) + s.slice(1).toLowerCase();
+      }
+
+      function setSvcOptions(activeNames){
+        if (!DOM.svc) return;
+        const cur = DOM.svc.value || "";
+        DOM.svc.innerHTML = "";
+        const all = document.createElement("option");
+        all.value = ""; all.textContent = "All services";
+        DOM.svc.appendChild(all);
+        activeNames.forEach(name=>{
+          const o = document.createElement("option");
+          o.value = name; o.textContent = name;
+          DOM.svc.appendChild(o);
+        });
+        if ([...DOM.svc.options].some(o=>o.value===cur)) DOM.svc.value = cur;
+      }
+
+      function formatLocalDate(isoString) {
+        if (!isoString) return "—";
+        const date = new Date(isoString);
+        return date.toLocaleString("en-SG", { dateStyle: "medium", timeStyle: "short" });
+      }
+
+      async function loadCategories() {
+        try {
+          const { ok, status, data } = await fetchJSON(CATEGORIES_API);
+          if (!ok) throw new Error(`Categories load failed (${status})`);
+          const list = Array.isArray(data?.categories) ? data.categories : [];
+          categoriesAllMap = new Map(
+            list
+              .map(c => [ String(c?.name || ""), String(c?.status || "").toUpperCase() ])
+              .filter(([name]) => !!name)
+          );
+          categoriesActive = [...categoriesAllMap.entries()]
+            .filter(([, st]) => st === "ACTIVE")
+            .map(([name]) => name)
+            .sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+          setSvcOptions(categoriesActive);
+        } catch (e) {
+          console.error(e);
+          categoriesAllMap.clear();
+          categoriesActive = [];
+          setSvcOptions([]);
+        }
+      }
+
+      async function loadServiceRequests() {
+        try {
+          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}`);
+          if (!ok) throw new Error(`Service requests load failed (${status})`);
+          return Array.isArray(data) ? data
+               : Array.isArray(data?.items) ? data.items
+               : [];
+        } catch (e) {
+          console.error(e);
+          return [];
+        }
+      }
+
+      function renderCards(items=[]) {
+        DOM.cardsWrap.innerHTML = "";
+        items.sort((a, b) => new Date(b.date_created) - new Date(a.date_created));
+
+        items.forEach((item)=>{
+          const node = DOM.tpl.content.cloneNode(true);
+          const card = node.querySelector(".card");
+
+          card.dataset.id     = item.service_request_id;
+          card.dataset.status = item.status;
+
+          node.querySelector(".card-title").textContent = item.title || "(Untitled request)";
+          node.querySelector('[data-field="service_request_id"]').textContent = `#${item.service_request_id}`;
+          node.querySelector('[data-field="category_chip"]').textContent = item.category ?? "—";
+          applyStatusBadge(node.querySelector(".status-badge"), item.status);
+
+          // New rows
+          node.querySelector('[data-field="created_by"]').textContent = item.created_by_name ?? "—";
+          node.querySelector('[data-field="location"]').textContent   = item.location ?? "—";
+
+          node.querySelector('[data-field="description"]').textContent    = item.description ?? "—";
+          node.querySelector('[data-field="date_created"]').textContent   = formatLocalDate(item.date_created);
+          node.querySelector('[data-field="date_completed"]').textContent =
+            item.status === "COMPLETED" && item.date_completed
+              ? formatLocalDate(item.date_completed)
+              : "—";
+
+          DOM.cardsWrap.appendChild(node);
+        });
+
+        applyStatusFilter();
+      }
+
+      function applyStatusFilter(){
+        $$("#cards .card").forEach((card)=>{
+          const st = String(card.dataset.status || "");
+          card.style.display = (currentStatus === "ALL" || st === currentStatus) ? "" : "none";
+        });
+        const showCompleted = currentStatus === "COMPLETED";
+        DOM.filtersBar.classList.toggle("show-completed", showCompleted);
+        DOM.completedFilters.toggleAttribute("hidden", !showCompleted);
+        const fa = document.querySelector(".filters-actions");
+        if (fa) fa.style.display = showCompleted ? "flex" : "none";
+      }
+
+      function wireStatusButtons(){
+        DOM.filterBtns.forEach((btn)=>{
+          btn.addEventListener("click", ()=>{
+            DOM.filterBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentStatus = btn.dataset.status || "ALL";
+            applyStatusFilter();
+          });
+        });
+      }
+
+      function resetCompletedFilters(){
+        if (DOM.svc) DOM.svc.value = "";
+        if (DOM.dateFrom) DOM.dateFrom.value = "";
+        if (DOM.dateTo) DOM.dateTo.value = "";
+        applyStatusFilter();
+        const summary = $("resultSummary");
+        if (summary) summary.textContent = "";
+      }
+
+      (async function init(){
+        wireStatusButtons();
+        await loadCategories();
+        const serviceRequests = await loadServiceRequests();
+        renderCards(serviceRequests);
+        applyStatusFilter();
+
+        if (DOM.resetBtn) {
+          DOM.resetBtn.addEventListener("click", (e)=>{
+            e.preventDefault(); resetCompletedFilters();
+          });
+        }
+
+        DOM.backToDashBtn.addEventListener("click", () => {
+          window.location.href = "/pin/pin_dashboard.html";
+        });
+      })();
+    </script>
+  </body>
+</html>
