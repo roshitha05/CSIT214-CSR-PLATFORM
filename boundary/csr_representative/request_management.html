@@ -340,8 +340,8 @@
           applyStatusBadge(node.querySelector(".status-badge"), item.status);
 
           // New rows
-          node.querySelector('[data-field="created_by"]').textContent = item.created_by_name ?? "—";
-          node.querySelector('[data-field="location"]').textContent   = item.location ?? "—";
+          node.querySelector('[data-field="created_by"]').textContent = item.user.fullname ?? "—";
+          node.querySelector('[data-field="location"]').textContent   = item.user.address ?? "—";
 
           node.querySelector('[data-field="description"]').textContent    = item.description ?? "—";
           node.querySelector('[data-field="date_created"]').textContent   = formatLocalDate(item.date_created);
