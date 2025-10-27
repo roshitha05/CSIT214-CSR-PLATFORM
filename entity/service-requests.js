@@ -62,6 +62,17 @@ export default class ServiceRequestsEntity extends Entity {
         return true;
     }
 
+    async increaseView(serviceRequest) {
+        if (!await this.idExists(serviceRequest.service_request_id)) return false;
+        console.log(serviceRequest)
+        await this.updateServiceRequest(
+            serviceRequest.service_request_id, 
+            { view_count: serviceRequest.view_count + 1 }
+        );
+
+        return true;
+    }
+
     async idExists(service_request_id) {
         const idCheck = await this.getServiceRequests({ service_request_id });
 

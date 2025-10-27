@@ -133,11 +133,11 @@ export default class App {
         serviceRequestsRouter.use('/', new CreateServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new DeleteServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new RestoreServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new SearchPinServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new SearchServiceRequests().getRouter());
         serviceRequestsRouter.use('/', new GetPinServiceRequests().getRouter());
         serviceRequestsRouter.use('/', new GetServiceRequestViews().getRouter());
         serviceRequestsRouter.use('/', new GetServiceRequests().getRouter());
-        serviceRequestsRouter.use('/', new SearchPinServiceRequests().getRouter());
-        serviceRequestsRouter.use('/', new SearchServiceRequests().getRouter());
         serviceRequestsRouter.use('/', new UpdateServiceRequest().getRouter());
 
         apiRouter.use('/user-profiles', userProfilesRouter);
