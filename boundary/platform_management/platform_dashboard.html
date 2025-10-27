@@ -17,7 +17,7 @@
     *{ box-sizing:border-box; margin:0; padding:0; font-family:Poppins,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
     body{ min-height:100vh; display:flex; background:var(--bg); color:var(--text); }
 
-    /* Sidebar */
+    /* ===== Sidebar ===== */
     .sidebar{
       width:240px; background:var(--primary); color:var(--white);
       display:flex; flex-direction:column; padding:1.5rem 1rem; box-shadow:var(--shadow);
@@ -30,14 +30,14 @@
     .navlink:hover{ background:var(--accent); }
     .navlink[aria-current="page"]{ background:var(--accent-2); }
 
-    /* Main */
+    /* ===== Main ===== */
     .main{ flex:1; padding:2rem; display:flex; flex-direction:column; }
     .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; }
     .topbar h1{ font-size:1.6rem; font-weight:600; }
     .user-info{ display:flex; align-items:center; gap:10px; }
     .user-info img{ width:40px; height:40px; border-radius:50%; border:2px solid var(--accent); }
 
-    /* Cards */
+    /* ===== Cards ===== */
     .cards{
       display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem;
     }
@@ -51,7 +51,7 @@
     .card h3{ font-size:1.1rem; }
     .card p{ color:#666; font-size:.95rem; }
 
-    /* Logout button */
+    /* ===== Logout button ===== */
     .logout-btn{
       margin-top:auto; display:flex; gap:.5rem; align-items:center; justify-content:center;
       background:var(--accent-2); color:var(--white); padding:.75rem; border:0; border-radius:8px; cursor:pointer;
@@ -59,7 +59,7 @@
     }
     .logout-btn:hover{ background:#1f5f8b; }
 
-    /* Modal */
+    /* ===== Modal =====*/
     .modal{
       display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
       justify-content:center; align-items:center; z-index:1000;
