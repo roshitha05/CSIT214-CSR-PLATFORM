@@ -959,20 +959,24 @@
         9) Filters (status segmented control + labels)
       ========================================================= */
       function applyStatusFilter(){
-        // Show/hide cards by data-status
+        const want = currentStatus === "ALL" ? null : STATUS[currentStatus];
         $$("#cards .card").forEach((card)=>{
-          const st = String(card.dataset.status || "");
-          card.style.display = (currentStatus === "ALL" || st === currentStatus) ? "" : "none";
+          const st = String(card.dataset.status || "").toUpperCase();
+          card.style.display = (!want || st === want) ? "" : "none";
         });
       }
 
       function wireStatusButtons(){
         DOM.filterBtns.forEach((btn)=>{
           btn.addEventListener("click", ()=>{
-            DOM.filterBtns.forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected","false"); });
+            DOM.filterBtns.forEach(b => { 
+              b.classList.remove("active"); 
+              b.setAttribute("aria-selected","false"); 
+            });
             btn.classList.add("active");
             btn.setAttribute("aria-selected","true");
-            currentStatus = btn.dataset.status || "ALL";
+
+            currentStatus = normalizeStatus(btn.dataset.status || "ALL");
             applyStatusFilter();
           });
         });
