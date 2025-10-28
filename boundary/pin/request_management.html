@@ -371,14 +371,14 @@
           </div>
 
           <div class="field">
-            <label class="filter-label" id="dateFromLbl" for="from">Created from</label>
+            <label class="filter-label" id="dateFromLbl" for="from">From</label>
             <input type="date" id="from" class="input" />
           </div>
 
           <span class="range-sep" aria-hidden="true">–</span>
 
           <div class="field">
-            <label class="filter-label" id="dateToLbl" for="to">Created to</label>
+            <label class="filter-label" id="dateToLbl" for="to">To</label>
             <input type="date" id="to" class="input" />
           </div>
 
@@ -434,7 +434,6 @@
         <div class="modal-content">
           <div class="modal-header">
             <h2 class="modal-title" id="editTitle">Edit Category</h2>
-            <button class="modal-close" id="editModalClose" aria-label="Close">&times;</button>
           </div>
 
           <div class="modal-body">
@@ -481,7 +480,6 @@
         <div class="modal-content">
           <div class="modal-header">
             <h2 class="modal-title" id="cancelTitle">Confirm Cancel</h2>
-            <button class="modal-close" id="cancelModalClose" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
             <p>Are you sure you want to cancel this service request?</p>
@@ -498,7 +496,6 @@
         <div class="modal-content">
           <div class="modal-header">
             <h2 class="modal-title" id="restoreTitle">Confirm Restore</h2>
-            <button class="modal-close" id="restoreModalClose" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
             <p>Are you sure you want to restore this service request?</p>
@@ -522,7 +519,7 @@
       const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
 
       const STATUS    = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
-      const TITLE_MAX = 64;   // matches modal hint "1–64"
+      const TITLE_MAX = 80;
       const DESC_MAX  = 255;
 
       /* =========================================================
@@ -546,25 +543,22 @@
         dateToLbl: $("dateToLbl"),
         resetBtn: $("resetFilters"),
 
-        // Edit modal (new IDs)
+        // Edit modal
         editModal: $("editModal"),
         editId: $("edit_id"),
         editTitle: $("editName"),
         editCategory: $("editCategory"),
         editDescription: $("editDesc"),
-        editClose: $("editModalClose"),
         editCancel: $("editModalCancelBtn"),
         editSave: $("editModalSaveBtn"),
 
-        // Cancel modal (note the close button id is archiveModalClose in HTML)
+        // Cancel modal
         cancelModal: $("cancelModal"),
-        cancelClose: $("cancelModalClose"),
         cancelCancel: $("cancelModalCancelBtn"),
         cancelConfirm: $("cancelModalConfirmBtn"),
 
         // Restore modal
         restoreModal: $("restoreModal"),
-        restoreClose: $("restoreModalClose"),
         restoreCancel: $("restoreModalCancelBtn"),
         restoreConfirm: $("restoreModalConfirmBtn"),
 
@@ -610,72 +604,87 @@
         badgeEl.textContent = s.charAt(0) + s.slice(1).toLowerCase();
       }
 
-      function setSvcOptions(activeNames){
-        if (!DOM.svc) return;
-        const cur = DOM.svc.value || "";
-        DOM.svc.innerHTML = "";
-        const all = document.createElement("option");
-        all.value = ""; all.textContent = "All services";
-        DOM.svc.appendChild(all);
-        activeNames.forEach(name=>{
-          const o = document.createElement("option");
-          o.value = name; o.textContent = name;
-          DOM.svc.appendChild(o);
-        });
-        if ([...DOM.svc.options].some(o=>o.value===cur)) DOM.svc.value = cur;
-      }
-
-      function setCategoryOptions(activeNames, currentValue = "") {
-        const sel = DOM.editCategory;
-        if (!sel) return;
-
-        sel.innerHTML = "";
-
-        // 1) ACTIVE categories (already sorted upstream)
-        activeNames.forEach(name => {
-          const o = document.createElement("option");
-          o.value = name;
-          o.textContent = name;
-          sel.appendChild(o);
-        });
-
-        // 2) If the current value is archived, include it once with "(Archived)"
-        const status = categoriesAllMap.get(currentValue); // "ACTIVE" | "ARCHIVED" | etc
-        const isArchivedCurrent =
-          currentValue &&
-          status &&
-          status !== "ACTIVE" &&
-          ![...sel.options].some(o => o.value === currentValue);
-
-        if (isArchivedCurrent) {
-          const o = document.createElement("option");
-          o.value = currentValue;
-          o.textContent = `${currentValue} (Archived)`;
-          o.dataset.archived = "true";
-          sel.appendChild(o);
-        }
-
-        // 3) Select current if present; otherwise select first option
-        if (currentValue && [...sel.options].some(o => o.value === currentValue)) {
-          sel.value = currentValue;
-        } else if (sel.options.length) {
-          sel.value = sel.options[0].value;
-        }
-
-        // Try to keep currentValue selected if present, else fallback to first option
-        if (currentValue && [...sel.options].some(o => o.value === currentValue)) {
-          sel.value = currentValue;
-        } else if (prev && [...sel.options].some(o => o.value === prev)) {
-          sel.value = prev;
-        } else if (sel.options.length) {
-          sel.value = sel.options[0].value;
-        }
-      }
-
       function formatLocalDate(isoString) {
         if (!isoString) return "—";
         const date = new Date(isoString);
         return date.toLocaleString("en-SG", { dateStyle: "medium", timeStyle: "short" });
+      }
+
+      /* =========================================================
+        4.1) Category helpers (DRY)
+      ========================================================= */
+      function isCategoryArchived(name) {
+        const st = categoriesAllMap.get(name);
+        return !!name && st && st !== "ACTIVE";
+      }
+
+      function labelCategory(name) {
+        if (!name) return "";
+        return isCategoryArchived(name) ? `${name} (Archived)` : name;
+      }
+
+      /**
+       * Populate a <select> with categories from categoriesAllMap.
+       * - Active first (A→Z), then Archived (A→Z) with "(Archived)" suffix
+       * - Keeps currentValue selected if present
+       * - Optionally includes an "All services" first option
+       */
+      function populateCategorySelect(selectEl, { includeAll = false, currentValue = "", archivedMode="all" } = {}) {
+        if (!selectEl) return;
+
+        // Partition active vs archived using categoriesAllMap
+        const active = [];
+        const archived = [];
+        for (const [name, st] of categoriesAllMap.entries()) {
+          if (!name) continue;
+          (st === "ACTIVE" ? active : archived).push(name);
+        }
+        active.sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+        archived.sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+
+        // Build options
+        selectEl.innerHTML = "";
+        if (includeAll) {
+          const all = document.createElement("option");
+          all.value = "";
+          all.textContent = "All services";
+          selectEl.appendChild(all);
+        }
+
+        const addOption = (name, isArchived) => {
+          const o = document.createElement("option");
+          o.value = name;
+          o.textContent = isArchived ? `${name} (Archived)` : name;
+          if (isArchived) o.dataset.archived = "true";
+          selectEl.appendChild(o);
+        };
+
+        // Always display ACTIVE categories first
+        active.forEach(n => addOption(n, false));
+        
+        // Archived categories
+        if (archivedMode === "all") {
+          archived.forEach(n => addOption(n, true));
+        } else if (archivedMode === "currentOnly" && currentValue && categoriesAllMap.get(currentValue) !== "ACTIVE") {
+          // Only include the current archived value (once)
+          addOption(currentValue, true);
+        }
+
+        // Keep selection if possible
+        const canSelect = [...selectEl.options].some(o => o.value === currentValue);
+        if (currentValue && canSelect) {
+          selectEl.value = currentValue;
+        } else if (selectEl.options.length) {
+          selectEl.value = selectEl.options[0].value;
+        }
+      }
+
+      /* Thin wrappers to preserve previous call sites */
+      function setSvcOptions() {
+        populateCategorySelect(DOM.svc, { includeAll: true, currentValue: DOM.svc?.value || "", archivedMode: "all", });
+      }
+      function setCategoryOptions(_activeNames, currentValue = "") {
+        populateCategorySelect(DOM.editCategory, { includeAll: false, currentValue, archivedMode: "currentOnly", });
       }
 
       /* =========================================================
@@ -698,12 +707,14 @@
             .map(([name]) => name)
             .sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
 
-          setSvcOptions(categoriesActive);             // populate Service filter only
+          
+          // Populate Service Filter (active first, archived after)
+          setSvcOptions();
         } catch (e) {
           console.error(e);
           categoriesAllMap.clear();
           categoriesActive = [];
-          setSvcOptions([]);                           // keep UI consistent
+          setSvcOptions([]); // will render just the "All services" option
         }
       }
 
@@ -780,7 +791,8 @@
       function populateEditModalFromCard(cardEl){
         const id          = cardEl.dataset.id;
         const title       = cardEl.querySelector(".card-title")?.textContent?.trim() || "";
-        const category = cardEl.querySelector('[data-field="category"]')?.textContent?.trim() || "";
+        const categoryEl  = cardEl.querySelector('[data-field="category"]');
+        const category    = categoryEl?.dataset?.categoryName ?? "";
         const description = cardEl.querySelector('[data-field="description"]')?.textContent?.trim() || "";
 
         DOM.editId.value          = id;
@@ -895,7 +907,11 @@
           node.querySelector('[data-field="service_request_id"]').textContent = `#${item.service_request_id}`;
           applyStatusBadge(node.querySelector(".status-badge"), item.status);
 
-          node.querySelector('[data-field="category"]').textContent        = item.category ?? "";
+          // Category: show label with "(Archived)" when needed, but keep raw name in data attribute
+          const catSpan = node.querySelector('[data-field="category"]');
+          catSpan.textContent = labelCategory(item.category ?? "");
+          catSpan.dataset.categoryName = item.category ?? ""; // <-- raw category name is preserved here
+
           node.querySelector('[data-field="description"]').textContent     = item.description ?? "";
           node.querySelector('[data-field="date_created"]').textContent    = formatLocalDate(item.date_created);
           node.querySelector('[data-field="date_completed"]').textContent  = 
@@ -942,19 +958,12 @@
       /* =========================================================
         9) Filters (status segmented control + labels)
       ========================================================= */
-      function updateDateLabels(){
-        const isCompleted = currentStatus === "COMPLETED";
-        if (DOM.dateFromLbl) DOM.dateFromLbl.textContent = isCompleted ? "Completed from" : "Created from";
-        if (DOM.dateToLbl)   DOM.dateToLbl.textContent   = isCompleted ? "Completed to"   : "Created to";
-      }
-
       function applyStatusFilter(){
         // Show/hide cards by data-status
         $$("#cards .card").forEach((card)=>{
           const st = String(card.dataset.status || "");
           card.style.display = (currentStatus === "ALL" || st === currentStatus) ? "" : "none";
         });
-        updateDateLabels();   // keep labels in sync with tab
       }
 
       function wireStatusButtons(){
@@ -986,6 +995,12 @@
         renderCards(serviceRequests);   // render initial list
         applyStatusFilter();            // ensure UI state & labels are correct
 
+        (function setDateMaxToday() {
+          const today = new Date().toISOString().split("T")[0];
+          if (DOM.dateFrom) DOM.dateFrom.setAttribute("max", today);
+          if (DOM.dateTo)   DOM.dateTo.setAttribute("max", today);
+        })();
+
         // Reset button
         if (DOM.resetBtn) {
           DOM.resetBtn.addEventListener("click", (e)=>{
@@ -995,7 +1010,6 @@
         }
 
         // Edit modal close
-        DOM.editClose.addEventListener("click", closeEditModal);
         DOM.editCancel.addEventListener("click", closeEditModal);
 
         // Live validation
@@ -1004,6 +1018,7 @@
         DOM.editDescription.addEventListener("input", validateDescriptionInline);
         DOM.editDescription.addEventListener("blur",  validateDescriptionInline);
 
+        // Edit Modal (Save changes)
         DOM.editSave.addEventListener("click", async ()=>{
           if (!currentEditCard) return;
           if (!validateEditForm()) return;
@@ -1013,11 +1028,47 @@
           const category    = DOM.editCategory.value;
           const description = collapse(DOM.editDescription.value);
 
+          // Grab button to modify UI state
+          const saveBtn = DOM.editSave;
+          const cancelBtn = DOM.editCancel;
+          const originalBtnText = saveBtn.textContent;
+
+          // Check if any changes were made
+          const originalTitle       = currentEditCard.querySelector(".card-title").textContent.trim();
+          const originalCategory    = currentEditCard.querySelector('[data-field="category"]').dataset.categoryName;
+          const originalDescription = currentEditCard.querySelector('[data-field="description"]').textContent.trim();
+
+          const noChanges =
+            originalTitle       === title &&
+            originalCategory    === category &&
+            originalDescription === description;
+          
+          if (noChanges) {
+            // Nothing changed - skip API call entirely
+            closeEditModal();
+            return;
+          }
+
           try {
+
+            // Lock UI and update button text
+            saveBtn.disabled = true;
+            cancelBtn.disabled = true;
+            DOM.editTitle.disabled = true;
+            DOM.editCategory.disabled = true;
+            DOM.editDescription.disabled = true;
+
+            saveBtn.textContent = "Saving...";
+
+            // Post the updated values to the API
             await editServiceRequest(id, { title, category, description });
+            await new Promise(r => setTimeout(r, 800));
 
             currentEditCard.querySelector(".card-title").textContent = title || "(Untitled request)";
-            currentEditCard.querySelector('[data-field="category"]').textContent    = category;
+            // Update Category (both the visible label and the raw name)
+            const catSpan = currentEditCard.querySelector('[data-field="category"]');
+            catSpan.textContent = labelCategory(category);       // e.g., "Childcare Support (Archived)"
+            catSpan.dataset.categoryName = category;            // raw value (no "(Archived)")
             currentEditCard.querySelector('[data-field="description"]').textContent = description;
 
             const detail = { service_request_id:Number(id), title, category, description };
@@ -1025,54 +1076,97 @@
           } catch (e) {
             console.error(e);
             alert("Failed to save changes. Please try again.");
+
+            // Restore controls on failure
+            saveBtn.disabled = false;
+            cancelBtn.disabled = false;
+            DOM.editTitle.disabled = false;
+            DOM.editCategory.disabled = false;
+            DOM.editDescription.disabled = false;
+            saveBtn.textContent = originalBtnText;
             return;
           }
+
+          // Re-enable controls
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          DOM.editTitle.disabled = false;
+          DOM.editCategory.disabled = false;
+          DOM.editDescription.disabled = false;
+          saveBtn.textContent = originalBtnText;
 
           closeEditModal();
         });
 
         // Cancel Modal
-        DOM.cancelClose.addEventListener("click", closeCancelModal);
         DOM.cancelCancel.addEventListener("click", closeCancelModal);
         DOM.cancelConfirm.addEventListener("click", async ()=>{
           if(!pendingCancelCard) return;
-          const card = pendingCancelCard;
-          DOM.cancelConfirm.disabled = true;
-          const original = DOM.cancelConfirm.textContent;
-          DOM.cancelConfirm.textContent = "Cancelling…";
+
+          const card    = pendingCancelCard;
+          const confirm = DOM.cancelConfirm;
+          const cancel  = DOM.cancelCancel;
+          const originalText = confirm.textContent;
+
+          // Lock UI
+          confirm.disabled = true;
+          cancel.disabled  = true;
+          confirm.textContent = "Cancelling...";
+
           try{
             await cancelServiceRequest(card.dataset.id);
+            await new Promise(r => setTimeout(r, 800));
             setCardState(card, STATUS.CANCELLED);
           }catch(err){
             console.error(err);
             alert("Failed to cancel request. Please try again.");
-          }finally{
-            DOM.cancelConfirm.disabled = false;
-            DOM.cancelConfirm.textContent = original;
-            closeCancelModal();
+            confirm.disabled = false;
+            cancel.disabled  = false;
+            confirm.textContent = originalText;
+            return;
           }
+
+          // Unlock UI
+          confirm.disabled = false;
+          cancel.disabled  = false;
+          confirm.textContent = originalText;
+          closeCancelModal();
         });
 
         // Restore Modal
-        DOM.restoreClose.addEventListener("click", closeRestoreModal);
         DOM.restoreCancel.addEventListener("click", closeRestoreModal);
         DOM.restoreConfirm.addEventListener("click", async ()=>{
           if(!pendingRestoreCard) return;
-          const card = pendingRestoreCard;
-          DOM.restoreConfirm.disabled = true;
-          const original = DOM.restoreConfirm.textContent;
-          DOM.restoreConfirm.textContent = "Restoring…";
+
+          const card    = pendingRestoreCard;
+          const confirm = DOM.restoreConfirm;
+          const cancel  = DOM.restoreCancel;
+          const originalText = confirm.textContent;
+
+          // Lock UI
+          confirm.disabled = true;
+          cancel.disabled  = true;
+          confirm.textContent = "Restoring...";
+
           try{
             await restoreServiceRequest(card.dataset.id);
+            await new Promise(r => setTimeout(r, 800));
             setCardState(card, STATUS.ACTIVE);
           }catch(err){
             console.error(err);
             alert("Failed to restore request. Please try again.");
-          }finally{
-            DOM.restoreConfirm.disabled = false;
-            DOM.restoreConfirm.textContent = original;
-            closeRestoreModal();
+            confirm.disabled = false;
+            cancel.disabled  = false;
+            confirm.textContent = originalText;
+            return;
           }
+
+          // Unlock UI
+          confirm.disabled = false;
+          cancel.disabled  = false;
+          confirm.textContent = originalText;
+
+          closeRestoreModal();
         });
 
         // Nav
