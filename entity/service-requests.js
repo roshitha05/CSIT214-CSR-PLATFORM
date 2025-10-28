@@ -26,8 +26,6 @@ export default class ServiceRequestsEntity extends Entity {
     }
 
     async insertServiceRequest(serviceRequest) {
-        if (await this.titleExists(serviceRequest.title)) return false;
-
         await this.db.insert(serviceRequestsTable)
             .values(serviceRequest)
             .returning();
@@ -39,13 +37,6 @@ export default class ServiceRequestsEntity extends Entity {
         if (Object.keys(update).length == 0) return true;
 
         if (!await this.idExists(service_request_id)) return false;
-        const serviceRequest = (await this.getServiceRequests({ service_request_id }))[0];
-        if (
-            serviceRequest.title !== update.title
-            && update.title !== undefined
-        ) {
-            if (await this.titleExists(update.title)) return false;
-        };
 
         const setQuery = {};
         Object.keys(update).forEach((key) => {
@@ -77,13 +68,6 @@ export default class ServiceRequestsEntity extends Entity {
         const idCheck = await this.getServiceRequests({ service_request_id });
 
         if (idCheck.length > 0) return true;
-        return false;
-    }
-
-    async titleExists(title) {
-        const titleCheck = await this.getServiceRequests({ title });
-
-        if (titleCheck.length > 0) return true;
         return false;
     }
 }
