@@ -666,9 +666,20 @@
         try {
           const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}`);
           if (!ok) throw new Error(`Service requests load failed (${status})`);
-          return Array.isArray(data) ? data
+          const serviceRequests = Array.isArray(data) ? data
               : Array.isArray(data?.items) ? data.items
               : [];
+
+          await Promise.all(
+            serviceRequests.map(async request => {
+              await fetchJSON(`
+                ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
+              )
+                .then( res => request.view_count = res.data);
+            })
+          )
+          
+          return serviceRequests;
         } catch (e) {
           console.error(e);
           return [];
