@@ -1,4 +1,4 @@
-import { eq, and, ilike } from 'drizzle-orm';
+import { eq, and, ilike, gt, or, lt } from 'drizzle-orm';
 import { serviceRequestsTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -23,6 +23,28 @@ export default class ServiceRequestsEntity extends Entity {
         }
 
         return await query;
+    }
+
+    async searchServiceRequests(filters) {
+        const conditions = [];
+
+        if (filters.title !== undefined) 
+            conditions.push(ilike(serviceRequestsTable.title, `%${filters.title}%`));
+        if (filters.category !== undefined)
+            conditions.push(ilike(serviceRequestsTable.category, filters.category));
+        if (filters.date_from !== undefined)
+            conditions.push(gt(serviceRequestsTable.date_created, new Date(filters.date_from)));
+        if (filters.date_to !== undefined)
+            conditions.push(lt(serviceRequestsTable.date_created, new Date(filters.date_to)));
+        if (filters.status !== undefined)
+            conditions.push(ilike(serviceRequestsTable.status, filters.status));
+
+        return await this.db
+            .select()
+            .from(serviceRequestsTable)
+            .where(
+                and(...conditions)
+            );
     }
 
     async insertServiceRequest(serviceRequest) {
@@ -55,7 +77,7 @@ export default class ServiceRequestsEntity extends Entity {
 
     async increaseView(serviceRequest) {
         if (!await this.idExists(serviceRequest.service_request_id)) return false;
-        console.log(serviceRequest)
+
         await this.updateServiceRequest(
             serviceRequest.service_request_id, 
             { view_count: serviceRequest.view_count + 1 }
