@@ -28,6 +28,8 @@ export default class ServiceRequestsEntity extends Entity {
     async searchServiceRequests(filters) {
         const conditions = [];
 
+        if (filters.created_by !== undefined)
+            conditions.push(eq(serviceRequestsTable.created_by, filters.created_by));
         if (filters.title !== undefined) 
             conditions.push(ilike(serviceRequestsTable.title, `%${filters.title}%`));
         if (filters.category !== undefined)

@@ -358,28 +358,28 @@
         <div class="row-bottom" aria-label="Additional filters">
           <div class="search-bar in-filters">
             <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-            <input type="text" id="search" placeholder="Search Requests..." aria-label="Search requests"/>
+            <input type="text" id="search" placeholder="Search Requests..." aria-label="Search requests" oninput="searchServiceRequest()"/>
           </div>
 
           <span class="spacer"></span>
 
           <div class="field">
             <label class="filter-label" for="svc">Service</label>
-            <select id="svc" class="select">
+            <select id="svc" class="select" onchange="searchServiceRequest()" >
               <option value="">All services</option>
             </select>
           </div>
 
           <div class="field">
             <label class="filter-label" id="dateFromLbl" for="from">From</label>
-            <input type="date" id="from" class="input" />
+            <input type="date" id="from" class="input" onchange="searchServiceRequest()" />
           </div>
 
           <span class="range-sep" aria-hidden="true">–</span>
 
           <div class="field">
             <label class="filter-label" id="dateToLbl" for="to">To</label>
-            <input type="date" id="to" class="input" />
+            <input type="date" id="to" class="input" onchange="searchServiceRequest()" />
           </div>
 
           <button class="btn ghost reset-inline" id="resetFilters">
@@ -536,6 +536,7 @@
         // Filters + status segmented
         filterBtns: $$(".segmented .filter-btn"),
         filtersBar: $("filtersBar"),
+        search: $("search"),
         svc: $("svc"),
         dateFrom: $("from"),
         dateTo: $("to"),
@@ -771,6 +772,39 @@
           }
         );
         if (!ok) throw new Error(`Service request update failed (${status})`);
+      }
+
+      async function searchServiceRequest() {
+        let payload = "";
+
+        if (DOM.search.value !== "") 
+          payload += `title=${encodeURIComponent(DOM.search.value)}&`;
+        if (DOM.svc.value !== "") 
+          payload += `category=${encodeURIComponent(DOM.svc.value)}&`;
+        if (DOM.dateFrom.value !== "") 
+          payload += `date_from=${encodeURIComponent(DOM.dateFrom.value)}&`;
+        if (DOM.dateTo.value !== "") 
+          payload += `date_to=${encodeURIComponent(DOM.dateTo.value)}&`;
+
+        const { ok, status, data } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${localStorage.getItem('user_id')}/search?${payload}`
+        );
+        if(!ok) throw new Error(`Failed to load requests (${status})`);
+
+        const serviceRequests = Array.isArray(data) ? data
+          : Array.isArray(data?.items) ? data.items
+          : [];
+        
+        await Promise.all(
+          serviceRequests.map(async request => {
+            await fetchJSON(`
+              ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
+            )
+              .then( res => request.view_count = res.data);
+          })
+        )
+
+        renderCards(serviceRequests);
       }
 
       /* =========================================================
