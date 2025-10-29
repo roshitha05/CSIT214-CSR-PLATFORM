@@ -1016,16 +1016,23 @@
             btn.classList.add("active");
             btn.setAttribute("aria-selected","true");
 
-            currentStatus = normalizeStatus(btn.dataset.status || "ALL");
+            currentStatus = (btn.dataset.status || "ALL").toUpperCase();
             applyStatusFilter();
           });
         });
       }
 
-      function resetCompletedFilters(){
+      function resetFilters(){
+        if (DOM.search) DOM.search.value = "";
         if (DOM.svc) DOM.svc.value = "";
         if (DOM.dateFrom) DOM.dateFrom.value = "";
         if (DOM.dateTo) DOM.dateTo.value = "";
+
+        // Re-query the backend with empty params to repopulate
+        if (typeof searchServiceRequest === "function") {
+          searchServiceRequest();
+        }
+
         applyStatusFilter();
       }
 
@@ -1049,7 +1056,7 @@
         if (DOM.resetBtn) {
           DOM.resetBtn.addEventListener("click", (e)=>{
             e.preventDefault();
-            resetCompletedFilters();
+            resetFilters();
           });
         }
 
