@@ -521,6 +521,7 @@
       const API_URL = "http://127.0.0.1:80/api";
       const CATEGORIES_API = `${API_URL}/categories`;
       const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
+      const SHORTLISTS_API = `${API_URL}/shortlists`;
       const STATUS = { ACTIVE: "ACTIVE", COMPLETED: "COMPLETED", CANCELLED: "CANCELLED" };
 
       /* =========================================================
@@ -677,6 +678,11 @@
                 ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
               )
                 .then( res => request.view_count = res.data);
+            
+              await fetchJSON(`
+                ${SHORTLISTS_API}/${request.service_request_id}/count`
+              )
+                .then( res => request.shortlisted_by_count = res.data);
             })
           )
           
