@@ -145,12 +145,14 @@ async function main(tx) {
     console.log('Seeding shortlists...');
 
     for (const request of requests) {
-        await tx.insert(shortlistsTable).values({
-            service_request: request,
-            shortlisted_by: allUsers
-                ['CSR Representative']
-                [Math.floor(Math.random() * allUsers['CSR Representative'].length)]
-        })
+        while (Math.random() > 0.15) {
+            await tx.insert(shortlistsTable).values({
+                service_request: request,
+                shortlisted_by: allUsers
+                    ['CSR Representative']
+                    [Math.floor(Math.random() * allUsers['CSR Representative'].length)]
+            })
+        }
     };
 
     console.log('Seeding matches...');
