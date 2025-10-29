@@ -46,6 +46,12 @@ import GetShortlists from './control/shortlists/get-shortlists.js';
 import GetShortlistCount from './control/shortlists/get-shortlist-count.js';
 import InsertShortlist from './control/shortlists/insert-shortlist.js';
 import SearchShortlists from './control/shortlists/search-shortlists.js';
+import GetMatches from './control/matches/get-matches.js';
+import GetMatchesHistory from './control/matches/get-service-request-match-history.js';
+import SearchMatches from './control/matches/search-matches.js';
+import SearchMatchesHistory from './control/matches/search-service-request-match-history.js';
+import InsertMatch from './control/matches/insert-match.js';
+import CompleteMatch from './control/matches/complete-match.js';
 
 export default class App {
     constructor() {
@@ -112,6 +118,7 @@ export default class App {
         const categoriesRouter = express.Router();
         const serviceRequestsRouter = express.Router();
         const shortlistsRouter = express.Router();
+        const matchesRouter = express.Router();
 
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
@@ -153,11 +160,19 @@ export default class App {
         shortlistsRouter.use('/', new InsertShortlist().getRouter());
         shortlistsRouter.use('/', new SearchShortlists().getRouter());
 
+        matchesRouter.use('/', new GetMatches().getRouter());
+        matchesRouter.use('/', new GetMatchesHistory().getRouter());
+        matchesRouter.use('/', new SearchMatches().getRouter());
+        matchesRouter.use('/', new SearchMatchesHistory().getRouter());
+        matchesRouter.use('/', new InsertMatch().getRouter());
+        matchesRouter.use('/', new CompleteMatch().getRouter());
+
         apiRouter.use('/user-profiles', userProfilesRouter);
         apiRouter.use('/users', usersRouter);
         apiRouter.use('/categories', categoriesRouter);
         apiRouter.use('/service-requests', serviceRequestsRouter);
         apiRouter.use('/shortlists', shortlistsRouter);
+        apiRouter.use('/matches', matchesRouter);
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('boundary'));
