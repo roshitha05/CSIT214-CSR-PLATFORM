@@ -3,6 +3,7 @@ import UsersEntity from '../entity/users.js';
 import UserProfilesEntity from '../entity/user-profiles.js';
 import CategoriesEntity from '../entity/categories.js';
 import ServiceRequestsEntity from '../entity/service-requests.js';
+import ShortlistsEntity from '../entity/shortlists.js';
 
 export default class Control {
     constructor() {
@@ -14,6 +15,7 @@ export default class Control {
         this.usersEntity = new UsersEntity();
         this.categoriesEntity = new CategoriesEntity();
         this.serviceRequestsEntity = new ServiceRequestsEntity();
+        this.shortlistsEntity = new ShortlistsEntity();
 
         this.createController();
     }

@@ -42,6 +42,11 @@ import UpdateServiceRequest from './control/service-requests/update-service-requ
 import RestoreServiceRequest from './control/service-requests/restore-service-request.js';
 import RetrieveServiceRequest from './control/service-requests/retrieve-search-request.js';
 
+import GetShortlists from './control/shortlists/get-shortlists.js';
+import GetShortlistCount from './control/shortlists/get-shortlist-count.js';
+import InsertShortlist from './control/shortlists/insert-shortlist.js';
+import SearchShortlists from './control/shortlists/search-shortlists.js';
+
 export default class App {
     constructor() {
         this.app = express();
@@ -106,6 +111,7 @@ export default class App {
         const usersRouter = express.Router();
         const categoriesRouter = express.Router();
         const serviceRequestsRouter = express.Router();
+        const shortlistsRouter = express.Router();
 
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
@@ -142,10 +148,16 @@ export default class App {
         serviceRequestsRouter.use('/', new GetServiceRequests().getRouter());
         serviceRequestsRouter.use('/', new UpdateServiceRequest().getRouter());
 
+        shortlistsRouter.use('/', new GetShortlists().getRouter());
+        shortlistsRouter.use('/', new GetShortlistCount().getRouter());
+        shortlistsRouter.use('/', new InsertShortlist().getRouter());
+        shortlistsRouter.use('/', new SearchShortlists().getRouter());
+
         apiRouter.use('/user-profiles', userProfilesRouter);
         apiRouter.use('/users', usersRouter);
         apiRouter.use('/categories', categoriesRouter);
         apiRouter.use('/service-requests', serviceRequestsRouter);
+        apiRouter.use('/shortlists', shortlistsRouter);
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('boundary'));
