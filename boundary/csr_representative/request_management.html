@@ -687,7 +687,7 @@
       }
 
       async function fetchServiceRequestDetail(id){
-        const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}/${encodeURIComponent(id)}`);
+        const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}/${encodeURIComponent(id)}/detail`);
         if(!ok) throw new Error(`Failed to load request #${id} (${status})`);
         return data;
       }
