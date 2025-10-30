@@ -30,11 +30,28 @@ export default class ServiceRequestsEntity extends Entity {
 
     async searchServiceRequests(filters) {
         const conditions = [];
+        const keywordConditions = []
 
+        if (filters.keyword !== undefined) {
+            const search = `%${filters.keyword}%`;
+
+            keywordConditions.push(ilike(serviceRequestsTable.title, search));
+            keywordConditions.push(ilike(serviceRequestsTable.description, search));
+            keywordConditions.push(ilike(serviceRequestsTable.category, search));
+            keywordConditions.push(ilike(serviceRequestsTable.status, search));
+
+            const intKeyword = parseInt(filters.keyword);
+            if (!isNaN(intKeyword)) {
+                keywordConditions
+                    .push(eq(serviceRequestsTable.service_request_id, intKeyword));
+                keywordConditions
+                    .push(eq(serviceRequestsTable.created_by, intKeyword));
+                keywordConditions
+                    .push(eq(serviceRequestsTable.view_count, intKeyword));
+            }
+        }
         if (filters.created_by !== undefined)
             conditions.push(eq(serviceRequestsTable.created_by, filters.created_by));
-        if (filters.title !== undefined) 
-            conditions.push(ilike(serviceRequestsTable.title, `%${filters.title}%`));
         if (filters.category !== undefined)
             conditions.push(ilike(serviceRequestsTable.category, filters.category));
         if (filters.date_from !== undefined)
@@ -48,7 +65,10 @@ export default class ServiceRequestsEntity extends Entity {
             .select()
             .from(serviceRequestsTable)
             .where(
-                and(...conditions)
+                and(
+                    and(...conditions),
+                    or(...keywordConditions)
+                )
             )
             .orderBy(serviceRequestsTable.service_request_id);
     }
