@@ -28,7 +28,7 @@ export default class ShortlistsEntity extends Entity {
     }
 
     async insertShortlist(shortlist) {
-        if (this.hasShortlisted(shortlist)) return false;
+        if (await this.hasShortlisted(shortlist)) return false;
 
         await this.db.insert(shortlistsTable)
             .values(shortlist)
@@ -38,7 +38,7 @@ export default class ShortlistsEntity extends Entity {
     }
 
     async deleteShortlist(shortlist_id) {
-        if (!this.idExists(shortlist_id)) return false;
+        if (!await this.idExists(shortlist_id)) return false;
 
         await this.db.delete(shortlistsTable)
             .where(eq(shortlistsTable.shortlist_id, shortlist_id));

@@ -811,10 +811,13 @@
       }
 
       async function postShortlistRequest(id){
-        return fetchJSON(`${SHORTLISTS_API}/${encodeURIComponent(id)}`, {
+        return fetchJSON(`${SHORTLISTS_API}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // body: JSON.stringify({ service_request_id : id })
+          body: JSON.stringify({ 
+            service_request : id,
+            shortlisted_by: localStorage.getItem('user_id')
+          })
         })
       }
 
