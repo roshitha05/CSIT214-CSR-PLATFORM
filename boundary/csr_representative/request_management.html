@@ -857,11 +857,13 @@
 
           // Wire up the View button (already present in template)
           const viewBtn = node.querySelector(".btn.primary");
+          const viewCount = node.querySelector('[data-field="view_count"]');
           viewBtn?.addEventListener("click", async ()=>{
             const id = card.dataset.id;
             try{
               const data = await fetchServiceRequestDetail(id);
               populateViewModal(data);
+              viewCount.textContent = parseInt(viewCount.textContent) + 1;
               openViewModal();
             }catch(err){
               console.error(err);
