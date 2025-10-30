@@ -37,6 +37,22 @@ export default class ShortlistsEntity extends Entity {
         return true;
     }
 
+    async deleteShortlist(shortlist_id) {
+        if (!this.idExists(shortlist_id)) return false;
+
+        await this.db.delete(shortlistsTable)
+            .where(eq(shortlistsTable.shortlist_id, shortlist_id));
+
+        return true;
+    }
+
+    async idExists(shortlist_id) {
+        const idCheck = await this.getShortlists({ shortlist_id });
+
+        if (idCheck.length > 0) return true;
+        return false;
+    }
+
     async hasShortlisted(shortlist) {
         const idCheck = await this.getShortlists(shortlist);
 

@@ -52,6 +52,7 @@ import SearchMatches from './control/matches/search-matches.js';
 import SearchMatchesHistory from './control/matches/search-service-request-match-history.js';
 import InsertMatch from './control/matches/insert-match.js';
 import CompleteMatch from './control/matches/complete-match.js';
+import RemoveShortlist from './control/shortlists/remove-shortlist.js';
 
 export default class App {
     constructor() {
@@ -159,6 +160,7 @@ export default class App {
         shortlistsRouter.use('/', new GetShortlistCount().getRouter());
         shortlistsRouter.use('/', new InsertShortlist().getRouter());
         shortlistsRouter.use('/', new SearchShortlists().getRouter());
+        shortlistsRouter.use('/', new RemoveShortlist().getRouter());
 
         matchesRouter.use('/', new GetMatches().getRouter());
         matchesRouter.use('/', new GetMatchesHistory().getRouter());
