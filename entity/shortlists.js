@@ -9,7 +9,9 @@ export default class ShortlistsEntity extends Entity {
     }
 
     async getShortlists(searchBy = {}) {
-        let query = this.db.select().from(shortlistsTable).$dynamic();
+        let query = this.db.select()
+            .from(shortlistsTable)
+            .orderBy(shortlistsTable.shortlist_id);
 
         const conditions = [];
         Object.keys(searchBy).forEach((key) => {

@@ -9,7 +9,9 @@ export default class MatchesEntity extends Entity {
     }
 
     async getMatches(searchBy = {}) {
-        let query = this.db.select().from(matchesTable).$dynamic();
+        let query = this.db.select()
+            .from(matchesTable)
+            .orderBy(matchesTable.service_request);
 
         const conditions = [];
         Object.keys(searchBy).forEach((key) => {
@@ -19,7 +21,8 @@ export default class MatchesEntity extends Entity {
         });
 
         if (conditions.length > 0) {
-            query = query.where(and(...conditions));
+            query = query
+                .where(and(...conditions));
         }
 
         return await query;

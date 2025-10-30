@@ -1,4 +1,4 @@
-import { eq, and, ilike, gt, or, lt } from 'drizzle-orm';
+import { eq, and, ilike, gt, or, lt, asc } from 'drizzle-orm';
 import { serviceRequestsTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -9,7 +9,9 @@ export default class ServiceRequestsEntity extends Entity {
     }
 
     async getServiceRequests(searchBy = {}) {
-        let query = this.db.select().from(serviceRequestsTable).$dynamic();
+        let query = this.db.select()
+            .from(serviceRequestsTable)
+            .orderBy(serviceRequestsTable.service_request_id);
 
         const conditions = [];
         Object.keys(searchBy).forEach((key) => {
@@ -19,7 +21,8 @@ export default class ServiceRequestsEntity extends Entity {
         });
 
         if (conditions.length > 0) {
-            query = query.where(and(...conditions));
+            query = query
+                .where(and(...conditions));
         }
 
         return await query;
@@ -46,7 +49,8 @@ export default class ServiceRequestsEntity extends Entity {
             .from(serviceRequestsTable)
             .where(
                 and(...conditions)
-            );
+            )
+            .orderBy(serviceRequestsTable.service_request_id);
     }
 
     async insertServiceRequest(serviceRequest) {
