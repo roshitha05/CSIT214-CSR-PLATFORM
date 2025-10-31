@@ -826,13 +826,6 @@
     const vDob   = DOM.editDob.value;
     const vProf  = collapse(DOM.editProfile.value);
 
-    // write back
-    DOM.editFullname.value = vName;
-    DOM.editUsername.value = vUsername;
-    DOM.editEmail.value    = vEmail;
-    DOM.editPhone.value    = vPhone;
-    DOM.editAddress.value  = vAddr;
-
     // Full name
     const okName = nonEmpty(vName) && vName.length <= NAME_MAX;
     DOM.editErr.fullname.style.display = okName ? "none" : "block";
@@ -916,8 +909,8 @@
     const payload = {
       fullname:      collapse(DOM.editFullname.value),
       username:      collapse(DOM.editUsername.value),
-      email:         collapse(DOM.editEmail.value),
-      phone_number:  collapse(DOM.editPhone.value),
+      email:         lowerTrim(DOM.editEmail.value),
+      phone_number:  digitsOnly(DOM.editPhone.value),
       address:       collapse(DOM.editAddress.value),
       date_of_birth: collapse(DOM.editDob.value),
       user_profile:  collapse(DOM.editProfile.value),
@@ -952,7 +945,7 @@
       const { ok, status } = await updateUserAPI(id, payload);
       if(!ok) throw new Error(`Update failed (${status})`);
 
-      // Update row in place
+      // Update row in place for UI
       if (payload.fullname      != null) currentRow.querySelector(".fullname").textContent = payload.fullname      || cur.fullname;
       if (payload.username      != null) currentRow.querySelector(".username").textContent = payload.username      || cur.username;
       if (payload.email         != null) currentRow.querySelector(".email").textContent    = payload.email         || cur.email;

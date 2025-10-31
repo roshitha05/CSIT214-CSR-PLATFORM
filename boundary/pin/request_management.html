@@ -251,12 +251,12 @@
       .modal { 
         display:none; position:fixed; inset:0; z-index:2000;
         background:rgba(0,0,0,.35); /* match request page */
-        justify-content:center; align-items:center; padding:24px;
+        justify-content:center; align-items:center; padding:32px;
       }
 
       /* Shell */
       .modal-content{
-        width:100%; max-width:680px; background:#fff; border-radius:16px;
+        width:100%; max-width:760px; background:#fff; border-radius:16px;
         box-shadow:0 8px 24px rgba(0,0,0,.25); overflow:hidden;
         padding:0; /* header/body/footer handle spacing */
       }
@@ -264,9 +264,9 @@
       /* Header */
       .modal-header{
         display:flex; align-items:center; justify-content:space-between;
-        padding:1rem 1.25rem; border-bottom:1px solid #e2e8f0; background:#f7fbff;
+        padding:1.25rem 1.75rem; border-bottom:1px solid #e2e8f0; background:#f7fbff;
       }
-      .modal-title{ font-size:1.05rem; font-weight:700; margin:0; color:#2c3e50; }
+      .modal-title{ font-size:1.1rem; font-weight:700; margin:0; color:#2c3e50; }
       .modal-close{
         background:transparent; border:none; font-size:1.2rem; cursor:pointer;
         line-height:1; padding:.25rem; color:#666;
@@ -274,29 +274,29 @@
 
       /* Body */
       .modal-body{
-        padding:1rem 1.25rem; display:grid; gap:18px; margin-top:2px;
-        max-height:65vh; overflow:auto;
+        padding:1.25rem 1.75rem; display:grid; gap:22px; margin-top:2px;
+        max-height:70vh; overflow:auto;
       }
 
       /* Footer */
       .modal-footer{
-        display:flex; justify-content:flex-end; gap:.5rem;
-        padding:1.25rem 1.5rem; border-top:1px solid #e2e8f0; background:#fbfcff;
+        display:flex; justify-content:flex-end; gap:.75rem;
+        padding:1.25rem 1.75rem; border-top:1px solid #e2e8f0; background:#fbfcff;
       }
 
-      /* Fields (recycle input/textarea styling from request_management) */
+      /* Fields */
       .modal-input,
       .modal-textarea{
         width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px;
-        padding:10px 12px; line-height:1.4; font-size:.95rem; font-family:inherit;
+        padding:12px 14px; line-height:1.45; font-size:1rem; font-family:inherit;
         transition:border-color .15s, box-shadow .15s;
       }
-      .modal-textarea{ min-height:120px; resize:vertical; padding:12px 14px; }
+      .modal-textarea{ min-height:140px; resize:vertical; padding:12px 14px; }
       .modal-input:focus, .modal-textarea:focus{
         outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
       }
 
-      /* Buttons (reuse) */
+      /* Buttons */
       .btn-cancel{
         background:#eef2f7; color:#34495e; border:1px solid #cbd5e1;
         padding:0 0.9rem; height:40px; border-radius:10px; font-weight:600; cursor:pointer;
@@ -433,7 +433,7 @@
       <div class="modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 class="modal-title" id="editTitle">Edit Category</h2>
+            <h2 class="modal-title" id="editTitle">Edit Request</h2>
           </div>
 
           <div class="modal-body">
@@ -857,7 +857,6 @@
       function validateDescriptionInline(){
         const el = DOM.editDescription, err = $("editErr-desc");
         const v = el.value.trim();
-        DOM.editDescription.value = v;
         if (v.length===0 || v.length>DESC_MAX){ setError(el,err,`Description must be 1–${DESC_MAX} characters.`); return false; }
         clearError(el,err); return true;
       }
