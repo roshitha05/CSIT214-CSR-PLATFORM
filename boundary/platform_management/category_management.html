@@ -387,14 +387,6 @@
       .replace(/"/g,"&quot;")
       .replace(/'/g,"&#039;");
 
-  function isDuplicateName(newName, profiles, currentName=null){
-    const t = norm(newName), cur = norm(currentName);
-    return profiles.some(p => {
-      const ex = norm(p?.name);
-      return ex === t && ex !== cur;
-    });
-  }
-
   // Status message helpers
   function showStatusError(msg){
     DOM.statusMsg.style.display="block";
@@ -575,12 +567,6 @@
 
     if(!hasText(v) || v.length > NAME_MAX){
       DOM.editErrName.textContent = `Please enter a valid name (1–${NAME_MAX} characters).`;
-      DOM.editErrName.style.display="block";
-      el.setAttribute("aria-invalid","true");
-      return false;
-    }
-    if(isDuplicateName(v, allCategories, currentRow?.dataset?.raw)){
-      DOM.editErrName.textContent = "A category with that name already exists.";
       DOM.editErrName.style.display="block";
       el.setAttribute("aria-invalid","true");
       return false;

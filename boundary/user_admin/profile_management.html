@@ -414,16 +414,6 @@
 
   const isProtectedSuspend = (name)=> PROTECTED_SUSPEND_NAMES.has(norm(name));
   const isNameLocked       = (name)=> LOCK_NAME_EDIT_NAMES.has(norm(name));
-  const isReservedName     = (name)=> RESERVED_NAMES.has(norm(name));
-
-  // Duplicate name check (ignore current record if provided)
-  function isDuplicateName(newName, profiles, currentName=null){
-    const t = norm(newName), cur = norm(currentName);
-    return profiles.some(p => {
-      const ex = norm(p?.name);
-      return ex === t && ex !== cur;
-    });
-  }
 
   // Status message helpers
   function showStatusError(msg){
@@ -632,18 +622,6 @@
 
     if(!hasText(v) || v.length > NAME_MAX){
       DOM.editErrName.textContent = `Please enter a valid name (1–${NAME_MAX} characters).`;
-      DOM.editErrName.style.display="block";
-      el.setAttribute("aria-invalid","true");
-      return false;
-    }
-    if(isReservedName(v)){
-      DOM.editErrName.textContent = "This name is reserved and cannot be used.";
-      DOM.editErrName.style.display="block";
-      el.setAttribute("aria-invalid","true");
-      return false;
-    }
-    if(isDuplicateName(v, allProfiles, currentRow?.dataset?.raw)){
-      DOM.editErrName.textContent = "A profile with that name already exists.";
       DOM.editErrName.style.display="block";
       el.setAttribute("aria-invalid","true");
       return false;
