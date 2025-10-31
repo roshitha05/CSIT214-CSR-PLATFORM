@@ -401,731 +401,731 @@
   </div>
 
   <script>
-  /* =========================================================
-    1) Config & constants
-  ========================================================= */
-  const DEBUG        = false;
-  const API_URL      = "http://127.0.0.1:80/api";
-  const USERS_API    = `${API_URL}/users`;
-  const PROFILES_API = `${API_URL}/user-profiles`;
+    /* =========================================================
+      1) Config & constants
+    ========================================================= */
+    const DEBUG        = false;
+    const API_URL      = "http://127.0.0.1:80/api";
+    const USERS_API    = `${API_URL}/users`;
+    const PROFILES_API = `${API_URL}/user-profiles`;
 
-  const STATUS = { ACTIVE:"ACTIVE", SUSPENDED:"SUSPENDED" };
-  const CURRENT_USER_ID = (localStorage.getItem("user_id") ?? "").trim();
+    const STATUS = { ACTIVE:"ACTIVE", SUSPENDED:"SUSPENDED" };
+    const CURRENT_USER_ID = (localStorage.getItem("user_id") ?? "").trim();
 
-  // Field validation
-  const NAME_MAX     = 64;
-  const USERNAME_MIN = 3, USERNAME_MAX = 32;
-  const EMAIL_MAX    = 254;
-  const PHONE_LEN    = 8;
-  const ADDRESS_MAX  = 255;
+    // Field validation
+    const NAME_MAX     = 64;
+    const USERNAME_MIN = 3, USERNAME_MAX = 32;
+    const EMAIL_MAX    = 254;
+    const PHONE_LEN    = 8;
+    const ADDRESS_MAX  = 255;
 
-  // Regular Expression
-  const USERNAME_RE = new RegExp(`^[A-Za-z0-9._-]{${USERNAME_MIN},${USERNAME_MAX}}$`);
-  const PHONE_RE    = new RegExp(`^\\d{${PHONE_LEN}}$`);
-  const EMAIL_RE    = new RegExp('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$', 'i');
-  /* =========================================================
-    2) DOM shortcuts
-  ========================================================= */
-  const $  = (id) => document.getElementById(id);
-  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+    // Regular Expression
+    const USERNAME_RE = new RegExp(`^[A-Za-z0-9._-]{${USERNAME_MIN},${USERNAME_MAX}}$`);
+    const PHONE_RE    = new RegExp(`^\\d{${PHONE_LEN}}$`);
+    const EMAIL_RE    = new RegExp('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$', 'i');
+    /* =========================================================
+      2) DOM shortcuts
+    ========================================================= */
+    const $  = (id) => document.getElementById(id);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-  const DOM = {
-    // Table
-    table: $("profileTable"),
-    tbody: $("profileTable")?.querySelector("tbody"),
-    noResultsRow: $("noResultsRow"),
-    search: $("search"),
+    const DOM = {
+      // Table
+      table: $("profileTable"),
+      tbody: $("profileTable")?.querySelector("tbody"),
+      noResultsRow: $("noResultsRow"),
+      search: $("search"),
 
-    // Edit modal
-    editModal: $("editModal"),
-    editForm: $("editForm"),
-    editFullname: $("editFullname"),
-    editUsername: $("editUsername"),
-    editEmail: $("editEmail"),
-    editPhone: $("editPhone"),
-    editAddress: $("editAddress"),
-    editDob: $("editDob"),
-    editProfile: $("editProfile"),
-    editErr: {
-      fullname: $("editErr-fullname"),
-      username: $("editErr-username"),
-      email: $("editErr-email"),
-      phone: $("editErr-phone"),
-      address: $("editErr-address"),
-      dob: $("editErr-dob"),
-      profile: $("editErr-profile"),
-    },
-    statusMsg: $("statusMsg"),
-    editCancel: $("editModalCancelBtn"),
-    editSave: $("editModalSaveBtn"),
+      // Edit modal
+      editModal: $("editModal"),
+      editForm: $("editForm"),
+      editFullname: $("editFullname"),
+      editUsername: $("editUsername"),
+      editEmail: $("editEmail"),
+      editPhone: $("editPhone"),
+      editAddress: $("editAddress"),
+      editDob: $("editDob"),
+      editProfile: $("editProfile"),
+      editErr: {
+        fullname: $("editErr-fullname"),
+        username: $("editErr-username"),
+        email: $("editErr-email"),
+        phone: $("editErr-phone"),
+        address: $("editErr-address"),
+        dob: $("editErr-dob"),
+        profile: $("editErr-profile"),
+      },
+      statusMsg: $("statusMsg"),
+      editCancel: $("editModalCancelBtn"),
+      editSave: $("editModalSaveBtn"),
+
+      // Suspend modal
+      suspendModal: $("suspendModal"),
+      suspendCancel: $("suspendModalCancelBtn"),
+      suspendConfirm: $("suspendModalConfirmBtn"),
+
+      // Reactivate modal
+      reactivateModal: $("reactivateModal"),
+      reactivateCancel: $("reactivateModalCancelBtn"),
+      reactivateConfirm: $("reactivateModalConfirmBtn"),
+
+      // Nav
+      btnBackToDash: $("btnBackToDash"),
+    };
+
+    /* =========================================================
+      3) Utilities
+    ========================================================= */
+    const log = (...a)=>{ if(DEBUG) console.log("[accounts]", ...a); };
+
+    const collapse = (s)=> String(s ?? "").replace(/\s+/g," ").trim();
+    const nonEmpty = (s)=> collapse(s).length > 0;
+    const lowerTrim = (s)=> collapse(s).toLowerCase();
+    const digitsOnly = (s)=> String(s ?? "").replace(/\D+/g,"");
+
+    const escapeHTML = (s)=>
+      String(s ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+    const pastDateOnly = (value) => {
+      if (!value) return true;
+      const d = new Date(value), today = new Date();
+      d.setHours(0,0,0,0); today.setHours(0,0,0,0);
+      return d instanceof Date && !isNaN(d) && d < today;
+    };
+
+    const formatDateTime = (iso) => {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      return new Intl.DateTimeFormat(undefined, {
+        year:"numeric", month:"short", day:"2-digit",
+        hour:"2-digit", minute:"2-digit"
+      }).format(d);
+    };
+
+    function showStatusError(msg){
+      DOM.statusMsg.style.display="block";
+      DOM.statusMsg.style.background="#fee2e2";
+      DOM.statusMsg.style.border="1px solid #fecaca";
+      DOM.statusMsg.style.color="#991b1b";
+      DOM.statusMsg.style.whiteSpace="normal";
+      DOM.statusMsg.textContent = msg;
+    }
+    function showStatusDebug(endpoint, payload){
+      DOM.statusMsg.style.display="block";
+      DOM.statusMsg.style.background="#fef9c3";
+      DOM.statusMsg.style.border="1px solid #fde047";
+      DOM.statusMsg.style.color="#854d0e";
+      DOM.statusMsg.style.whiteSpace="pre-wrap";
+      DOM.statusMsg.textContent = `[DEBUG]\nPUT ${endpoint}\n\n${JSON.stringify(payload,null,2)}`;
+    }
+    function clearStatus(){ DOM.statusMsg.style.display="none"; DOM.statusMsg.textContent=""; }
+
+    /* =========================================================
+      4) State
+    ========================================================= */
+    let allUsers = [];
+    let allProfiles = [];
+    let userProfilesStatusDict = {};
+
+    let currentRow = null;
+    let pendingSuspendRow = null;
+    let pendingReactRow = null;
+
+    // Guards
+    let editing=false, suspending=false, reactivating=false;
+    let editHasSubmitted=false;
+
+    /* =========================================================
+      5) API layer
+    ========================================================= */
+    async function fetchJSON(url, options={}){
+      const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
+      const ct  = res.headers.get("content-type") || "";
+      let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    async function loadUsers(){
+      try{
+        // users
+        const { ok, status, data } = await fetchJSON(USERS_API, { method:"GET" });
+        if(!ok) throw new Error(`Failed to load users (${status})`);
+
+        // profiles (for profile suspension status & dropdown)
+        const profRes = await fetchJSON(PROFILES_API, { method:"GET" });
+        if(!profRes.ok) throw new Error(`Failed to load user profiles (${profRes.status})`);
+
+        allProfiles = Array.isArray(profRes.data?.userProfiles) ? profRes.data.userProfiles : [];
+        userProfilesStatusDict = {};
+        allProfiles.forEach(p => { userProfilesStatusDict[p.name] = p.status; });
+
+        allUsers = Array.isArray(data?.users) ? data.users : [];
+        allUsers.forEach(u => { u.user_profile_status = userProfilesStatusDict[u.user_profile]; });
+
+        renderRows(allUsers);
+      }catch(e){
+        console.error(e);
+        DOM.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Failed to load users.</td></tr>`;
+      }
+    }
+
+    async function loadUsersBySearch(keyword){
+      try{
+        const { ok, status, data } = await fetchJSON(`${USERS_API}/search?keyword=${encodeURIComponent(keyword)}`, { method:"GET" });
+        if(!ok) throw new Error(`Failed to load users (${status})`);
+
+        const profRes = await fetchJSON(PROFILES_API, { method:"GET" });
+        if(!profRes.ok) throw new Error(`Failed to load user profiles (${profRes.status})`);
+
+        allProfiles = Array.isArray(profRes.data?.userProfiles) ? profRes.data.userProfiles : [];
+        userProfilesStatusDict = {};
+        allProfiles.forEach(p => { userProfilesStatusDict[p.name] = p.status; });
+
+        allUsers = Array.isArray(data?.users) ? data.users : [];
+        allUsers.forEach(u => { u.user_profile_status = userProfilesStatusDict[u.user_profile]; });
+
+        renderRows(allUsers);
+      }catch(e){
+        console.error(e);
+        DOM.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Failed to load users.</td></tr>`;
+      }
+    }
+
+    async function updateUserAPI(id, payload){
+      return fetchJSON(`${USERS_API}/${encodeURIComponent(id)}`,{
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+    async function suspendUserAPI(key){
+      return fetchJSON(`${USERS_API}/${key}/suspend`, { method:"POST" });
+    }
+    async function reinstateUserAPI(key){
+      return fetchJSON(`${USERS_API}/${key}/reinstate`, { method:"POST" });
+    }
+
+    /* =========================================================
+      6) Rendering
+    ========================================================= */
+    function statusBadgeHTML(effectiveStatusStr){
+      const s = String(effectiveStatusStr || "").toUpperCase();
+      if (s === STATUS.SUSPENDED) return '<span class="badge badge-suspended">Suspended</span>';
+      if (s === STATUS.ACTIVE)    return '<span class="badge badge-active">Active</span>';
+      return '<span class="badge badge-suspended">Suspended (Profile)</span>';
+    }
+
+    function actionButtonHTML(user){
+      const isSelf   = String(user.user_id ?? "") === CURRENT_USER_ID;
+      const status   = String(user.status || "").toUpperCase();
+      const profileSusp = String(user.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED;
+
+      // cannot suspend yourself
+      if(isSelf) return '<button class="btn-suspend" disabled title="You cannot suspend your own account">Suspend</button>';
+
+      // profile-level suspension disables account toggle
+      if(profileSusp){
+        return `<button class="btn-reactivate" disabled title="This account is suspended via profile. Reinstate the profile first.">Reinstate</button>`;
+      }
+
+      return status === STATUS.ACTIVE
+        ? '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>'
+        : '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>';
+    }
+
+    function rowHTML(u){
+      const key = encodeURIComponent(String(u.user_id ?? u.username ?? ""));
+      let effective = String(u.status || STATUS.ACTIVE).toUpperCase();
+      if (String(u.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED) effective = "SUSPENDED_PROFILE";
+
+      const fullname   = escapeHTML(u.fullname)      || "—";
+      const email      = escapeHTML(u.email)         || "—";
+      const username   = escapeHTML(u.username)      || "—";
+      const phone      = escapeHTML(u.phone_number)  || "—";
+      const address    = escapeHTML(u.address)       || "—";
+      const dob        = escapeHTML(u.date_of_birth) || "—";
+      const profile    = escapeHTML(u.user_profile)  || "—";
+      const created_at = formatDateTime(u.created_at);
+
+      return `
+        <tr 
+          data-key="${key}" 
+          data-user-id="${escapeHTML(String(u.user_id ?? ""))}" 
+          data-username="${escapeHTML(String(u.username ?? ""))}"
+          data-profile-suspended="${String(u.user_profile_status || '').toUpperCase() === STATUS.SUSPENDED ? 'true' : 'false'}"
+          data-status="${effective}"
+        >
+          <td class="fullname">${fullname}</td>
+          <td class="email">${email}</td>
+          <td class="username">${username}</td>
+          <td class="phone">${phone}</td>
+          <td class="address">${address}</td>
+          <td class="dob">${dob}</td>
+          <td class="profile">${profile}</td>
+          <td class="created_at">${created_at}</td>
+          <td class="status">${statusBadgeHTML(effective)}</td>
+          <td class="actions">
+            <div class="btn-row">
+              <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
+              ${actionButtonHTML({
+                user_id: u.user_id,
+                status: u.status,
+                user_profile_status: u.user_profile_status
+              })}
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderRows(users){
+      DOM.tbody.innerHTML = users
+        .slice()
+        .sort((a,b)=> String(a.fullname || "").localeCompare(String(b.fullname || ""), undefined, { sensitivity:"base" }))
+        .map(rowHTML)
+        .join("");
+      updateNoResultsRow();
+    }
+
+    function updateNoResultsRow(){
+      const rows = $$("#profileTable tbody tr");
+      const anyVisible = rows.some(r => r.style.display !== "none");
+      DOM.noResultsRow.style.display = anyVisible ? "none" : "";
+    }
+
+    function setRowStatus(tr, next){
+      // next: STATUS.ACTIVE | STATUS.SUSPENDED | "SUSPENDED_PROFILE"
+      const status = (next || STATUS.ACTIVE).toUpperCase();
+      tr.dataset.status = status;
+
+      // rebuild badge
+      tr.querySelector(".status").innerHTML = statusBadgeHTML(status);
+
+      // rebuild action button
+      const btnRow = tr.querySelector(".actions .btn-row");
+      const curAct = btnRow.querySelector(".btn-suspend, .btn-reactivate");
+
+      const userForButtons = {
+        user_id: tr.dataset.userId,
+        status: status === "SUSPENDED_PROFILE" ? STATUS.ACTIVE : status, // to render correct action label
+        user_profile_status: (tr.dataset.profileSuspended === "true" ? STATUS.SUSPENDED : STATUS.ACTIVE)
+      };
+      const tmp = document.createElement("div");
+      tmp.innerHTML = actionButtonHTML(userForButtons);
+      const fresh = tmp.firstElementChild;
+      curAct ? curAct.replaceWith(fresh) : btnRow.appendChild(fresh);
+    }
+
+    /* =========================================================
+      7) Modal logic + validation
+    ========================================================= */
+    function setDobMaxToday(){
+      const today = new Date().toISOString().split("T")[0];
+      DOM.editDob?.setAttribute("max", today);
+    }
+
+    async function loadProfilesForEdit(preselect, opts={}){
+      const locked = !!opts.locked;
+      const select = DOM.editProfile;
+      select.disabled = true;
+
+      if (locked && preselect){
+        select.innerHTML = `<option value="${preselect}">${preselect}</option>`;
+        select.value = preselect;
+        select.disabled = true;
+        select.setAttribute("aria-disabled","true");
+        select.title = "You cannot change your own profile.";
+        select.dataset.locked = "true";
+        return;
+      } else {
+        delete select.dataset.locked;
+        select.title = "";
+      }
+
+      select.innerHTML = '<option value="">Loading profiles...</option>';
+      try{
+        const { ok, status, data } = await fetchJSON(PROFILES_API, { method:"GET" });
+        if(!ok) throw new Error(`Profiles fetch failed (${status})`);
+        const profiles = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
+        select.innerHTML = "";
+        if(profiles.length === 0){
+          select.appendChild(new Option("No profiles available...", ""));
+          select.disabled = true;
+          return;
+        }
+        select.appendChild(new Option("Select a profile...", ""));
+        profiles
+          .filter(p=>p?.name)
+          .sort((a,b)=> a.name.localeCompare(b.name, undefined, { sensitivity:"base" }))
+          .forEach(p => select.appendChild(new Option(p.name, p.name)));
+
+        if(preselect) select.value = preselect;
+        select.disabled = profiles.length === 0;
+      }catch(e){
+        console.error(e);
+        select.innerHTML = "";
+        select.appendChild(new Option("Error loading profiles", ""));
+        select.disabled = true;
+      }
+    }
+
+    function openEditModal(tr){
+      currentRow = tr;
+
+      DOM.editFullname.value = tr.querySelector(".fullname")?.textContent.trim() || "";
+      DOM.editUsername.value = tr.querySelector(".username")?.textContent.trim() || "";
+      DOM.editEmail.value    = tr.querySelector(".email")?.textContent.trim()    || "";
+      DOM.editPhone.value    = tr.querySelector(".phone")?.textContent.trim()    || "";
+      DOM.editAddress.value  = tr.querySelector(".address")?.textContent.trim()  || "";
+
+      const rawDob = tr.querySelector(".dob")?.textContent.trim() || "";
+      DOM.editDob.value = /^\d{4}-\d{2}-\d{2}$/.test(rawDob) ? rawDob : "";
+
+      const curProfile = tr.querySelector(".profile")?.textContent.trim() || "";
+
+      // Reset field errors & status
+      Object.values(DOM.editErr).forEach(el => el.style.display="none");
+      [DOM.editFullname, DOM.editUsername, DOM.editEmail, DOM.editPhone, DOM.editAddress, DOM.editDob, DOM.editProfile]
+        .forEach(f => f?.removeAttribute("aria-invalid"));
+      clearStatus();
+      editHasSubmitted = false;
+
+      // Lock profile if editing self
+      const isSelf = String(tr.dataset.userId || "") === CURRENT_USER_ID;
+
+      setDobMaxToday();
+      DOM.editModal.style.display = "flex";
+      loadProfilesForEdit(curProfile, { locked: isSelf });
+    }
+
+    function closeEditModal(){
+      DOM.editModal.style.display="none";
+      currentRow = null;
+      Object.values(DOM.editErr).forEach(el => el.style.display="none");
+      [DOM.editFullname, DOM.editUsername, DOM.editEmail, DOM.editPhone, DOM.editAddress, DOM.editDob, DOM.editProfile]
+        .forEach(f => f?.removeAttribute("aria-invalid"));
+      clearStatus();
+      editHasSubmitted = false;
+    }
+
+    function validateEditForm(){
+      let valid = true;
+
+      // normalize
+      const vName  = collapse(DOM.editFullname.value);
+      const vUsername = collapse(DOM.editUsername.value);
+      const vEmail = lowerTrim(DOM.editEmail.value);
+      const vPhone = digitsOnly(DOM.editPhone.value);
+      const vAddr  = collapse(DOM.editAddress.value);
+      const vDob   = DOM.editDob.value;
+      const vProf  = collapse(DOM.editProfile.value);
+
+      // Full name
+      const okName = nonEmpty(vName) && vName.length <= NAME_MAX;
+      DOM.editErr.fullname.style.display = okName ? "none" : "block";
+      DOM.editFullname.toggleAttribute("aria-invalid", !okName);
+      valid &&= okName;
+
+      // Login ID
+      const okLogin = nonEmpty(vUsername) && USERNAME_RE.test(vUsername) && vUsername.length >= USERNAME_MIN && vUsername.length <= USERNAME_MAX;
+      DOM.editErr.username.style.display = okLogin ? "none" : "block";
+      DOM.editUsername.toggleAttribute("aria-invalid", !okLogin);
+      valid &&= okLogin;
+
+      // Email
+      const okEmail = nonEmpty(vEmail) && EMAIL_RE.test(vEmail) && vEmail.length <= EMAIL_MAX;
+      DOM.editErr.email.style.display = okEmail ? "none" : "block";
+      DOM.editEmail.toggleAttribute("aria-invalid", !okEmail);
+      valid &&= okEmail;
+
+      // Phone
+      const okPhone = nonEmpty(vPhone) && PHONE_RE.test(vPhone);
+      DOM.editErr.phone.style.display = okPhone ? "none" : "block";
+      DOM.editPhone.toggleAttribute("aria-invalid", !okPhone);
+      valid &&= okPhone;
+
+      // Address
+      const okAddr = nonEmpty(vAddr) && vAddr.length <= ADDRESS_MAX;
+      DOM.editErr.address.style.display = okAddr ? "none" : "block";
+      DOM.editAddress.toggleAttribute("aria-invalid", !okAddr);
+      valid &&= okAddr;
+
+      // DOB
+      const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
+      DOM.editErr.dob.style.display = okDob ? "none" : "block";
+      DOM.editDob.toggleAttribute("aria-invalid", !okDob);
+      valid &&= okDob;
+
+      // Profile (unless locked/disabled)
+      const profileLocked = DOM.editProfile.disabled || DOM.editProfile.dataset.locked === "true";
+      const okProf = profileLocked ? true : (collapse(DOM.editProfile.value).length > 0);
+      DOM.editErr.profile.style.display = okProf ? "none" : "block";
+      DOM.editProfile.toggleAttribute("aria-invalid", !okProf);
+      valid &&= okProf;
+
+      return valid;
+    }
+
+    async function saveEditModal(){
+      if (editing || !currentRow) return;
+      editHasSubmitted = true;
+      if (!validateEditForm()) return;
+
+      editing = true;
+      clearStatus();
+
+      const id = currentRow.dataset.userId;
+      if(!id){
+        showStatusError("Internal error: missing user id.");
+        editing=false; return;
+      }
+
+      const editBtn   = DOM.editSave;
+      const cancelBtn = DOM.editCancel;
+      const origText  = editBtn?.textContent;
+
+      if (editBtn)   { editBtn.disabled = true;  editBtn.textContent = "Updating..."; }
+      if (cancelBtn) { cancelBtn.disabled = true; }
+
+      const fields = [DOM.editFullname, DOM.editUsername, DOM.editEmail, DOM.editPhone, DOM.editAddress, DOM.editDob, DOM.editProfile].filter(Boolean);
+      fields.forEach(el => el.disabled = true);
+
+      const cur = {
+        fullname:      currentRow.querySelector(".fullname")?.textContent.trim() || "",
+        username:      currentRow.querySelector(".username")?.textContent.trim() || "",
+        email:         currentRow.querySelector(".email")?.textContent.trim()    || "",
+        phone_number:  currentRow.querySelector(".phone")?.textContent.trim()    || "",
+        address:       currentRow.querySelector(".address")?.textContent.trim()  || "",
+        date_of_birth: currentRow.querySelector(".dob")?.textContent.trim()      || "",
+        user_profile:  currentRow.querySelector(".profile")?.textContent.trim()  || "",
+      };
+
+      const payload = {
+        fullname:      collapse(DOM.editFullname.value),
+        username:      collapse(DOM.editUsername.value),
+        email:         lowerTrim(DOM.editEmail.value),
+        phone_number:  digitsOnly(DOM.editPhone.value),
+        address:       collapse(DOM.editAddress.value),
+        date_of_birth: collapse(DOM.editDob.value),
+        user_profile:  collapse(DOM.editProfile.value),
+      };
+
+      // Prevent changing your own profile
+      if (String(id) === CURRENT_USER_ID && payload.user_profile !== cur.user_profile) {
+        showStatusError("You cannot change your own profile.");
+        editBtn.disabled=false; editBtn.textContent = origText || "Save";
+        cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
+        editing=false; return;
+      }
+
+      // Early exit if no changes
+      const changed = Object.keys(payload).some(k => String(payload[k] ?? "") !== String(cur[k] ?? ""));
+      if (!changed) {
+        await new Promise(r => setTimeout(r, 300));
+        editBtn.disabled=false; editBtn.textContent = origText || "Save";
+        cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
+        editing=false; closeEditModal(); return;
+      }
+
+      if (DEBUG){
+        showStatusDebug(`${USERS_API}/${id}`, payload);
+        await new Promise(r => setTimeout(r, 400));
+        editBtn.disabled=false; editBtn.textContent = origText || "Save";
+        cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
+        editing=false; return;
+      }
+
+      try{
+        const { ok, status } = await updateUserAPI(id, payload);
+        if(!ok) throw new Error(`Update failed (${status})`);
+
+        // Update row in place for UI
+        if (payload.fullname      != null) currentRow.querySelector(".fullname").textContent = payload.fullname      || cur.fullname;
+        if (payload.username      != null) currentRow.querySelector(".username").textContent = payload.username      || cur.username;
+        if (payload.email         != null) currentRow.querySelector(".email").textContent    = payload.email         || cur.email;
+        if (payload.phone_number  != null) currentRow.querySelector(".phone").textContent    = payload.phone_number  || cur.phone_number  || "—";
+        if (payload.address       != null) currentRow.querySelector(".address").textContent  = payload.address       || cur.address       || "—";
+        if (payload.date_of_birth != null) currentRow.querySelector(".dob").textContent      = payload.date_of_birth || cur.date_of_birth || "—";
+        if (payload.user_profile  != null) currentRow.querySelector(".profile").textContent  = payload.user_profile  || cur.user_profile  || "—";
+
+        if (payload.username != null) currentRow.dataset.username = payload.username;
+
+        // If editing yourself, refresh localStorage display fields (never change user_id)
+        if (String(id) === CURRENT_USER_ID) {
+          if (payload.username) localStorage.setItem("username", payload.username);
+          if (payload.fullname) localStorage.setItem("fullname", payload.fullname);
+        }
+
+        // Refresh profile-suspension state
+        const newProfile = (payload.user_profile || cur.user_profile || "").trim();
+        const profStatus = String(userProfilesStatusDict?.[newProfile] ?? STATUS.ACTIVE).toUpperCase();
+        currentRow.dataset.profileSuspended = (profStatus === STATUS.SUSPENDED);
+
+        const prevDisplay = String(currentRow.dataset.status || "").toUpperCase();
+        const ownBase = (prevDisplay === STATUS.SUSPENDED) ? STATUS.SUSPENDED : STATUS.ACTIVE;
+        const effective = (currentRow.dataset.profileSuspended === "true") ? "SUSPENDED_PROFILE" : ownBase;
+        setRowStatus(currentRow, effective);
+
+        await new Promise(r => setTimeout(r, 500));
+        closeEditModal();
+      }catch(e){
+        console.error(e);
+        showStatusError(e.message || "Could not save changes. Please try again.");
+      }finally{
+        DOM.editSave.disabled=false; DOM.editSave.textContent = origText || "Save";
+        DOM.editCancel.disabled=false;
+        fields.forEach(el => el.disabled = false);
+        editing=false;
+      }
+    }
 
     // Suspend modal
-    suspendModal: $("suspendModal"),
-    suspendCancel: $("suspendModalCancelBtn"),
-    suspendConfirm: $("suspendModalConfirmBtn"),
-
-    // Reactivate modal
-    reactivateModal: $("reactivateModal"),
-    reactivateCancel: $("reactivateModalCancelBtn"),
-    reactivateConfirm: $("reactivateModalConfirmBtn"),
-
-    // Nav
-    btnBackToDash: $("btnBackToDash"),
-  };
-
-  /* =========================================================
-    3) Utilities
-  ========================================================= */
-  const log = (...a)=>{ if(DEBUG) console.log("[accounts]", ...a); };
-
-  const collapse = (s)=> String(s ?? "").replace(/\s+/g," ").trim();
-  const nonEmpty = (s)=> collapse(s).length > 0;
-  const lowerTrim = (s)=> collapse(s).toLowerCase();
-  const digitsOnly = (s)=> String(s ?? "").replace(/\D+/g,"");
-
-  const escapeHTML = (s)=>
-    String(s ?? "")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;")
-      .replace(/'/g,"&#039;");
-
-  const pastDateOnly = (value) => {
-    if (!value) return true;
-    const d = new Date(value), today = new Date();
-    d.setHours(0,0,0,0); today.setHours(0,0,0,0);
-    return d instanceof Date && !isNaN(d) && d < today;
-  };
-
-  const formatDateTime = (iso) => {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return String(iso);
-    return new Intl.DateTimeFormat(undefined, {
-      year:"numeric", month:"short", day:"2-digit",
-      hour:"2-digit", minute:"2-digit"
-    }).format(d);
-  };
-
-  function showStatusError(msg){
-    DOM.statusMsg.style.display="block";
-    DOM.statusMsg.style.background="#fee2e2";
-    DOM.statusMsg.style.border="1px solid #fecaca";
-    DOM.statusMsg.style.color="#991b1b";
-    DOM.statusMsg.style.whiteSpace="normal";
-    DOM.statusMsg.textContent = msg;
-  }
-  function showStatusDebug(endpoint, payload){
-    DOM.statusMsg.style.display="block";
-    DOM.statusMsg.style.background="#fef9c3";
-    DOM.statusMsg.style.border="1px solid #fde047";
-    DOM.statusMsg.style.color="#854d0e";
-    DOM.statusMsg.style.whiteSpace="pre-wrap";
-    DOM.statusMsg.textContent = `[DEBUG]\nPUT ${endpoint}\n\n${JSON.stringify(payload,null,2)}`;
-  }
-  function clearStatus(){ DOM.statusMsg.style.display="none"; DOM.statusMsg.textContent=""; }
-
-  /* =========================================================
-    4) State
-  ========================================================= */
-  let allUsers = [];
-  let allProfiles = [];
-  let userProfilesStatusDict = {};
-
-  let currentRow = null;
-  let pendingSuspendRow = null;
-  let pendingReactRow = null;
-
-  // Guards
-  let editing=false, suspending=false, reactivating=false;
-  let editHasSubmitted=false;
-
-  /* =========================================================
-    5) API layer
-  ========================================================= */
-  async function fetchJSON(url, options={}){
-    const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
-    const ct  = res.headers.get("content-type") || "";
-    let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
-    return { ok: res.ok, status: res.status, data };
-  }
-
-  async function loadUsers(){
-    try{
-      // users
-      const { ok, status, data } = await fetchJSON(USERS_API, { method:"GET" });
-      if(!ok) throw new Error(`Failed to load users (${status})`);
-
-      // profiles (for profile suspension status & dropdown)
-      const profRes = await fetchJSON(PROFILES_API, { method:"GET" });
-      if(!profRes.ok) throw new Error(`Failed to load user profiles (${profRes.status})`);
-
-      allProfiles = Array.isArray(profRes.data?.userProfiles) ? profRes.data.userProfiles : [];
-      userProfilesStatusDict = {};
-      allProfiles.forEach(p => { userProfilesStatusDict[p.name] = p.status; });
-
-      allUsers = Array.isArray(data?.users) ? data.users : [];
-      allUsers.forEach(u => { u.user_profile_status = userProfilesStatusDict[u.user_profile]; });
-
-      renderRows(allUsers);
-    }catch(e){
-      console.error(e);
-      DOM.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Failed to load users.</td></tr>`;
-    }
-  }
-
-  async function loadUsersBySearch(keyword){
-    try{
-      const { ok, status, data } = await fetchJSON(`${USERS_API}/search?keyword=${encodeURIComponent(keyword)}`, { method:"GET" });
-      if(!ok) throw new Error(`Failed to load users (${status})`);
-
-      const profRes = await fetchJSON(PROFILES_API, { method:"GET" });
-      if(!profRes.ok) throw new Error(`Failed to load user profiles (${profRes.status})`);
-
-      allProfiles = Array.isArray(profRes.data?.userProfiles) ? profRes.data.userProfiles : [];
-      userProfilesStatusDict = {};
-      allProfiles.forEach(p => { userProfilesStatusDict[p.name] = p.status; });
-
-      allUsers = Array.isArray(data?.users) ? data.users : [];
-      allUsers.forEach(u => { u.user_profile_status = userProfilesStatusDict[u.user_profile]; });
-
-      renderRows(allUsers);
-    }catch(e){
-      console.error(e);
-      DOM.tbody.innerHTML = `<tr><td colspan="10" class="no-results">Failed to load users.</td></tr>`;
-    }
-  }
-
-  async function updateUserAPI(id, payload){
-    return fetchJSON(`${USERS_API}/${encodeURIComponent(id)}`,{
-      method:"PUT",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload)
-    });
-  }
-  async function suspendUserAPI(key){
-    return fetchJSON(`${USERS_API}/${key}/suspend`, { method:"POST" });
-  }
-  async function reinstateUserAPI(key){
-    return fetchJSON(`${USERS_API}/${key}/reinstate`, { method:"POST" });
-  }
-
-  /* =========================================================
-    6) Rendering
-  ========================================================= */
-  function statusBadgeHTML(effectiveStatusStr){
-    const s = String(effectiveStatusStr || "").toUpperCase();
-    if (s === STATUS.SUSPENDED) return '<span class="badge badge-suspended">Suspended</span>';
-    if (s === STATUS.ACTIVE)    return '<span class="badge badge-active">Active</span>';
-    return '<span class="badge badge-suspended">Suspended (Profile)</span>';
-  }
-
-  function actionButtonHTML(user){
-    const isSelf   = String(user.user_id ?? "") === CURRENT_USER_ID;
-    const status   = String(user.status || "").toUpperCase();
-    const profileSusp = String(user.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED;
-
-    // cannot suspend yourself
-    if(isSelf) return '<button class="btn-suspend" disabled title="You cannot suspend your own account">Suspend</button>';
-
-    // profile-level suspension disables account toggle
-    if(profileSusp){
-      return `<button class="btn-reactivate" disabled title="This account is suspended via profile. Reinstate the profile first.">Reinstate</button>`;
-    }
-
-    return status === STATUS.ACTIVE
-      ? '<button class="btn-suspend" onclick="openSuspendModal(this)">Suspend</button>'
-      : '<button class="btn-reactivate" onclick="openReactivateModal(this)">Reinstate</button>';
-  }
-
-  function rowHTML(u){
-    const key = encodeURIComponent(String(u.user_id ?? u.username ?? ""));
-    let effective = String(u.status || STATUS.ACTIVE).toUpperCase();
-    if (String(u.user_profile_status || "").toUpperCase() === STATUS.SUSPENDED) effective = "SUSPENDED_PROFILE";
-
-    const fullname   = escapeHTML(u.fullname)      || "—";
-    const email      = escapeHTML(u.email)         || "—";
-    const username   = escapeHTML(u.username)      || "—";
-    const phone      = escapeHTML(u.phone_number)  || "—";
-    const address    = escapeHTML(u.address)       || "—";
-    const dob        = escapeHTML(u.date_of_birth) || "—";
-    const profile    = escapeHTML(u.user_profile)  || "—";
-    const created_at = formatDateTime(u.created_at);
-
-    return `
-      <tr 
-        data-key="${key}" 
-        data-user-id="${escapeHTML(String(u.user_id ?? ""))}" 
-        data-username="${escapeHTML(String(u.username ?? ""))}"
-        data-profile-suspended="${String(u.user_profile_status || '').toUpperCase() === STATUS.SUSPENDED ? 'true' : 'false'}"
-        data-status="${effective}"
-      >
-        <td class="fullname">${fullname}</td>
-        <td class="email">${email}</td>
-        <td class="username">${username}</td>
-        <td class="phone">${phone}</td>
-        <td class="address">${address}</td>
-        <td class="dob">${dob}</td>
-        <td class="profile">${profile}</td>
-        <td class="created_at">${created_at}</td>
-        <td class="status">${statusBadgeHTML(effective)}</td>
-        <td class="actions">
-          <div class="btn-row">
-            <button class="btn-edit" onclick="openEditModal(this.closest('tr'))">Edit</button>
-            ${actionButtonHTML({
-              user_id: u.user_id,
-              status: u.status,
-              user_profile_status: u.user_profile_status
-            })}
-          </div>
-        </td>
-      </tr>
-    `;
-  }
-
-  function renderRows(users){
-    DOM.tbody.innerHTML = users
-      .slice()
-      .sort((a,b)=> String(a.fullname || "").localeCompare(String(b.fullname || ""), undefined, { sensitivity:"base" }))
-      .map(rowHTML)
-      .join("");
-    updateNoResultsRow();
-  }
-
-  function updateNoResultsRow(){
-    const rows = $$("#profileTable tbody tr");
-    const anyVisible = rows.some(r => r.style.display !== "none");
-    DOM.noResultsRow.style.display = anyVisible ? "none" : "";
-  }
-
-  function setRowStatus(tr, next){
-    // next: STATUS.ACTIVE | STATUS.SUSPENDED | "SUSPENDED_PROFILE"
-    const status = (next || STATUS.ACTIVE).toUpperCase();
-    tr.dataset.status = status;
-
-    // rebuild badge
-    tr.querySelector(".status").innerHTML = statusBadgeHTML(status);
-
-    // rebuild action button
-    const btnRow = tr.querySelector(".actions .btn-row");
-    const curAct = btnRow.querySelector(".btn-suspend, .btn-reactivate");
-
-    const userForButtons = {
-      user_id: tr.dataset.userId,
-      status: status === "SUSPENDED_PROFILE" ? STATUS.ACTIVE : status, // to render correct action label
-      user_profile_status: (tr.dataset.profileSuspended === "true" ? STATUS.SUSPENDED : STATUS.ACTIVE)
-    };
-    const tmp = document.createElement("div");
-    tmp.innerHTML = actionButtonHTML(userForButtons);
-    const fresh = tmp.firstElementChild;
-    curAct ? curAct.replaceWith(fresh) : btnRow.appendChild(fresh);
-  }
-
-  /* =========================================================
-    7) Modal logic + validation
-  ========================================================= */
-  function setDobMaxToday(){
-    const today = new Date().toISOString().split("T")[0];
-    DOM.editDob?.setAttribute("max", today);
-  }
-
-  async function loadProfilesForEdit(preselect, opts={}){
-    const locked = !!opts.locked;
-    const select = DOM.editProfile;
-    select.disabled = true;
-
-    if (locked && preselect){
-      select.innerHTML = `<option value="${preselect}">${preselect}</option>`;
-      select.value = preselect;
-      select.disabled = true;
-      select.setAttribute("aria-disabled","true");
-      select.title = "You cannot change your own profile.";
-      select.dataset.locked = "true";
-      return;
-    } else {
-      delete select.dataset.locked;
-      select.title = "";
-    }
-
-    select.innerHTML = '<option value="">Loading profiles...</option>';
-    try{
-      const { ok, status, data } = await fetchJSON(PROFILES_API, { method:"GET" });
-      if(!ok) throw new Error(`Profiles fetch failed (${status})`);
-      const profiles = Array.isArray(data?.userProfiles) ? data.userProfiles : [];
-      select.innerHTML = "";
-      if(profiles.length === 0){
-        select.appendChild(new Option("No profiles available...", ""));
-        select.disabled = true;
+    function openSuspendModal(button){
+      const row = button.closest("tr");
+      if (String(row?.dataset.userId || "") === CURRENT_USER_ID){
+        showStatusError("You cannot suspend your own account.");
         return;
       }
-      select.appendChild(new Option("Select a profile...", ""));
-      profiles
-        .filter(p=>p?.name)
-        .sort((a,b)=> a.name.localeCompare(b.name, undefined, { sensitivity:"base" }))
-        .forEach(p => select.appendChild(new Option(p.name, p.name)));
-
-      if(preselect) select.value = preselect;
-      select.disabled = profiles.length === 0;
-    }catch(e){
-      console.error(e);
-      select.innerHTML = "";
-      select.appendChild(new Option("Error loading profiles", ""));
-      select.disabled = true;
-    }
-  }
-
-  function openEditModal(tr){
-    currentRow = tr;
-
-    DOM.editFullname.value = tr.querySelector(".fullname")?.textContent.trim() || "";
-    DOM.editUsername.value = tr.querySelector(".username")?.textContent.trim() || "";
-    DOM.editEmail.value    = tr.querySelector(".email")?.textContent.trim()    || "";
-    DOM.editPhone.value    = tr.querySelector(".phone")?.textContent.trim()    || "";
-    DOM.editAddress.value  = tr.querySelector(".address")?.textContent.trim()  || "";
-
-    const rawDob = tr.querySelector(".dob")?.textContent.trim() || "";
-    DOM.editDob.value = /^\d{4}-\d{2}-\d{2}$/.test(rawDob) ? rawDob : "";
-
-    const curProfile = tr.querySelector(".profile")?.textContent.trim() || "";
-
-    // Reset field errors & status
-    Object.values(DOM.editErr).forEach(el => el.style.display="none");
-    [DOM.editFullname, DOM.editUsername, DOM.editEmail, DOM.editPhone, DOM.editAddress, DOM.editDob, DOM.editProfile]
-      .forEach(f => f?.removeAttribute("aria-invalid"));
-    clearStatus();
-    editHasSubmitted = false;
-
-    // Lock profile if editing self
-    const isSelf = String(tr.dataset.userId || "") === CURRENT_USER_ID;
-
-    setDobMaxToday();
-    DOM.editModal.style.display = "flex";
-    loadProfilesForEdit(curProfile, { locked: isSelf });
-  }
-
-  function closeEditModal(){
-    DOM.editModal.style.display="none";
-    currentRow = null;
-    Object.values(DOM.editErr).forEach(el => el.style.display="none");
-    [DOM.editFullname, DOM.editUsername, DOM.editEmail, DOM.editPhone, DOM.editAddress, DOM.editDob, DOM.editProfile]
-      .forEach(f => f?.removeAttribute("aria-invalid"));
-    clearStatus();
-    editHasSubmitted = false;
-  }
-
-  function validateEditForm(){
-    let valid = true;
-
-    // normalize
-    const vName  = collapse(DOM.editFullname.value);
-    const vUsername = collapse(DOM.editUsername.value);
-    const vEmail = lowerTrim(DOM.editEmail.value);
-    const vPhone = digitsOnly(DOM.editPhone.value);
-    const vAddr  = collapse(DOM.editAddress.value);
-    const vDob   = DOM.editDob.value;
-    const vProf  = collapse(DOM.editProfile.value);
-
-    // Full name
-    const okName = nonEmpty(vName) && vName.length <= NAME_MAX;
-    DOM.editErr.fullname.style.display = okName ? "none" : "block";
-    DOM.editFullname.toggleAttribute("aria-invalid", !okName);
-    valid &&= okName;
-
-    // Login ID
-    const okLogin = nonEmpty(vUsername) && USERNAME_RE.test(vUsername) && vUsername.length >= USERNAME_MIN && vUsername.length <= USERNAME_MAX;
-    DOM.editErr.username.style.display = okLogin ? "none" : "block";
-    DOM.editUsername.toggleAttribute("aria-invalid", !okLogin);
-    valid &&= okLogin;
-
-    // Email
-    const okEmail = nonEmpty(vEmail) && EMAIL_RE.test(vEmail) && vEmail.length <= EMAIL_MAX;
-    DOM.editErr.email.style.display = okEmail ? "none" : "block";
-    DOM.editEmail.toggleAttribute("aria-invalid", !okEmail);
-    valid &&= okEmail;
-
-    // Phone
-    const okPhone = nonEmpty(vPhone) && PHONE_RE.test(vPhone);
-    DOM.editErr.phone.style.display = okPhone ? "none" : "block";
-    DOM.editPhone.toggleAttribute("aria-invalid", !okPhone);
-    valid &&= okPhone;
-
-    // Address
-    const okAddr = nonEmpty(vAddr) && vAddr.length <= ADDRESS_MAX;
-    DOM.editErr.address.style.display = okAddr ? "none" : "block";
-    DOM.editAddress.toggleAttribute("aria-invalid", !okAddr);
-    valid &&= okAddr;
-
-    // DOB
-    const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
-    DOM.editErr.dob.style.display = okDob ? "none" : "block";
-    DOM.editDob.toggleAttribute("aria-invalid", !okDob);
-    valid &&= okDob;
-
-    // Profile (unless locked/disabled)
-    const profileLocked = DOM.editProfile.disabled || DOM.editProfile.dataset.locked === "true";
-    const okProf = profileLocked ? true : (collapse(DOM.editProfile.value).length > 0);
-    DOM.editErr.profile.style.display = okProf ? "none" : "block";
-    DOM.editProfile.toggleAttribute("aria-invalid", !okProf);
-    valid &&= okProf;
-
-    return valid;
-  }
-
-  async function saveEditModal(){
-    if (editing || !currentRow) return;
-    editHasSubmitted = true;
-    if (!validateEditForm()) return;
-
-    editing = true;
-    clearStatus();
-
-    const id = currentRow.dataset.userId;
-    if(!id){
-      showStatusError("Internal error: missing user id.");
-      editing=false; return;
+      pendingSuspendRow = row;
+      DOM.suspendModal.style.display="flex";
     }
 
-    const editBtn   = DOM.editSave;
-    const cancelBtn = DOM.editCancel;
-    const origText  = editBtn?.textContent;
-
-    if (editBtn)   { editBtn.disabled = true;  editBtn.textContent = "Updating..."; }
-    if (cancelBtn) { cancelBtn.disabled = true; }
-
-    const fields = [DOM.editFullname, DOM.editUsername, DOM.editEmail, DOM.editPhone, DOM.editAddress, DOM.editDob, DOM.editProfile].filter(Boolean);
-    fields.forEach(el => el.disabled = true);
-
-    const cur = {
-      fullname:      currentRow.querySelector(".fullname")?.textContent.trim() || "",
-      username:      currentRow.querySelector(".username")?.textContent.trim() || "",
-      email:         currentRow.querySelector(".email")?.textContent.trim()    || "",
-      phone_number:  currentRow.querySelector(".phone")?.textContent.trim()    || "",
-      address:       currentRow.querySelector(".address")?.textContent.trim()  || "",
-      date_of_birth: currentRow.querySelector(".dob")?.textContent.trim()      || "",
-      user_profile:  currentRow.querySelector(".profile")?.textContent.trim()  || "",
-    };
-
-    const payload = {
-      fullname:      collapse(DOM.editFullname.value),
-      username:      collapse(DOM.editUsername.value),
-      email:         lowerTrim(DOM.editEmail.value),
-      phone_number:  digitsOnly(DOM.editPhone.value),
-      address:       collapse(DOM.editAddress.value),
-      date_of_birth: collapse(DOM.editDob.value),
-      user_profile:  collapse(DOM.editProfile.value),
-    };
-
-    // Prevent changing your own profile
-    if (String(id) === CURRENT_USER_ID && payload.user_profile !== cur.user_profile) {
-      showStatusError("You cannot change your own profile.");
-      editBtn.disabled=false; editBtn.textContent = origText || "Save";
-      cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
-      editing=false; return;
+    function closeSuspendModal(){
+      DOM.suspendModal.style.display="none";
+      pendingSuspendRow = null;
     }
 
-    // Early exit if no changes
-    const changed = Object.keys(payload).some(k => String(payload[k] ?? "") !== String(cur[k] ?? ""));
-    if (!changed) {
-      await new Promise(r => setTimeout(r, 300));
-      editBtn.disabled=false; editBtn.textContent = origText || "Save";
-      cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
-      editing=false; closeEditModal(); return;
-    }
+    async function confirmSuspend(){
+      if(!pendingSuspendRow || suspending) return;
+      suspending=true;
 
-    if (DEBUG){
-      showStatusDebug(`${USERS_API}/${id}`, payload);
-      await new Promise(r => setTimeout(r, 400));
-      editBtn.disabled=false; editBtn.textContent = origText || "Save";
-      cancelBtn.disabled=false; fields.forEach(el => el.disabled = false);
-      editing=false; return;
-    }
-
-    try{
-      const { ok, status } = await updateUserAPI(id, payload);
-      if(!ok) throw new Error(`Update failed (${status})`);
-
-      // Update row in place for UI
-      if (payload.fullname      != null) currentRow.querySelector(".fullname").textContent = payload.fullname      || cur.fullname;
-      if (payload.username      != null) currentRow.querySelector(".username").textContent = payload.username      || cur.username;
-      if (payload.email         != null) currentRow.querySelector(".email").textContent    = payload.email         || cur.email;
-      if (payload.phone_number  != null) currentRow.querySelector(".phone").textContent    = payload.phone_number  || cur.phone_number  || "—";
-      if (payload.address       != null) currentRow.querySelector(".address").textContent  = payload.address       || cur.address       || "—";
-      if (payload.date_of_birth != null) currentRow.querySelector(".dob").textContent      = payload.date_of_birth || cur.date_of_birth || "—";
-      if (payload.user_profile  != null) currentRow.querySelector(".profile").textContent  = payload.user_profile  || cur.user_profile  || "—";
-
-      if (payload.username != null) currentRow.dataset.username = payload.username;
-
-      // If editing yourself, refresh localStorage display fields (never change user_id)
-      if (String(id) === CURRENT_USER_ID) {
-        if (payload.username) localStorage.setItem("username", payload.username);
-        if (payload.fullname) localStorage.setItem("fullname", payload.fullname);
+      const key = pendingSuspendRow.dataset.key;
+      if (!key) {
+        showStatusError("Internal Error: Missing user key.");
+        suspending = false;
+        return;
       }
 
-      // Refresh profile-suspension state
-      const newProfile = (payload.user_profile || cur.user_profile || "").trim();
-      const profStatus = String(userProfilesStatusDict?.[newProfile] ?? STATUS.ACTIVE).toUpperCase();
-      currentRow.dataset.profileSuspended = (profStatus === STATUS.SUSPENDED);
+      const orig = DOM.suspendConfirm.textContent;
+      DOM.suspendConfirm.disabled=true; DOM.suspendConfirm.textContent="Suspending...";
+      DOM.suspendCancel.disabled=true;
 
-      const prevDisplay = String(currentRow.dataset.status || "").toUpperCase();
-      const ownBase = (prevDisplay === STATUS.SUSPENDED) ? STATUS.SUSPENDED : STATUS.ACTIVE;
-      const effective = (currentRow.dataset.profileSuspended === "true") ? "SUSPENDED_PROFILE" : ownBase;
-      setRowStatus(currentRow, effective);
-
-      await new Promise(r => setTimeout(r, 500));
-      closeEditModal();
-    }catch(e){
-      console.error(e);
-      showStatusError(e.message || "Could not save changes. Please try again.");
-    }finally{
-      DOM.editSave.disabled=false; DOM.editSave.textContent = origText || "Save";
-      DOM.editCancel.disabled=false;
-      fields.forEach(el => el.disabled = false);
-      editing=false;
+      try{
+        const { ok, status } = await suspendUserAPI(key);
+        if(!ok) throw new Error(`Suspend failed (${status})`);
+        setRowStatus(pendingSuspendRow, STATUS.SUSPENDED);
+      }catch(e){
+        console.error(e);
+        showStatusError("Could not suspend. Please try again.");
+      }finally{
+        await new Promise(r => setTimeout(r, 500));
+        DOM.suspendConfirm.disabled=false; DOM.suspendConfirm.textContent=orig;
+        DOM.suspendCancel.disabled=false;
+        suspending=false;
+        closeSuspendModal();
+      }
     }
-  }
-
-  // Suspend modal
-  function openSuspendModal(button){
-    const row = button.closest("tr");
-    if (String(row?.dataset.userId || "") === CURRENT_USER_ID){
-      showStatusError("You cannot suspend your own account.");
-      return;
-    }
-    pendingSuspendRow = row;
-    DOM.suspendModal.style.display="flex";
-  }
-
-  function closeSuspendModal(){
-    DOM.suspendModal.style.display="none";
-    pendingSuspendRow = null;
-  }
-
-  async function confirmSuspend(){
-    if(!pendingSuspendRow || suspending) return;
-    suspending=true;
-
-    const key = pendingSuspendRow.dataset.key;
-    if (!key) {
-      showStatusError("Internal Error: Missing user key.");
-      suspending = false;
-      return;
-    }
-
-    const orig = DOM.suspendConfirm.textContent;
-    DOM.suspendConfirm.disabled=true; DOM.suspendConfirm.textContent="Suspending...";
-    DOM.suspendCancel.disabled=true;
-
-    try{
-      const { ok, status } = await suspendUserAPI(key);
-      if(!ok) throw new Error(`Suspend failed (${status})`);
-      setRowStatus(pendingSuspendRow, STATUS.SUSPENDED);
-    }catch(e){
-      console.error(e);
-      showStatusError("Could not suspend. Please try again.");
-    }finally{
-      await new Promise(r => setTimeout(r, 500));
-      DOM.suspendConfirm.disabled=false; DOM.suspendConfirm.textContent=orig;
-      DOM.suspendCancel.disabled=false;
-      suspending=false;
-      closeSuspendModal();
-    }
-  }
-
-  // Reactivate modal
-  function openReactivateModal(button){
-    pendingReactRow = button.closest("tr");
-    DOM.reactivateModal.style.display="flex";
-  }
-
-  function closeReactivateModal(){
-    DOM.reactivateModal.style.display="none";
-    pendingReactRow = null;
-  }
-
-  async function confirmReactivate(){
-    if(!pendingReactRow || reactivating) return;
-    reactivating=true;
-
-    const key = pendingReactRow.dataset.key;
-    if (!key) {
-      showStatusError("Internal Error: Missing user key.");
-      reactivating = false;
-      return;
-    }
-    
-    const orig = DOM.reactivateConfirm.textContent;
-    DOM.reactivateConfirm.disabled=true; DOM.reactivateConfirm.textContent="Reactivating...";
-    DOM.reactivateCancel.disabled=true;
-
-    try{
-      const { ok, status } = await reinstateUserAPI(key);
-      if(!ok) throw new Error(`Reinstate failed (${status})`);
-      // If profile is suspended, keep display as SUSPENDED_PROFILE
-      const profSusp = pendingReactRow.dataset.profileSuspended === "true";
-      setRowStatus(pendingReactRow, profSusp ? "SUSPENDED_PROFILE" : STATUS.ACTIVE);
-    }catch(e){
-      console.error(e);
-      showStatusError("Could not reactivate. Please try again.");
-    }finally{
-      await new Promise(r => setTimeout(r, 500));
-      DOM.reactivateConfirm.disabled=false; DOM.reactivateConfirm.textContent=orig;
-      DOM.reactivateCancel.disabled=false;
-      reactivating=false;
-      closeReactivateModal();
-    }
-  }
-
-  /* =========================================================
-    8) Search
-  ========================================================= */
-  function handleSearchInput(){
-    const q = DOM.search.value.trim().toLowerCase();
-    loadUsersBySearch(q);
-    updateNoResultsRow();
-  }
-
-  /* =========================================================
-    9) Boot
-  ========================================================= */
-  (async function init(){
-    await loadUsers();
-
-    // Search
-    DOM.search.addEventListener("input", handleSearchInput);
-
-    // Edit modal
-    DOM.editSave.addEventListener("click",     saveEditModal);
-    DOM.editCancel.addEventListener("click",   closeEditModal);
-    DOM.editFullname.addEventListener("input", validateEditForm);
-    DOM.editFullname.addEventListener("blur",  validateEditForm);
-    DOM.editUsername.addEventListener("input", validateEditForm);
-    DOM.editUsername.addEventListener("blur",  validateEditForm);
-    DOM.editEmail.addEventListener("input",    validateEditForm);
-    DOM.editEmail.addEventListener("blur",     validateEditForm);
-    DOM.editPhone.addEventListener("input",    validateEditForm);
-    DOM.editPhone.addEventListener("blur",     validateEditForm);
-    DOM.editAddress.addEventListener("input",  validateEditForm);
-    DOM.editAddress.addEventListener("blur",   validateEditForm);
-    DOM.editDob.addEventListener("change",     validateEditForm);
-    DOM.editProfile.addEventListener("change", validateEditForm);
-
-    // Suspend modal
-    DOM.suspendConfirm.addEventListener("click", confirmSuspend);
-    DOM.suspendCancel.addEventListener("click", closeSuspendModal);
 
     // Reactivate modal
-    DOM.reactivateConfirm.addEventListener("click", confirmReactivate);
-    DOM.reactivateCancel.addEventListener("click", closeReactivateModal);
+    function openReactivateModal(button){
+      pendingReactRow = button.closest("tr");
+      DOM.reactivateModal.style.display="flex";
+    }
 
-    // Nav
-    DOM.btnBackToDash.addEventListener("click", ()=>{ window.location.href = "admin_dashboard.html"; });
-  })();
+    function closeReactivateModal(){
+      DOM.reactivateModal.style.display="none";
+      pendingReactRow = null;
+    }
 
-  // Expose for inline handlers (parity with category/profiles pages)
-  window.openEditModal = openEditModal;
-  window.openSuspendModal = openSuspendModal;
-  window.openReactivateModal = openReactivateModal;
+    async function confirmReactivate(){
+      if(!pendingReactRow || reactivating) return;
+      reactivating=true;
+
+      const key = pendingReactRow.dataset.key;
+      if (!key) {
+        showStatusError("Internal Error: Missing user key.");
+        reactivating = false;
+        return;
+      }
+      
+      const orig = DOM.reactivateConfirm.textContent;
+      DOM.reactivateConfirm.disabled=true; DOM.reactivateConfirm.textContent="Reactivating...";
+      DOM.reactivateCancel.disabled=true;
+
+      try{
+        const { ok, status } = await reinstateUserAPI(key);
+        if(!ok) throw new Error(`Reinstate failed (${status})`);
+        // If profile is suspended, keep display as SUSPENDED_PROFILE
+        const profSusp = pendingReactRow.dataset.profileSuspended === "true";
+        setRowStatus(pendingReactRow, profSusp ? "SUSPENDED_PROFILE" : STATUS.ACTIVE);
+      }catch(e){
+        console.error(e);
+        showStatusError("Could not reactivate. Please try again.");
+      }finally{
+        await new Promise(r => setTimeout(r, 500));
+        DOM.reactivateConfirm.disabled=false; DOM.reactivateConfirm.textContent=orig;
+        DOM.reactivateCancel.disabled=false;
+        reactivating=false;
+        closeReactivateModal();
+      }
+    }
+
+    /* =========================================================
+      8) Search
+    ========================================================= */
+    function handleSearchInput(){
+      const q = DOM.search.value.trim().toLowerCase();
+      loadUsersBySearch(q);
+      updateNoResultsRow();
+    }
+
+    /* =========================================================
+      9) Boot
+    ========================================================= */
+    (async function init(){
+      await loadUsers();
+
+      // Search
+      DOM.search.addEventListener("input", handleSearchInput);
+
+      // Edit modal
+      DOM.editSave.addEventListener("click",     saveEditModal);
+      DOM.editCancel.addEventListener("click",   closeEditModal);
+      DOM.editFullname.addEventListener("input", validateEditForm);
+      DOM.editFullname.addEventListener("blur",  validateEditForm);
+      DOM.editUsername.addEventListener("input", validateEditForm);
+      DOM.editUsername.addEventListener("blur",  validateEditForm);
+      DOM.editEmail.addEventListener("input",    validateEditForm);
+      DOM.editEmail.addEventListener("blur",     validateEditForm);
+      DOM.editPhone.addEventListener("input",    validateEditForm);
+      DOM.editPhone.addEventListener("blur",     validateEditForm);
+      DOM.editAddress.addEventListener("input",  validateEditForm);
+      DOM.editAddress.addEventListener("blur",   validateEditForm);
+      DOM.editDob.addEventListener("change",     validateEditForm);
+      DOM.editProfile.addEventListener("change", validateEditForm);
+
+      // Suspend modal
+      DOM.suspendConfirm.addEventListener("click", confirmSuspend);
+      DOM.suspendCancel.addEventListener("click", closeSuspendModal);
+
+      // Reactivate modal
+      DOM.reactivateConfirm.addEventListener("click", confirmReactivate);
+      DOM.reactivateCancel.addEventListener("click", closeReactivateModal);
+
+      // Nav
+      DOM.btnBackToDash.addEventListener("click", ()=>{ window.location.href = "admin_dashboard.html"; });
+    })();
+
+    // Expose for inline handlers (parity with category/profiles pages)
+    window.openEditModal = openEditModal;
+    window.openSuspendModal = openSuspendModal;
+    window.openReactivateModal = openReactivateModal;
   </script>
 </body>
 </html>
