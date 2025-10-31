@@ -59,7 +59,7 @@
       }
 
       /* =========================
-        Controls (inputs & buttons)
+        Controls
       ========================= */
       .search-bar{ flex:1 1 auto; min-width:280px; }
       .search-bar input{
@@ -244,8 +244,14 @@
       .metric .count{ min-width:1ch; text-align:right }
       .actions{ margin-left:auto }
 
+      /* -- Card Disabled -- */
+      .card-disabled { opacity: 0.6; pointer-events: none; filter: grayscale(0.3); }
+      .card-disabled .btn.primary { 
+        background: #cbd5e1 !important; color: #64748b !important;
+        cursor: not-allowed !important; box-shadow: none !important;
+      }
       /* =========================
-        View Modal (base + specific)
+        View Modal
       ========================= */
       /* Backdrop + shell */
       .modal{
@@ -261,7 +267,6 @@
       }
       /* Match card header look */
       .modal-header{
-        /* switched to the same blue as .card-header */
         background:#f3f8ff;
         border-bottom:1px solid var(--border);
         padding:1rem 1.25rem;
@@ -347,6 +352,9 @@
       /* Section labels & blocks */
       .view-section-label{
         margin:.25rem 0 .35rem; font-size:.85rem; font-weight:700; color:#334155;
+      }.view-section-label + .view-info-grid,
+      .view-section-label + .view-dates {
+        margin-top:.6rem; 
       }
       .view-desc{
         padding:.75rem .9rem; border-radius:10px;
@@ -846,37 +854,66 @@
           const catChip = node.querySelector('[data-field="category_chip"]');
           applyCategoryChipStyle(catChip, item.category ?? "");
 
+          // Handle requester info
+          const user = item.user ?? {};
+          const createdByEl = node.querySelector('[data-field="created_by"]');
+          let createdByText = user.fullname ?? "—";
+
+          // Append (Suspended) if available
+          if (user.status && user.status.toUpperCase() === "SUSPENDED") {
+            createdByText += " (Suspended)";
+          }
+          createdByEl.textContent = createdByText;
+
           // Body
-          node.querySelector('[data-field="created_by"]').textContent = item.user?.fullname ?? "—";
           node.querySelector('[data-field="location"]').textContent   = item.user?.address ?? "—";
           node.querySelector('[data-field="description"]').textContent = item.description ?? "—";
           node.querySelector('[data-field="date_created"]').textContent   = formatLocalDate(item.date_created);
           node.querySelector('[data-field="date_completed"]').textContent =
             item.status === "COMPLETED" && item.date_completed ? formatLocalDate(item.date_completed) : "—";
 
+          // Add "Matched By: ..." only if completed
+          if (item.status === "COMPLETED" && item.matched_by?.fullname) {
+            const matchedRow = document.createElement("p");
+            matchedRow.className = "card-row";
+            matchedRow.innerHTML = `
+              <span class="card-label">Matched by:</span>
+              <span class="muted">${item.matched_by.fullname}</span>
+            `;
+            node.querySelector(".card-body").appendChild(matchedRow);
+          }
+
           // Metrics
           node.querySelector('[data-field="view_count"]').textContent           = item.view_count ?? 0;
           node.querySelector('[data-field="shortlisted_by_count"]').textContent = item.shortlisted_by_count ?? 0;
 
-          // Wire up the View button (already present in template)
+          // Wire up the View button
           const viewBtn = node.querySelector(".btn.primary");
           const viewCount = node.querySelector('[data-field="view_count"]');
-          viewBtn?.addEventListener("click", async ()=>{
-            const id = card.dataset.id;
-            try{
-              const data = await fetchServiceRequestDetail(id);
-              populateViewModal(data);
-              viewCount.textContent = parseInt(viewCount.textContent) + 1;
-              openViewModal();
-            }catch(err){
-              console.error(err);
-              alert("Failed to load request details. Please try again.");
-            }
-          });
+
+          // Disable card + button if user is suspended
+          if (user.status && user.status.toUpperCase() === "SUSPENDED") {
+            card.classList.add("card-disabled");
+            viewBtn.disabled = true;
+            viewBtn.title = "Requester account suspended — request unavailable.";
+          } else {
+            // Normal behavior: open modal
+            viewBtn?.addEventListener("click", async () => {
+              const id = card.dataset.id;
+              try {
+                const data = await fetchServiceRequestDetail(id);
+                populateViewModal(data);
+                viewCount.textContent = parseInt(viewCount.textContent) + 1;
+                openViewModal();
+              } catch (err) {
+                console.error(err);
+                alert("Failed to load request details. Please try again.");
+              }
+            });
+          }
 
           DOM.cardsWrap.appendChild(node);
         });
-
         applyStatusFilter();
       }
 
