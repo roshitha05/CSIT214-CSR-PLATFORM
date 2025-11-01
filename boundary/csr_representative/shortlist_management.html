@@ -926,7 +926,6 @@
                 `service_request=${data.service_request_id}`
               )
                 .then( res => {
-                  console.log(res.data.matches)
                   if (res.data.matches.length > 0) {
                     if (res.data.matches[0].matched_by.user_id == localStorage.getItem('user_id')) {
                       data.matched = 'me';
