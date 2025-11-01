@@ -829,6 +829,23 @@
         })
       }
 
+      async function removeShortlistRequest(id) {
+        return fetchJSON(
+          `${SHORTLISTS_API}/search?` +
+          `service_request=${id}` +
+          `&shortlisted_by=${localStorage.getItem('user_id')}`
+        )
+          .then( res => res.data.shortlists)
+          .then( shortlist => {
+            return fetchJSON(
+              `${SHORTLISTS_API}/${shortlist[0].shortlist_id}`,
+              {
+                method: "DELETE"
+              }
+            )
+          })
+      }
+
       /* =========================================================
         8) Rendering
       ========================================================= */
@@ -902,6 +919,17 @@
               const id = card.dataset.id;
               try {
                 const data = await fetchServiceRequestDetail(id);
+                
+                await fetchJSON(
+                  `${SHORTLISTS_API}/search?` +
+                  `service_request=${data.service_request_id}` +
+                  `&shortlisted_by=${localStorage.getItem('user_id')}`
+                )
+                  .then( res => {
+                    if (res.data.shortlists.length > 0) data.shortlisted = true;
+                    else data.shortlisted = false;
+                  })
+                
                 populateViewModal(data);
                 viewCount.textContent = parseInt(viewCount.textContent) + 1;
                 openViewModal();
@@ -991,6 +1019,20 @@
 
         set("date_created",   formatLocalDate(req?.date_created));
         set("date_completed", req?.status === "COMPLETED" ? formatLocalDate(req?.date_completed) : "—");
+        
+        if (req.shortlisted) {
+          ViewDOM.shortlistBtn.classList.add('shortlisted');
+          const icon = ViewDOM.shortlistBtn.querySelector("i");
+          const label = ViewDOM.shortlistBtn.querySelector("span");
+          icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
+          if (label) label.textContent = "Shortlisted";
+        } else {
+          ViewDOM.shortlistBtn.classList.remove('shortlisted');
+          const icon = ViewDOM.shortlistBtn.querySelector("i");
+          const label = ViewDOM.shortlistBtn.querySelector("span");
+          icon?.classList.remove("fa-solid"); icon?.classList.add("fa-regular");
+          if (label) label.textContent = "Shortlist";
+        }
       }
 
       function openViewModal(){
@@ -1034,6 +1076,69 @@
         }
       }
 
+      async function shortlistCurrentRequest() {
+        const id = ViewDOM.modal?.dataset?.requestId;
+        if (!id || !ViewDOM.shortlistBtn) return;
+
+        try {
+          const res = await postShortlistRequest(id);
+          if (!res.ok) throw new Error(`Shortlist failed (${res.status})`);
+
+          // UI updates
+          const icon = ViewDOM.shortlistBtn.querySelector("i");
+          const label = ViewDOM.shortlistBtn.querySelector("span");
+          icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
+          if (label) label.textContent = "Shortlisted";
+
+          const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
+          if (countNode) {
+            const n = parseInt(countNode.textContent, 10);
+            countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
+          }
+          ViewDOM.shortlistBtn.classList.add('shortlisted');
+        } catch (e) {
+          console.error(e);
+          alert("Unable to shortlist this request. Please try again later.");
+          ViewDOM.shortlistBtn.disabled = false;
+        }
+      }
+
+      async function removeShortlistCurrentRequest() {
+        const id = ViewDOM.modal?.dataset?.requestId;
+        if (!id || !ViewDOM.shortlistBtn) return;
+
+        try {
+          const res = await removeShortlistRequest(id);
+          if (!res.ok) throw new Error(`Remove shortlist failed (${res.status})`);
+
+          // UI updates
+          // const icon = ViewDOM.shortlistBtn.querySelector("i");
+          // const label = ViewDOM.shortlistBtn.querySelector("span");
+          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
+          // if (label) label.textContent = "Shortlisted";
+
+          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
+          // if (countNode) {
+          //   const n = parseInt(countNode.textContent, 10);
+          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
+          // }
+          ViewDOM.shortlistBtn.classList.remove('shortlisted');
+
+          const icon = ViewDOM.shortlistBtn.querySelector("i");
+          const label = ViewDOM.shortlistBtn.querySelector("span");
+          icon?.classList.remove("fa-solid"); icon?.classList.add("fa-regular");
+          if (label) label.textContent = "Shortlist";
+
+        } catch (e) {
+          console.error(e);
+          alert("Unable to shortlist this request. Please try again later.");
+          ViewDOM.shortlistBtn.disabled = false;
+        }
+      }
+
+
       /* =========================================================
         11) Init & event bindings
       ========================================================= */
@@ -1061,7 +1166,10 @@
         }
 
         if (ViewDOM.shortlistBtn) {
-          ViewDOM.shortlistBtn.addEventListener("click", shortlistCurrentRequest);
+          ViewDOM.shortlistBtn.addEventListener("click", btn => {
+            if (btn.currentTarget.classList.contains('shortlisted')) removeShortlistCurrentRequest()
+            else shortlistCurrentRequest()
+          })
         }
 
         DOM.backToDashBtn.addEventListener("click", () => {
