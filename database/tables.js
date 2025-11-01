@@ -44,7 +44,8 @@ export const matchesTable = pgTable('matches', {
         .references(() => serviceRequestsTable.service_request_id, {
             onDelete: 'cascade'
         })
-        .notNull(),
+        .notNull()
+        .primaryKey(),
     matched_by: integer()
         .references(() => usersTable.user_id, {
             onDelete: 'cascade'

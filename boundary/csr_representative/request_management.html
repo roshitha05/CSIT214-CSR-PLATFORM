@@ -607,6 +607,7 @@
       const CATEGORIES_API = `${API_URL}/categories`;
       const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
       const SHORTLISTS_API = `${API_URL}/shortlists`;
+      const MATCHES_API = `${API_URL}/matches`;
       const STATUS = { ACTIVE: "ACTIVE", COMPLETED: "COMPLETED", CANCELLED: "CANCELLED" };
 
       /* =========================================================
@@ -846,6 +847,23 @@
           })
       }
 
+      async function matchRequest(id) {
+        return fetchJSON(`${MATCHES_API}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            service_request : id,
+            matched_by: localStorage.getItem('user_id')
+          })
+        })
+      }
+
+      async function completeMatchRequest(id) {
+        return fetchJSON(`${MATCHES_API}/${id}/complete`, {
+          method: "POST"
+        })
+      }
+
       /* =========================================================
         8) Rendering
       ========================================================= */
@@ -928,6 +946,22 @@
                   .then( res => {
                     if (res.data.shortlists.length > 0) data.shortlisted = true;
                     else data.shortlisted = false;
+                  })
+
+                await fetchJSON(
+                  `${MATCHES_API}/search?` +
+                  `service_request=${data.service_request_id}`
+                )
+                  .then( res => {
+                    console.log(res.data.matches)
+                    if (res.data.matches.length > 0) {
+                      if (res.data.matches[0].matched_by.user_id == localStorage.getItem('user_id')) {
+                        data.matched = 'me';
+                      } else {
+                        data.matched = 'others';
+                      }
+                    }
+                    else data.matched = 'none';
                   })
                 
                 populateViewModal(data);
@@ -1032,6 +1066,24 @@
           const label = ViewDOM.shortlistBtn.querySelector("span");
           icon?.classList.remove("fa-solid"); icon?.classList.add("fa-regular");
           if (label) label.textContent = "Shortlist";
+        }
+
+        if (req.matched == 'me') {
+          ViewDOM.matchBtn.disabled = false;
+          ViewDOM.matchBtn.classList.add('matched');
+          const label = ViewDOM.matchBtn.querySelector("span");
+          if (label) label.textContent = "Complete the Match";
+        } 
+        else if (req.matched == 'others') {
+          ViewDOM.matchBtn.disabled = true;
+          const label = ViewDOM.matchBtn.querySelector("span");
+          if (label) label.textContent = "Matched by others";
+        }
+        else {
+          ViewDOM.matchBtn.disabled = false;
+          ViewDOM.matchBtn.classList.remove('matched');
+          const label = ViewDOM.matchBtn.querySelector("span");
+          if (label) label.textContent = "Match with Volunteer";
         }
       }
 
@@ -1138,6 +1190,63 @@
         }
       }
 
+      async function matchCurrentRequest() {
+        const id = ViewDOM.modal?.dataset?.requestId;
+        if (!id || !ViewDOM.shortlistBtn) return;
+
+        try {
+          const res = await matchRequest(id);
+          if (!res.ok) throw new Error(`Match failed (${res.status})`);
+
+          // UI updates
+          // const icon = ViewDOM.shortlistBtn.querySelector("i");
+          // const label = ViewDOM.shortlistBtn.querySelector("span");
+          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
+          // if (label) label.textContent = "Shortlisted";
+
+          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
+          // if (countNode) {
+          //   const n = parseInt(countNode.textContent, 10);
+          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
+          // }
+          ViewDOM.matchBtn.classList.add('matched');
+          const label = ViewDOM.matchBtn.querySelector("span");
+          if (label) label.textContent = "Complete the Match";
+
+        } catch (e) {
+          console.error(e);
+          alert("Unable to match this request. Please try again later.");
+        }
+      }
+
+      async function completeMatchCurrentRequest() {
+        const id = ViewDOM.modal?.dataset?.requestId;
+        if (!id || !ViewDOM.shortlistBtn) return;
+
+        try {
+          const res = await completeMatchRequest(id);
+          if (!res.ok) throw new Error(`Complete match failed (${res.status})`);
+
+          // UI updates
+          // const icon = ViewDOM.shortlistBtn.querySelector("i");
+          // const label = ViewDOM.shortlistBtn.querySelector("span");
+          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
+          // if (label) label.textContent = "Shortlisted";
+
+          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
+          // if (countNode) {
+          //   const n = parseInt(countNode.textContent, 10);
+          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
+          // }
+          alert("Match completed!");
+          window.location.reload();
+        } catch (e) {
+          console.error(e);
+          alert("Unable to complete match for this request. Please try again later.");
+        }
+      }
 
       /* =========================================================
         11) Init & event bindings
@@ -1169,6 +1278,13 @@
           ViewDOM.shortlistBtn.addEventListener("click", btn => {
             if (btn.currentTarget.classList.contains('shortlisted')) removeShortlistCurrentRequest()
             else shortlistCurrentRequest()
+          })
+        }
+
+        if (ViewDOM.matchBtn) {
+            ViewDOM.matchBtn.addEventListener("click", btn => {
+            if (btn.currentTarget.classList.contains('matched')) completeMatchCurrentRequest()
+            else matchCurrentRequest()
           })
         }
 

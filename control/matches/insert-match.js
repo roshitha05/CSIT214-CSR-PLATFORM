@@ -6,9 +6,9 @@ export default class InsertMatch extends Control {
     }
 
     createController() {
-        this.router.get('/', async (req, res, next) => {
+        this.router.post('/', async (req, res, next) => {
             const success = await this.matchesEntity
-                .insertMatch({ ...req.query, status: "ACTIVE" });
+                .insertMatch({ ...req.body, status: "ACTIVE" });
 
             if (success) return res.status(200).send(true)
             res.status(400).send(false)

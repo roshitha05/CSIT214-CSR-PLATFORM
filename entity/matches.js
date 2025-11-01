@@ -29,7 +29,7 @@ export default class MatchesEntity extends Entity {
     }
 
     async insertMatch(match) {
-        if (await this.hasMatch(match)) return false;
+        if (await this.hasMatch(match.service_request)) return false;
 
         await this.db.insert(matchesTable)
             .values(match)
