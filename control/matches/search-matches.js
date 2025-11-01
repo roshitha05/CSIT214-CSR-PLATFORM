@@ -13,7 +13,7 @@ export default class SearchMatches extends Control {
             await Promise.all(
                 matches.map( async match => {
                     const serviceRequest = await this.serviceRequestsEntity
-                        .getServiceRequests({ server_request_id: match.service_request })
+                        .getServiceRequests({ service_request_id: match.service_request })
                     const user = await this.usersEntity
                         .getUsers({ user_id: match.matched_by })
 
