@@ -628,7 +628,7 @@
         modal: $("viewModal"),
         closeBtn: $("viewCloseBtn"),
         matchBtn: $("viewMatchBtn"),
-        shortlistBtn: $("viewShortlistBtn"),
+        nBtn: $("viewShortlistBtn"),
         q: (name) => $("viewModal")?.querySelector(`[data-field="${name}"]`),
       };
 
@@ -744,14 +744,35 @@
 
       async function loadServiceRequests() {
         try {
-          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}`);
-          if (!ok) throw new Error(`Service requests load failed (${status})`);
-          const serviceRequests = Array.isArray(data) ? data
-              : Array.isArray(data?.items) ? data.items
-              : [];
+          // const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}`);
+          // if (!ok) throw new Error(`Service requests load failed (${status})`);
+          // const serviceRequests = Array.isArray(data) ? data
+          //     : Array.isArray(data?.items) ? data.items
+          //     : [];
+          const shortlisted = await fetchJSON(`${SHORTLISTS_API}/search?` +
+            `shortlisted_by=${localStorage.getItem('user_id')}`
+          )
+            .then ( res => res.data.shortlists);
+        
+          const serviceRequests = []
+
+          await Promise.all(
+            shortlisted.map( async shortlist => {
+              await fetchJSON(
+                `${SERVICE_REQUEST_API}/search?` +
+                `service_request_id=${shortlist.service_request.service_request_id}`
+              )
+                .then( res => {
+                  const request = res.data[0];
+                  request.shortlist_id = shortlist.shortlist_id;
+                  serviceRequests.unshift(request)
+                })
+            })
+          )
 
           await Promise.all(
             serviceRequests.map(async request => {
+              console.log(request)
               await fetchJSON(`
                 ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
               )

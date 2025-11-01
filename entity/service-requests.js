@@ -50,6 +50,8 @@ export default class ServiceRequestsEntity extends Entity {
                     .push(eq(serviceRequestsTable.view_count, intKeyword));
             }
         }
+        if (filters.service_request_id !== undefined)
+            conditions.push(eq(serviceRequestsTable.service_request_id, filters.service_request_id));
         if (filters.created_by !== undefined)
             conditions.push(eq(serviceRequestsTable.created_by, filters.created_by));
         if (filters.category !== undefined)
