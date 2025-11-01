@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { usersTable, userProfilesTable, categoriesTable, serviceRequestsTable, shortlistsTable, matchesTable } from '../database/tables.js';
 import { users, categories, serviceRequests } from './seeds.js';
 import DB from '../database/db.js';
+import ShortlistsEntity from '../entity/shortlists.js';
 
 const getEmail = (name) => `${name.replace(' ', '_')}@CSR.com`;
 const getPassword = (name) => name.replace(' ', '');
@@ -144,14 +145,20 @@ async function main(tx) {
 
     console.log('Seeding shortlists...');
 
+    const shortlist = new ShortlistsEntity();
+
     for (const request of requests) {
         while (Math.random() > 0.15) {
-            await tx.insert(shortlistsTable).values({
-                service_request: request,
-                shortlisted_by: allUsers
+            const shortlisted_by = allUsers
                     ['CSR Representative']
                     [Math.floor(Math.random() * allUsers['CSR Representative'].length)]
-            })
+
+            if (!shortlist.hasShortlisted({ service_request: request, shortlisted_by })) {
+                await tx.insert(shortlistsTable).values({
+                    service_request: request,
+                    shortlisted_by: shortlisted_by
+                })
+            }
         }
     };
 
