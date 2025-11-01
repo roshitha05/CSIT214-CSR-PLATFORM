@@ -169,10 +169,10 @@ async function main(tx) {
     console.log('Seeding matches...');
 
     for (const request of requests) {
-        if (Math.random < 0.3) continue;
+        if (Math.random() < 0.3) continue;
 
         let status = 'ACTIVE';
-        if (Math.random < 0.4) status = 'COMPLETED';
+        if (Math.random() < 0.4) status = 'COMPLETED';
 
         await tx.insert(matchesTable).values({
             service_request: request,
