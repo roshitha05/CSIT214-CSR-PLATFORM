@@ -145,7 +145,7 @@ async function main(tx) {
 
     console.log('Seeding shortlists...');
 
-    const shortlist = new ShortlistsEntity();
+    const shortlistSet = new Set();
 
     for (const request of requests) {
         while (Math.random() > 0.15) {
@@ -153,11 +153,15 @@ async function main(tx) {
                     ['CSR Representative']
                     [Math.floor(Math.random() * allUsers['CSR Representative'].length)]
 
-            if (!shortlist.hasShortlisted({ service_request: request, shortlisted_by })) {
+            const key = `${request}-${shortlisted_by}`;
+
+            if (!shortlistSet.has(key)) {
                 await tx.insert(shortlistsTable).values({
                     service_request: request,
                     shortlisted_by: shortlisted_by
                 })
+                
+                shortlistSet.add(key);
             }
         }
     };
