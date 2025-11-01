@@ -1104,34 +1104,6 @@
         const id = ViewDOM.modal?.dataset?.requestId;
         if (!id || !ViewDOM.shortlistBtn) return;
 
-        ViewDOM.shortlistBtn.disabled = true;
-        try {
-          const res = await postShortlistRequest(id);
-          if (!res.ok) throw new Error(`Shortlist failed (${res.status})`);
-
-          // UI updates
-          const icon = ViewDOM.shortlistBtn.querySelector("i");
-          const label = ViewDOM.shortlistBtn.querySelector("span");
-          icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
-          if (label) label.textContent = "Shortlisted";
-
-          const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
-          const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
-          if (countNode) {
-            const n = parseInt(countNode.textContent, 10);
-            countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
-          }
-        } catch (e) {
-          console.error(e);
-          alert("Unable to shortlist this request. Please try again later.");
-          ViewDOM.shortlistBtn.disabled = false;
-        }
-      }
-
-      async function shortlistCurrentRequest() {
-        const id = ViewDOM.modal?.dataset?.requestId;
-        if (!id || !ViewDOM.shortlistBtn) return;
-
         try {
           const res = await postShortlistRequest(id);
           if (!res.ok) throw new Error(`Shortlist failed (${res.status})`);
