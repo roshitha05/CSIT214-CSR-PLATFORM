@@ -571,9 +571,9 @@
           <div class="modal-footer">
 
             <!-- Shortlist button (on the left) -->
-            <button type="button" class="btn outline" id="viewShortlistBtn">
+            <button type="button" class="btn outline shortlisted" id="viewShortlistBtn">
               <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
-              <span>Shortlist</span>
+              <span>Remove Shortlist</span>
             </button>
 
             <!-- Close and Match button (on the right) -->
@@ -628,6 +628,7 @@
         modal: $("viewModal"),
         closeBtn: $("viewCloseBtn"),
         matchBtn: $("viewMatchBtn"),
+        shortlistBtn: $('viewShortlistBtn'),
         nBtn: $("viewShortlistBtn"),
         q: (name) => $("viewModal")?.querySelector(`[data-field="${name}"]`),
       };
@@ -772,7 +773,6 @@
 
           await Promise.all(
             serviceRequests.map(async request => {
-              console.log(request)
               await fetchJSON(`
                 ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
               )
@@ -840,6 +840,23 @@
             shortlisted_by: localStorage.getItem('user_id')
           })
         })
+      }
+
+      async function removeShortlistRequest(id) {
+        return fetchJSON(
+          `${SHORTLISTS_API}/search?` +
+          `service_request=${id}` +
+          `&shortlisted_by=${localStorage.getItem('user_id')}`
+        )
+          .then( res => res.data.shortlists)
+          .then( shortlist => {
+            return fetchJSON(
+              `${SHORTLISTS_API}/${shortlist[0].shortlist_id}`,
+              {
+                method: "DELETE"
+              }
+            )
+          })
       }
 
       /* =========================================================
@@ -1016,6 +1033,36 @@
         }
       }
 
+      async function removeShortlistCurrentRequest() {
+        const id = ViewDOM.modal?.dataset?.requestId;
+        if (!id || !ViewDOM.shortlistBtn) return;
+
+        ViewDOM.shortlistBtn.disabled = true;
+        try {
+          const res = await removeShortlistRequest(id);
+          if (!res.ok) throw new Error(`Remove shortlist failed (${res.status})`);
+
+          // UI updates
+          // const icon = ViewDOM.shortlistBtn.querySelector("i");
+          // const label = ViewDOM.shortlistBtn.querySelector("span");
+          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
+          // if (label) label.textContent = "Shortlisted";
+
+          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
+          // if (countNode) {
+          //   const n = parseInt(countNode.textContent, 10);
+          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
+          // }
+          alert("Shortlist removed.");
+          window.location.reload();
+        } catch (e) {
+          console.error(e);
+          alert("Unable to shortlist this request. Please try again later.");
+          ViewDOM.shortlistBtn.disabled = false;
+        }
+      }
+
       /* =========================================================
         11) Init & event bindings
       ========================================================= */
@@ -1043,7 +1090,7 @@
         }
 
         if (ViewDOM.shortlistBtn) {
-          ViewDOM.shortlistBtn.addEventListener("click", shortlistCurrentRequest);
+          ViewDOM.shortlistBtn.addEventListener("click", removeShortlistCurrentRequest);
         }
 
         DOM.backToDashBtn.addEventListener("click", () => {
