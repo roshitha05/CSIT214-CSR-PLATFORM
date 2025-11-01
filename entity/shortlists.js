@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, lte, gte } from 'drizzle-orm';
 import { shortlistsTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -25,6 +25,29 @@ export default class ShortlistsEntity extends Entity {
         }
 
         return await query;
+    }
+
+    async searchShortlists(filters) {
+        const conditions = [];
+
+        if (filters.shortlist_id !== undefined)
+            conditions.push(eq(shortlistsTable.shortlist_id, filters.shortlist_id));
+        if (filters.service_request !== undefined)
+            conditions.push(eq(shortlistsTable.service_request, filters.service_request));
+        if (filters.shortlisted_by !== undefined)
+            conditions.push(eq(shortlistsTable.shortlisted_by, filters.shortlisted_by));
+        if (filters.date_from !== undefined)
+            conditions.push(gte(shortlistsTable.date_created, new Date(filters.date_from)));
+        if (filters.date_to !== undefined)
+            conditions.push(lte(shortlistsTable.date_created, new Date(filters.date_to)));
+
+        return await this.db
+            .select()
+            .from(shortlistsTable)
+            .where(
+                and(...conditions)
+            )
+            .orderBy(shortlistsTable.shortlist_id);
     }
 
     async insertShortlist(shortlist) {

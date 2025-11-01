@@ -53,6 +53,9 @@ import SearchMatchesHistory from './control/matches/search-service-request-match
 import InsertMatch from './control/matches/insert-match.js';
 import CompleteMatch from './control/matches/complete-match.js';
 import RemoveShortlist from './control/shortlists/remove-shortlist.js';
+import GetDailyReport from './control/reports/get-daily-reports.js';
+import GetWeeklyReport from './control/reports/get-weekly-reports.js';
+import GetMonthlyReport from './control/reports/get-monthly-reports.js';
 
 export default class App {
     constructor() {
@@ -120,6 +123,7 @@ export default class App {
         const serviceRequestsRouter = express.Router();
         const shortlistsRouter = express.Router();
         const matchesRouter = express.Router();
+        const reportsRouter = express.Router();
 
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
@@ -169,12 +173,17 @@ export default class App {
         matchesRouter.use('/', new InsertMatch().getRouter());
         matchesRouter.use('/', new CompleteMatch().getRouter());
 
+        reportsRouter.use('/', new GetDailyReport().getRouter());
+        reportsRouter.use('/', new GetWeeklyReport().getRouter());
+        reportsRouter.use('/', new GetMonthlyReport().getRouter());
+
         apiRouter.use('/user-profiles', userProfilesRouter);
         apiRouter.use('/users', usersRouter);
         apiRouter.use('/categories', categoriesRouter);
         apiRouter.use('/service-requests', serviceRequestsRouter);
         apiRouter.use('/shortlists', shortlistsRouter);
         apiRouter.use('/matches', matchesRouter);
+        apiRouter.use('/reports', reportsRouter);
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('boundary'));

@@ -1,4 +1,4 @@
-import { eq, and, ilike, gt, or, lt, asc } from 'drizzle-orm';
+import { eq, and, ilike, gt, or, lt, asc, gte, lte } from 'drizzle-orm';
 import { serviceRequestsTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -57,9 +57,13 @@ export default class ServiceRequestsEntity extends Entity {
         if (filters.category !== undefined)
             conditions.push(ilike(serviceRequestsTable.category, filters.category));
         if (filters.date_from !== undefined)
-            conditions.push(gt(serviceRequestsTable.date_created, new Date(filters.date_from)));
+            conditions.push(gte(serviceRequestsTable.date_created, new Date(filters.date_from)));
         if (filters.date_to !== undefined)
-            conditions.push(lt(serviceRequestsTable.date_created, new Date(filters.date_to)));
+            conditions.push(lte(serviceRequestsTable.date_created, new Date(filters.date_to)));
+        if (filters.date_completed_from !== undefined)
+            conditions.push(gte(serviceRequestsTable.date_completed, new Date(filters.date_completed_from)));
+        if (filters.date_completed_to !== undefined)
+            conditions.push(lte(serviceRequestsTable.date_completed, new Date(filters.date_completed_to)));
         if (filters.status !== undefined)
             conditions.push(ilike(serviceRequestsTable.status, filters.status));
 

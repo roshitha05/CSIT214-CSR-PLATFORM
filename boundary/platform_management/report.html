@@ -104,11 +104,6 @@
       </div>
 
       <div>
-        <label for="to">To</label>
-        <input type="date" id="to" class="input" aria-label="End date">
-      </div>
-
-      <div>
         <label class="muted">&nbsp;</label>
         <button class="btn" id="btnReset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
       </div>
@@ -116,7 +111,6 @@
       <div class="right">
         <span class="loading" id="loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</span>
         <button class="btn primary" id="btnGenerate"><i class="fa-solid fa-chart-column"></i> Generate</button>
-        <button class="btn" id="btnExport"><i class="fa-solid fa-file-export"></i> Export CSV</button>
       </div>
     </section>
 
@@ -142,28 +136,6 @@
         </div>
       </div>
 
-      <!-- Category Summary -->
-      <div class="panel" id="pCategory">
-        <h2>Category Summary</h2>
-        <div class="panel-body">
-          <table>
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Total</th>
-                <th>Completed</th>
-                <th>Cancelled</th>
-                <th>Avg Completion (days)</th>
-                <th>Completion Rate</th>
-              </tr>
-            </thead>
-            <tbody id="tblCategory">
-              <!-- rows injected -->
-            </tbody>
-          </table>
-          <div class="note">Completion Rate = Completed / Total.</div>
-        </div>
-      </div>
     </section>
   </main>
 
@@ -172,7 +144,7 @@
         Config / constants
     ===================== */
     const API_URL = "http://127.0.0.1:80/api";
-    const REPORTS_API = `${API_URL}/reports/summary`;
+    const REPORTS_API = `${API_URL}/reports`;
 
     /* === SAMPLE REPORT (for immediate visualization) === */
     const SAMPLE_REPORT = {
@@ -224,7 +196,7 @@
     function setLoading(on){
         DOM.loading.classList.toggle("show", !!on);
         DOM.btnGenerate.disabled = !!on;
-        DOM.btnExport.disabled = !!on;
+        //DOM.btnExport.disabled = !!on;
     }
     function sanitize(n, d=0){
         return (n===null || n===undefined || Number.isNaN(n)) ? d : n;
@@ -234,11 +206,11 @@
     function fmtPct(n){ return (sanitize(n)*100).toFixed(1) + "%"; }
     function ymdToday(){ return new Date().toISOString().split("T")[0]; }
 
-    async function fetchJSON(url){
-        const res = await fetch(url, { credentials:"include", mode:"cors" });
-        const ct = res.headers.get("content-type")||"";
-        const data = ct.includes("application/json") ? await res.json() : await res.text();
-        return { ok:res.ok, status:res.status, data };
+    async function fetchJSON(url, options={}) {
+      const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
+      const ct  = res.headers.get("content-type") || "";
+      let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
+      return { ok: res.ok, status: res.status, data };
     }
 
     /* =====================
@@ -246,11 +218,8 @@
     ===================== */
     function renderActivityKpis(a){
         const items = [
-        { icon:"fa-list", label:"Total Requests", value:sanitize(a.total_requests) },
-        { icon:"fa-check", label:"Completed", value:sanitize(a.completed) },
-        { icon:"fa-circle-pause", label:"Active", value:sanitize(a.active) },
-        { icon:"fa-ban", label:"Cancelled", value:sanitize(a.cancelled) },
-        { icon:"fa-stopwatch", label:"Avg Completion (days)", value:fmtDays(a.avg_completion_time_days) },
+        { icon:"fa-list", label:"Total Requests", value:sanitize(a.requestsCreated) },
+        { icon:"fa-check", label:"Completed", value:sanitize(a.completedRequests) },
         ];
         DOM.kpiActivity.innerHTML = items.map(k=>`
         <div class="kpi">
@@ -266,10 +235,8 @@
     function renderEngagementKpis(e){
         const topCSR = e?.top_csr?.name ? `${e.top_csr.name} (${sanitize(e.top_csr.matches)} matches)` : "—";
         const items = [
-        { icon:"fa-bookmark", label:"Shortlisted (count)", value:sanitize(e.shortlisted_count) },
-        { icon:"fa-handshake", label:"Matched / Completed", value:sanitize(e.matched_count) },
-        { icon:"fa-bolt", label:"Avg Response (hours)", value:fmtHours(e.avg_response_time_hours) },
-        { icon:"fa-user", label:"Top CSR", value:topCSR },
+        { icon:"fa-bookmark", label:"Shortlisted (count)", value:sanitize(e.shortlists) },
+        { icon:"fa-handshake", label:"Matched / Completed", value:sanitize(e.matches) },
         ];
         DOM.kpiEngagement.innerHTML = items.map(k=>`
         <div class="kpi">
@@ -282,25 +249,25 @@
         `).join("");
     }
 
-    function renderCategoryTable(rows){
-        if (!Array.isArray(rows) || rows.length===0){
-        DOM.tblCategory.innerHTML = `
-            <tr><td colspan="6" class="muted">No data for this period.</td></tr>
-        `;
-        return;
-        }
-        rows.sort((a,b)=> (b.total||0) - (a.total||0));
-        DOM.tblCategory.innerHTML = rows.map(r=>`
-        <tr>
-            <td>${r.category || "—"}</td>
-            <td>${sanitize(r.total)}</td>
-            <td>${sanitize(r.completed)}</td>
-            <td>${sanitize(r.cancelled)}</td>
-            <td>${fmtDays(r.avg_completion_time_days)}</td>
-            <td>${fmtPct(r.completion_rate)}</td>
-        </tr>
-        `).join("");
-    }
+    // function renderCategoryTable(rows){
+    //     if (!Array.isArray(rows) || rows.length===0){
+    //     DOM.tblCategory.innerHTML = `
+    //         <tr><td colspan="6" class="muted">No data for this period.</td></tr>
+    //     `;
+    //     return;
+    //     }
+    //     rows.sort((a,b)=> (b.total||0) - (a.total||0));
+    //     DOM.tblCategory.innerHTML = rows.map(r=>`
+    //     <tr>
+    //         <td>${r.category || "—"}</td>
+    //         <td>${sanitize(r.total)}</td>
+    //         <td>${sanitize(r.completed)}</td>
+    //         <td>${sanitize(r.cancelled)}</td>
+    //         <td>${fmtDays(r.avg_completion_time_days)}</td>
+    //         <td>${fmtPct(r.completion_rate)}</td>
+    //     </tr>
+    //     `).join("");
+    // }
 
     /* =====================
         CSV Export (client-side)
@@ -372,22 +339,22 @@
         Shared render entrypoint
     ===================== */
     function renderReportFromData(data) {
-        renderActivityKpis(data.activity_overview || {});
-        renderEngagementKpis(data.engagement || {});
-        renderCategoryTable(data.category_summary || []);
+        renderActivityKpis(data || {});
+        renderEngagementKpis(data || {});
+        //renderCategoryTable(data || []);
 
         // Prepare export for this payload
         const type = (data?.period?.type || "custom").toLowerCase();
         const from = data?.period?.from || DOM.from.value || "from";
-        const to   = data?.period?.to   || DOM.to.value   || "to";
-        DOM.btnExport.onclick = ()=>{
-        const file = `report_${type}_${from}_to_${to}.csv`;
-        downloadCsv(file, {
-            activity: data.activity_overview,
-            engagement: data.engagement,
-            category: data.category_summary
-        });
-        };
+        //const to   = data?.period?.to   || DOM.to.value   || "to";
+        // DOM.btnExport.onclick = ()=>{
+        // const file = `report_${type}_${from}_to_${to}.csv`;
+        // downloadCsv(file, {
+        //     activity: data.activity_overview,
+        //     engagement: data.engagement,
+        //     category: data.category_summary
+        // });
+        // };
     }
 
     /* =====================
@@ -395,16 +362,23 @@
     ===================== */
     async function generateReport(){
         const from = DOM.from.value;
-        const to = DOM.to.value;
-        if (!from || !to){ alert("Please select both From and To dates."); return; }
-        if (new Date(from) > new Date(to)){ alert("‘From’ must be earlier than or equal to ‘To’."); return; }
+        //const to = DOM.to.value;
+        //if (!from || !to){ alert("Please select both From and To dates."); return; }
+        //if (new Date(from) > new Date(to)){ alert("‘From’ must be earlier than or equal to ‘To’."); return; }
 
         const type = DOM.type.value; // DAILY | WEEKLY | MONTHLY
-        const qs = new URLSearchParams({ date_from: from, date_to: to, type });
+        //const qs = new URLSearchParams({ date_from: from, date_to: to, type });
 
         setLoading(true);
         try{
-        const { ok, status, data } = await fetchJSON(`${REPORTS_API}?${qs.toString()}`);
+        const { ok, status, data } = await fetchJSON(
+          `${REPORTS_API}/${type.toLowerCase()}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              date: from
+          })
+        });
         if (!ok) throw new Error(`Report fetch failed (${status})`);
         renderReportFromData(data);
         }catch(err){
@@ -424,12 +398,12 @@
         // Date max = today
         const today = ymdToday();
         DOM.from.setAttribute("max", today);
-        DOM.to.setAttribute("max", today);
+        //DOM.to.setAttribute("max", today);
 
         // Sensible default: last 7 days
         const d = new Date(); d.setDate(d.getDate()-6);
         DOM.from.value = d.toISOString().split("T")[0];
-        DOM.to.value = today;
+        //DOM.to.value = today;
 
         // Render SAMPLE immediately for visualization
         renderReportFromData(SAMPLE_REPORT);

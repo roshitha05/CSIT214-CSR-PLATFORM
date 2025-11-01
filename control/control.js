@@ -5,6 +5,7 @@ import CategoriesEntity from '../entity/categories.js';
 import ServiceRequestsEntity from '../entity/service-requests.js';
 import ShortlistsEntity from '../entity/shortlists.js';
 import MatchesEntity from '../entity/matches.js';
+import ReportsEntity from '../entity/reports.js';
 
 export default class Control {
     constructor() {
@@ -18,6 +19,7 @@ export default class Control {
         this.serviceRequestsEntity = new ServiceRequestsEntity();
         this.shortlistsEntity = new ShortlistsEntity();
         this.matchesEntity = new MatchesEntity();
+        this.reportsEntity = new ReportsEntity();
 
         this.createController();
     }

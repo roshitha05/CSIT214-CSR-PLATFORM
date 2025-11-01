@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, lte } from 'drizzle-orm';
 import { matchesTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -26,6 +26,29 @@ export default class MatchesEntity extends Entity {
         }
 
         return await query;
+    }
+
+    async searchMatches(filters) {
+        const conditions = [];
+
+        if (filters.status !== undefined)
+            conditions.push(ilike(matchesTable.status, `%${filters.status}%`));
+        if (filters.service_request !== undefined)
+            conditions.push(eq(matchesTable.service_request, filters.service_request));
+        if (filters.shortlisted_by !== undefined)
+            conditions.push(eq(matchesTable.shortlisted_by, filters.shortlisted_by));
+        if (filters.date_from !== undefined)
+            conditions.push(gte(matchesTable.date_created, new Date(filters.date_from)));
+        if (filters.date_to !== undefined)
+            conditions.push(lte(matchesTable.date_created, new Date(filters.date_to)));
+
+        return await this.db
+            .select()
+            .from(matchesTable)
+            .where(
+                and(...conditions)
+            )
+            .orderBy(matchesTable.service_request);
     }
 
     async insertMatch(match) {
