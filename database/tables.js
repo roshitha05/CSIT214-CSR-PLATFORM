@@ -52,6 +52,7 @@ export const matchesTable = pgTable('matches', {
         })
         .notNull(),
     status: varchar({ length: 256 }).notNull(),
+    date_created: timestamp().defaultNow()
 });
 
 export const serviceRequestsTable = pgTable('service_requests', {
@@ -86,5 +87,6 @@ export const shortlistsTable = pgTable('shortlists', {
         .references(() => usersTable.user_id, {
             onDelete: 'cascade'
         })
-        .notNull()
+        .notNull(),
+    date_created: timestamp().defaultNow()
 });
