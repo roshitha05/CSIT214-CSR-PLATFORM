@@ -57,6 +57,13 @@
       "when": 1761978614856,
       "tag": "0007_add_pkey_matches",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1761983469167,
+      "tag": "0008_add_date_created",
+      "breakpoints": true
     }
   ]
 }
