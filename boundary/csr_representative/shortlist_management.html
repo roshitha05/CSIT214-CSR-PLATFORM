@@ -811,25 +811,47 @@
         if (DOM.dateTo.value !== "") 
           payload += `date_to=${encodeURIComponent(DOM.dateTo.value)}&`;
 
-        const { ok, status, data } = await fetchJSON(
-          `${SERVICE_REQUEST_API}/search?${payload}`
-        );
-        if(!ok) throw new Error(`Failed to load requests (${status})`);
+        const shortlisted = await fetchJSON(
+            `${SHORTLISTS_API}/search?` +
+            `shortlisted_by=${localStorage.getItem('user_id')}` +
+            `&${payload}`
+        )
+          .then( res => res.data.shortlists )
+          .catch( e => { throw new Error(`Failed to load requests (${status})` )})
 
-        const serviceRequests = Array.isArray(data) ? data
-          : Array.isArray(data?.items) ? data.items
-          : [];
-        
+        const serviceRequests = []
+
+        await Promise.all(
+          shortlisted.map( async shortlist => {
+            await fetchJSON(
+              `${SERVICE_REQUEST_API}/search?` +
+              `service_request_id=${shortlist.service_request.service_request_id}`
+            )
+              .then( res => {
+                const request = res.data[0];
+                request.shortlist_id = shortlist.shortlist_id;
+                serviceRequests.unshift(request)
+              })
+          })
+        )
+
         await Promise.all(
           serviceRequests.map(async request => {
             await fetchJSON(`
               ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
             )
               .then( res => request.view_count = res.data);
+          
+            await fetchJSON(`
+              ${SHORTLISTS_API}/${request.service_request_id}/count`
+            )
+              .then( res => request.shortlisted_by_count = res.data);
           })
         )
 
         renderCards(serviceRequests);
+        applyStatusFilter();
+        applyFilter();
       }
 
       async function postShortlistRequest(id){
@@ -966,7 +988,9 @@
             btn.setAttribute("aria-selected","true");
 
             currentStatus = (btn.dataset.status || "ALL").toUpperCase();
-            applyStatusFilter();
+            
+            applyStatusFilter();  
+            applyFilter();
           });
         });
       }
@@ -982,6 +1006,16 @@
         }
 
         applyStatusFilter();
+      }
+
+      function applyFilter() {
+        const q = DOM.search.value || "";
+        const cards = document.getElementsByClassName("card");
+        for (const card of cards) {
+          if (card.style.display == "none") continue;
+          const showRow = card.innerText.toLowerCase().includes(q);
+          card.style.display = showRow ? "" : "none";
+        }
       }
 
       /* =========================================================

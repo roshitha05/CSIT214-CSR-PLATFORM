@@ -1038,11 +1038,12 @@
 
         applyStatusFilter();
       }
+
       function applyFilter() {
-        console.log(DOM.search.value)
         const q = DOM.search.value || "";
         const cards = document.getElementsByClassName("card");
         for (const card of cards) {
+          if (card.style.display == "none") continue;
           const showRow = card.innerText.toLowerCase().includes(q);
           card.style.display = showRow ? "" : "none";
         }
