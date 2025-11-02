@@ -994,7 +994,7 @@
         closeEditModal();
       }catch(e){
         console.error(e);
-        showStatusError(e.message || "Could not save changes. Please try again.");
+        showStatusError("Could not save changes. Please check your credentials.");
       }finally{
         DOM.editSave.disabled=false; DOM.editSave.textContent = origText || "Save";
         DOM.editCancel.disabled=false;

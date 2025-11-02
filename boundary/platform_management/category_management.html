@@ -223,6 +223,7 @@
       Utilities
     ========================= */
     .error{ margin-top:6px; color:var(--danger); font-size:.9rem; display:none; }
+    #statusMsg{ display:none; margin-top:4px; padding:10px 12px; border-radius:8px; }
 
     @keyframes fadeIn{
       from{ opacity:0; transform:scale(.95); }
@@ -301,7 +302,7 @@
           <div id="editErr-desc" class="error">Description must be 255 characters or fewer.</div>
         </div>
 
-        <div id="statusMsg" class="success" role="status" aria-live="polite" style="display:none;"></div>
+        <div id="statusMsg" class="success" role="status" aria-live="polite"></div>
 
         <div class="modal-actions">
           <button type="button" class="btn-cancel" id="editModalCancelBtn">Cancel</button>
