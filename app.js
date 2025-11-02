@@ -55,6 +55,8 @@ import RemoveShortlist from './control/shortlists/remove-shortlist.js';
 import GetDailyReport from './control/reports/get-daily-reports.js';
 import GetWeeklyReport from './control/reports/get-weekly-reports.js';
 import GetMonthlyReport from './control/reports/get-monthly-reports.js';
+import GetPinServiceRequestsHistory from './control/service-requests/get-pin-service-requests-history.js';
+import SearchPinServiceRequestsHistory from './control/service-requests/search-pin-service-requests-history.js';
 
 export default class App {
     constructor() {
@@ -149,7 +151,9 @@ export default class App {
         categoriesRouter.use('/', new RestoreCategory().getRouter());
 
         serviceRequestsRouter.use('/', new GetServiceRequestsHistory().getRouter());
+        serviceRequestsRouter.use('/', new GetPinServiceRequestsHistory().getRouter());
         serviceRequestsRouter.use('/', new SearchServiceRequestsHistory().getRouter());
+        serviceRequestsRouter.use('/', new SearchPinServiceRequestsHistory().getRouter());
         serviceRequestsRouter.use('/', new CreateServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new DeleteServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new RestoreServiceRequest().getRouter());
