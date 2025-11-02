@@ -871,11 +871,11 @@
         })
       }
 
-      async function completeMatchRequest(id) {
-        return fetchJSON(`${MATCHES_API}/${id}/complete`, {
-          method: "POST"
-        })
-      }
+      // async function completeMatchRequest(id) {
+      //   return fetchJSON(`${MATCHES_API}/${id}/complete`, {
+      //     method: "POST"
+      //   })
+      // }
 
       /* =========================================================
         8) Rendering
@@ -926,13 +926,8 @@
                 `service_request=${data.service_request_id}`
               )
                 .then( res => {
-                  if (res.data.matches.length > 0) {
-                    if (res.data.matches[0].matched_by.user_id == localStorage.getItem('user_id')) {
-                      data.matched = 'me';
-                    } else {
-                      data.matched = 'others';
-                    }
-                  }
+                  if (res.data.matches.length > 0) 
+                    data.matched = res.data.matches[0].matched_by.fullname
                   else data.matched = 'none';
                 })
 
@@ -1025,17 +1020,12 @@
         set("date_created",   formatLocalDate(req?.date_created));
         set("date_completed", req?.status === "COMPLETED" ? formatLocalDate(req?.date_completed) : "—");
       
-        if (req.matched == 'me') {
-          ViewDOM.matchBtn.disabled = false;
+        if (req.matched !== 'none') {
+          ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
           const label = ViewDOM.matchBtn.querySelector("span");
-          if (label) label.textContent = "Complete the Match";
+          if (label) label.textContent = `Matched by: ${req.matched}`;
         } 
-        else if (req.matched == 'others') {
-          ViewDOM.matchBtn.disabled = true;
-          const label = ViewDOM.matchBtn.querySelector("span");
-          if (label) label.textContent = "Matched by others";
-        }
         else {
           ViewDOM.matchBtn.disabled = false;
           ViewDOM.matchBtn.classList.remove('matched');
@@ -1135,10 +1125,11 @@
           //   const n = parseInt(countNode.textContent, 10);
           //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
           // }
+          ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
           const label = ViewDOM.matchBtn.querySelector("span");
-          if (label) label.textContent = "Complete the Match";
-
+          alert("Successfully matched")
+          window.location.reload();
         } catch (e) {
           console.error(e);
           alert("Unable to match this request. Please try again later.");
@@ -1205,10 +1196,7 @@
         }
 
         if (ViewDOM.matchBtn) {
-            ViewDOM.matchBtn.addEventListener("click", btn => {
-            if (btn.currentTarget.classList.contains('matched')) completeMatchCurrentRequest()
-            else matchCurrentRequest()
-          })
+            ViewDOM.matchBtn.addEventListener("click", matchCurrentRequest)
         }
 
         DOM.backToDashBtn.addEventListener("click", () => {
