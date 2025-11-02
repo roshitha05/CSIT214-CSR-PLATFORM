@@ -7,7 +7,7 @@ export default class InsertMatch extends Control {
 
     createController() {
         this.router.post('/', async (req, res, next) => {
-            const success = await this.matchesEntity
+            let success = await this.matchesEntity
                 .insertMatch({ ...req.body, status: "COMPLETED" });
 
             if (!success) return res.status(400).send(false)

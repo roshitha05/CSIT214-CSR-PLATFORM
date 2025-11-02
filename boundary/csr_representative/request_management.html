@@ -1171,10 +1171,11 @@
           //   const n = parseInt(countNode.textContent, 10);
           //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
           // }
+          ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
           const label = ViewDOM.matchBtn.querySelector("span");
-          if (label) label.textContent = "Complete the Match";
-
+          alert("Successfully matched")
+          window.location.reload();
         } catch (e) {
           console.error(e);
           alert("Unable to match this request. Please try again later.");

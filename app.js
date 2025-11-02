@@ -51,7 +51,6 @@ import GetMatchesHistory from './control/matches/get-service-request-match-histo
 import SearchMatches from './control/matches/search-matches.js';
 import SearchMatchesHistory from './control/matches/search-service-request-match-history.js';
 import InsertMatch from './control/matches/insert-match.js';
-import CompleteMatch from './control/matches/complete-match.js';
 import RemoveShortlist from './control/shortlists/remove-shortlist.js';
 import GetDailyReport from './control/reports/get-daily-reports.js';
 import GetWeeklyReport from './control/reports/get-weekly-reports.js';
@@ -171,7 +170,6 @@ export default class App {
         matchesRouter.use('/', new SearchMatches().getRouter());
         matchesRouter.use('/', new SearchMatchesHistory().getRouter());
         matchesRouter.use('/', new InsertMatch().getRouter());
-        matchesRouter.use('/', new CompleteMatch().getRouter());
 
         reportsRouter.use('/', new GetDailyReport().getRouter());
         reportsRouter.use('/', new GetWeeklyReport().getRouter());
