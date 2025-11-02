@@ -1,6 +1,9 @@
 {
-  "adminUA":  { "username": "IsabellaGray", "password": "IsabellaGray" },
-  "adminCSR": { "username": "LiamCarter",   "password": "LiamCarter" },
+  "adminUA": {
+    "login": "IsabellaGray", 
+    "password": "IsabellaGray" 
+  },
+  
 
   "create": {
     "profile": {
