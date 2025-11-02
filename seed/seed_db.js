@@ -189,10 +189,7 @@ async function main(tx) {
     console.log('Seeding matches...');
 
     for (const { request, date_created } of requests) {
-        if (Math.random() < 0.3) continue;
-
-        let status = 'ACTIVE';
-        if (Math.random() < 0.4) status = 'COMPLETED';
+        if (Math.random() < 0.4) continue;
 
         let date;
         do {
@@ -204,21 +201,17 @@ async function main(tx) {
             matched_by: allUsers
                 ['CSR Representative']
                 [Math.floor(Math.random() * allUsers['CSR Representative'].length)],
-            status: status,
-            date_created: date_created
+            status: "COMPLETED",
+            date_created: date
         });
 
-        if (status == 'COMPLETED') {
-            let date_completed;
-            do {
-                date_completed = randomDate();
-            } while(date_completed < date_created)
-
-            await tx
-                .update(serviceRequestsTable)
-                .set({ date_completed })
-                .where(eq(serviceRequestsTable.service_request_id, request));
-        }
+        await tx
+            .update(serviceRequestsTable)
+            .set({ 
+                status: "COMPLETED",
+                date_completed: date
+             })
+            .where(eq(serviceRequestsTable.service_request_id, request));
     };
 
     console.log('Committing changes...');
