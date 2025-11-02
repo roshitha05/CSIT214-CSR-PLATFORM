@@ -536,6 +536,7 @@
       const CATEGORIES_API      = `${API_URL}/categories`;
       const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
       const SHORTLISTS_API      = `${API_URL}/shortlists`;
+      const MATCHES_API         = `${API_URL}/matches`;
 
       const STATUS    = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
       const TITLE_MAX = 80;
@@ -774,10 +775,16 @@
                   ? (typeof vr.data === "number" ? vr.data : (vr.data?.count ?? 0))
                   : 0;
 
-                await fetchJSON(`
-                  ${SHORTLISTS_API}/${request.service_request_id}/count`
-                )
+                await fetchJSON(`${SHORTLISTS_API}/${request.service_request_id}/count`)
                   .then( res => request.shortlisted_by_count = res.data);
+
+                if (String(request.status).toUpperCase() === "COMPLETED") {
+                  try {
+                    const res = await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`);
+                    const firstMatch = res?.data?.matches?.[0];
+                    request.matched_by = firstMatch?.matched_by?.fullname || null;
+                  } catch { request.matched_by = null; }
+                }
               } catch { request.view_count = 0; }
             })
           );
@@ -1017,6 +1024,16 @@
             item.status === "COMPLETED"
               ? formatLocalDate(item.date_completed)
               : "—";
+
+          if (item.status === "COMPLETED" && item.matched_by) {
+            const matchedRow = document.createElement("p");
+            matchedRow.className = "card-row";
+            matchedRow.innerHTML = `
+              <span class="card-label">Matched by:</span>
+              <span class="muted">${item.matched_by}</span>
+            `;
+            node.querySelector(".card-body").appendChild(matchedRow);
+          }
               
           node.querySelector('[data-field="view_count"]').textContent      = item.view_count ?? 0;
           node.querySelector('[data-field="shortlisted_by_count"]').textContent = item.shortlisted_by_count ?? 0;
