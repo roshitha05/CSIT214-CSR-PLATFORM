@@ -1,35 +1,23 @@
 {
-  "admin": {
-    "loginId": "LiamCarter",
-    "password": "LiamCarter"
-  },
-  "csrUser": {
-    "loginId": "OliviaBennett",
-    "password": "OliviaBennett"
-  },
-  "profileKey": {
-    "name": "CSR Representative"
-  },
+  "adminUA":  { "username": "IsabellaGray", "password": "IsabellaGray" },
+  "adminCSR": { "username": "LiamCarter",   "password": "LiamCarter" },
+
   "create": {
-    "user": {
-      "username": "ManualUser01",
-      "loginId": "ManualUser01",
-      "password": "ManualUser01",
-      "email": "ManualUser01@CSR.com",
-      "role": "CSR Representative",
-      "phone": "91234567"
-    },
     "profile": {
-      "name": "CSR_Profile_Manual",
-      "description": "CSR profile created by manual Jest"
+      "name": "CSR Representative",
+      "description": "Handles verification and assignment of incoming service requests.",
+      "status": "ACTIVE"
+    },
+    "user": {
+      "fullname": "Sophia Lim",
+      "email": "sophia.lim@CSR.com",
+      "username": "SophiaLim",
+      "password": "Soph!a#2025",
+      "phone_number": "93456789",
+      "address": "1 CSR Way, Singapore",
+      "date_of_birth": "1999-05-14",
+      "status": "ACTIVE",
+      "user_profile": "CSR Representative"
     }
-  },
-  "update": {
-    "user": { "phone": "9999" },
-    "profile": { "description": "Updated CSR description" }
-  },
-  "suspend": {
-    "user": { "suspended": true },
-    "profile": { "suspended": true }
   }
 }

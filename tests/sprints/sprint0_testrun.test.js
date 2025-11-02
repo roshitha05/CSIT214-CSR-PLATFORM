@@ -1,6 +1,6 @@
 import request from 'supertest';
-import App from '../app.js';
-import { LOGIN, LOGOUT } from './helpers/testConfig.js';
+import App from '../../app.js';
+import { LOGIN, LOGOUT } from '../helpers/testConfig.js';
 
 const app = new App().app;
 const agent = request.agent(app);
