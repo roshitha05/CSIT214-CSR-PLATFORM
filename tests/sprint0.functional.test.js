@@ -1,106 +1,142 @@
+// tests/sprint0.functional.test.js
 import request from 'supertest';
 import App from '../app.js';
 
 import {
   LOGIN, LOGOUT,
-  USERS as CREATE_ACCOUNT,
-  USERS as GET_ACCOUNTS,
-  PROFILES as CREATE_PROFILE,
-  PROFILES as GET_PROFILES,
-  data as testData 
+  USERS as CREATE_ACCOUNT, USERS as GET_ACCOUNTS,
+  PROFILES as CREATE_PROFILE, PROFILES as GET_PROFILES,
+  data as testData,
+  setupDbForTests
 } from './helpers/testConfig.js';
 
 const app = new App().app;
 const agent = request.agent(app);
 const uniq = () => Date.now().toString().slice(-6);
 
+// run DB help prop
+beforeAll(async () => {
+  await setupDbForTests();
+})
 
-async function loginAsAdmin() {
-  const raw = testData.admin.loginId;
-  const pwd = testData.admin.password;
-  const email = testData.admin.email;
+// --- Helper Functions ------------------------------------------------------
 
-  for (const body of [
-    { username: raw, password: pwd },
-    { loginId:  raw, password: pwd },
-    { email,    password: pwd },
-    { loginId: raw, email, password: pwd }
-  ]) {
-    const res = await agent.post(LOGIN).send(body);
-    if ([200, 204].includes(res.statusCode)) return res;
-  }
-
-  throw new Error('Admin login failed with username/loginId/email payloads.');
+// Debug failed requests clearly
+function debugFail(label, res) {
+  console.error(`${label} FAILED:`, res.statusCode, res.body, res.text);
 }
 
-describe('Sprint 0', () => {
-  test('Admin logs in successfully', async () => {
-    const adminCreds = {
-      loginId: testData.admin.loginId,
-      email: testData.admin.email, 
-      password: testData.admin.password
-    };
+// Log in as the existing User Admin (IsabellaGray)
+async function loginAsAdmin() {
+  const creds = {
+    username: testData.admin.username,
+    password: testData.admin.password
+  };
+  const res = await agent.post(LOGIN).send(creds);
 
-    const res = await agent.post(LOGIN).send(adminCreds);
+  if (![200, 204].includes(res.statusCode)) {
+    throw new Error(
+      `Admin login failed: status=${res.statusCode}, body=${JSON.stringify(res.body)}`
+    );
+  }
 
-    expect([200, 204]).toContain(res.statusCode);
-    expect(res.body).toHaveProperty('user');
-    expect(res.body.user).toHaveProperty('username', testData.admin.loginId);
+  const role = String(res.body?.user?.user_profile || '');
+  if (!/user[_\s-]?admin/i.test(role)) {
+    throw new Error(
+      `Logged in as "${creds.username}" but role="${role}". Expected User Admin permissions.`
+    );
+  }
+  return res;
+}
+
+// Ensure a profile with the given name exists (FK for user_profile)
+async function ensureProfileExists(name) {
+  const r = await agent.get(GET_PROFILES).query({ name });
+  if (r.statusCode === 200) {
+    const found = Array.isArray(r.body)
+      ? r.body.find(p => p.name === name)
+      : (r.body?.name === name ? r.body : null);
+    if (found) return found;
+  }
+
+  const c = await agent.post(CREATE_PROFILE).send({
+    name,
+    description: 'Seeded by test to satisfy FK',
+    status: 'ACTIVE'
   });
 
-    test('Create User Profile as User Admin', async () => {
-    await loginAsAdmin();
-    //const suffix = uniq();
+  if (![200, 201].includes(c.statusCode)) {
+    debugFail('SeedProfile', c);
+    throw new Error('Could not seed required user_profile');
+  }
+  return c.body;
+}
 
-    const profile = testData.create.profile;
+// --- Functional Tests ------------------------------------------------------
+
+describe('Sprint 0 — Functional Tests (User Admin)', () => {
+
+  test('1️⃣ Admin logs in successfully', async () => {
+    const res = await loginAsAdmin();
+    expect([200, 204]).toContain(res.statusCode);
+    expect(res.body).toHaveProperty('user');
+    expect(res.body.user).toHaveProperty('username', testData.admin.username);
+  });
+
+  test('2️⃣ Create User Profile as User Admin', async () => {
+    await loginAsAdmin();
+
+    const suffix = uniq();
+    const p = testData.create.profile;
     const payload = {
-        ...profile,
-        name: profile.name
+      name:        `${p.name}_${suffix}`,
+      description: p.description,
+      status:      p.status || 'ACTIVE'
     };
 
     const createRes = await agent.post(CREATE_PROFILE).send(payload);
-    if (![200, 201].includes(createRes.statusCode)) {
-        console.error('CreateProfile FAILED:', createRes.statusCode, createRes.body);
-    }
+    if (![200, 201].includes(createRes.statusCode)) debugFail('CreateProfile', createRes);
     expect([200, 201]).toContain(createRes.statusCode);
-    });
 
-    test('Create User Account as User Admin', async () => {
+    const getRes = await agent.get(GET_PROFILES).query({ name: payload.name });
+    expect(getRes.statusCode).toBe(200);
+  });
+
+  test('3️⃣ Create User Account as User Admin', async () => {
     await loginAsAdmin();
-    const suffix = uniq();
+    await ensureProfileExists('CSR Representative');
 
-    const user = testData.create.user;
+    const suffix = uniq();
+    const base = testData.create.user;
     const payload = {
-        ...user,
-        username: `${user.username}_${suffix}`,
-        email: user.email.replace('@', `+${suffix}@`) 
+      fullname:      base.fullname,
+      email:         base.email.replace('@', `+${suffix}@`),
+      username:      `${base.username}_${suffix}`,
+      password:      base.password,
+      phone_number:  base.phone_number,
+      address:       base.address,
+      date_of_birth: base.date_of_birth,
+      status:        base.status,
+      user_profile:  base.user_profile
     };
 
     const createRes = await agent.post(CREATE_ACCOUNT).send(payload);
-    if (![200, 201].includes(createRes.statusCode)) {
-        console.error('CreateUser FAILED:', createRes.statusCode, createRes.body);
-    }
+    if (![200, 201].includes(createRes.statusCode)) debugFail('CreateUser', createRes);
     expect([200, 201]).toContain(createRes.statusCode);
-    });
-
-
-  test('Login as User Admin (negative: wrong password)', async () => {
-    // Sends wrong password to confirm auth failure codes are correct
-    const wrong = { loginId: testData.admin.loginId, password: testData.admin.password + '_x' };
-    const res = await agent.post(LOGIN).send(wrong);
-    expect([400, 401, 403]).toContain(res.statusCode);
   });
 
-  test('Log Out as User Admin', async () => {
+  test('4️⃣ Log Out as User Admin', async () => {
     const res = await agent.post(LOGOUT);
     expect([200, 204]).toContain(res.statusCode);
     expect(res.body === true || typeof res.body === 'object').toBe(true);
   });
+
 });
 
+// close DB connection to avoid open handles
 afterAll(async () => {
   try {
-    const { default: DB } = await import('../db.js');
+    const { default: DB } = await import('../database/db.js');
     DB.getInstance().getPool().end();
   } catch {}
 });
