@@ -41,15 +41,15 @@ import SearchServiceRequests from './control/service-requests/search-service-req
 import UpdateServiceRequest from './control/service-requests/update-service-request.js';
 import RestoreServiceRequest from './control/service-requests/restore-service-request.js';
 import RetrieveServiceRequest from './control/service-requests/retrieve-search-request.js';
+import GetServiceRequestsHistory from './control/service-requests/get-service-request-history.js';
+import SearchServiceRequestsHistory from './control/service-requests/search-service-request-history.js';
 
 import GetShortlists from './control/shortlists/get-shortlists.js';
 import GetShortlistCount from './control/shortlists/get-shortlist-count.js';
 import InsertShortlist from './control/shortlists/insert-shortlist.js';
 import SearchShortlists from './control/shortlists/search-shortlists.js';
 import GetMatches from './control/matches/get-matches.js';
-import GetMatchesHistory from './control/matches/get-service-request-match-history.js';
 import SearchMatches from './control/matches/search-matches.js';
-import SearchMatchesHistory from './control/matches/search-service-request-match-history.js';
 import InsertMatch from './control/matches/insert-match.js';
 import RemoveShortlist from './control/shortlists/remove-shortlist.js';
 import GetDailyReport from './control/reports/get-daily-reports.js';
@@ -148,6 +148,8 @@ export default class App {
         categoriesRouter.use('/', new ArchiveCategory().getRouter());
         categoriesRouter.use('/', new RestoreCategory().getRouter());
 
+        serviceRequestsRouter.use('/', new GetServiceRequestsHistory().getRouter());
+        serviceRequestsRouter.use('/', new SearchServiceRequestsHistory().getRouter());
         serviceRequestsRouter.use('/', new CreateServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new DeleteServiceRequest().getRouter());
         serviceRequestsRouter.use('/', new RestoreServiceRequest().getRouter());
@@ -165,10 +167,8 @@ export default class App {
         shortlistsRouter.use('/', new SearchShortlists().getRouter());
         shortlistsRouter.use('/', new RemoveShortlist().getRouter());
 
-        matchesRouter.use('/', new GetMatches().getRouter());
-        matchesRouter.use('/', new GetMatchesHistory().getRouter());
         matchesRouter.use('/', new SearchMatches().getRouter());
-        matchesRouter.use('/', new SearchMatchesHistory().getRouter());
+        matchesRouter.use('/', new GetMatches().getRouter());
         matchesRouter.use('/', new InsertMatch().getRouter());
 
         reportsRouter.use('/', new GetDailyReport().getRouter());

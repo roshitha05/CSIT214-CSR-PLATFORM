@@ -1,4 +1,4 @@
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq, and, gte, lte, ilike } from 'drizzle-orm';
 import { matchesTable } from '../database/tables.js';
 import Entity from './entity.js';
 

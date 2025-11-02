@@ -788,18 +788,35 @@
 
       async function searchServiceRequest() {
         let payload = "";
-
-        if (DOM.search.value !== "") 
-          payload += `keyword=${encodeURIComponent(DOM.search.value)}&`;
-        if (DOM.svc.value !== "") 
+        let searchTerm = false;
+        
+        // if (DOM.search.value !== "") {
+        //   payload += `keyword=${encodeURIComponent(DOM.search.value)}&`;
+        //   searchTerm = true;
+        // }
+        if (DOM.svc.value !== "") {
           payload += `category=${encodeURIComponent(DOM.svc.value)}&`;
-        if (DOM.dateFrom.value !== "") 
+          searchTerm = true;
+        }
+        if (DOM.dateFrom.value !== "") {
           payload += `date_from=${encodeURIComponent(DOM.dateFrom.value)}&`;
-        if (DOM.dateTo.value !== "") 
+          searchTerm = true;
+        }
+        if (DOM.dateTo.value !== "") {
           payload += `date_to=${encodeURIComponent(DOM.dateTo.value)}&`;
-
+          searchTerm = true;
+        }
+          
+        let fetchURL;
+        if (currentStatus === 'COMPLETED' && searchTerm === true) {
+          fetchURL = `${SERVICE_REQUEST_API}/history/search?${payload}`
+        } else if (currentStatus === 'COMPLETED' && searchTerm === false) {
+          fetchURL = `${SERVICE_REQUEST_API}/history`
+        } else {
+          fetchURL = `${SERVICE_REQUEST_API}/search?${payload}`
+        }
         const { ok, status, data } = await fetchJSON(
-          `${SERVICE_REQUEST_API}/search?${payload}`
+          fetchURL
         );
         if(!ok) throw new Error(`Failed to load requests (${status})`);
 
@@ -817,6 +834,8 @@
         )
 
         renderCards(serviceRequests);
+        applyStatusFilter();
+        applyFilter();
       }
 
       async function postShortlistRequest(id){
@@ -994,7 +1013,10 @@
             btn.setAttribute("aria-selected","true");
 
             currentStatus = (btn.dataset.status || "ALL").toUpperCase();
+
+            searchServiceRequest();
             applyStatusFilter();
+            applyFilter();
           });
         });
       }
@@ -1010,6 +1032,15 @@
         }
 
         applyStatusFilter();
+      }
+      function applyFilter() {
+        console.log(DOM.search.value)
+        const q = DOM.search.value || "";
+        const cards = document.getElementsByClassName("card");
+        for (const card of cards) {
+          const showRow = card.innerText.toLowerCase().includes(q);
+          card.style.display = showRow ? "" : "none";
+        }
       }
 
       /* =========================================================
