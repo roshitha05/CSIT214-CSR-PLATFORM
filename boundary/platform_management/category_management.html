@@ -223,7 +223,19 @@
       Utilities
     ========================= */
     .error{ margin-top:6px; color:var(--danger); font-size:.9rem; display:none; }
-    @keyframes fadeIn{ from{opacity:0; transform:scale(.95);} to{opacity:1; transform:scale(1);} }
+
+    @keyframes fadeIn{
+      from{ opacity:0; transform:scale(.95); }
+      to{ opacity:1; transform:scale(1); }
+    }
+
+    .flash-success td {
+      background:#dcfce7 !important;
+      transition: background-color 1200ms ease-in-out;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .flash-success td { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -405,6 +417,14 @@
     DOM.statusMsg.textContent = `[DEBUG]\nPUT ${endpoint}\n\n${JSON.stringify(payload,null,2)}`;
   }
   function clearStatus(){ DOM.statusMsg.style.display="none"; DOM.statusMsg.textContent=""; }
+
+  function flashRow(tr) {
+    if (!tr) return;
+    tr.classList.remove("flash-success"); // allow re-trigger
+    void tr.offsetWidth;
+    tr.classList.add("flash-success");
+    setTimeout(() => tr && tr.classList.remove("flash-success"), 1400);
+  }
 
   /* =========================================================
     4) State
@@ -661,6 +681,8 @@
       const i = allCategories.findIndex(p => norm(p.name) === norm(curRaw));
       if(i !== -1) allCategories[i] = { ...allCategories[i], name, description };
 
+      flashRow(currentRow);
+
       await new Promise(r => setTimeout(r, 500));
       closeEditModal();
     }catch(e){
@@ -698,6 +720,7 @@
       const { ok, status } = await archiveCategoryAPI(key);
       if(!ok) throw new Error(`Archive failed (${status})`);
       setRowState(pendingArchiveRow, STATUS.ARCHIVED);
+      flashRow(pendingArchiveRow);
     }catch(e){
       console.error(e);
       showStatusError("Could not archive the category. Please try again.");
@@ -734,6 +757,7 @@
       const { ok, status } = await restoreCategoryAPI(key);
       if(!ok) throw new Error(`Restore failed (${status})`);
       setRowState(pendingRestoreRow, STATUS.ACTIVE);
+      flashRow(pendingRestoreRow);
     }catch(e){
       console.error(e);
       showStatusError("Could not restore the category. Please try again.");
