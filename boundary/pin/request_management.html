@@ -244,6 +244,24 @@
       .btn-restore-request{ background:#22c55e; color:#fff; }
       .btn-restore-request:hover{ opacity:.9; }
 
+      /* card flash */
+      .card.flash-success { animation: flashFade 1200ms ease-out; }
+
+      @keyframes flashFade {
+        0%   { background-color:#ecfdf5; box-shadow:0 0 0 0 rgba(34,197,94,.35), var(--shadow); }
+        40%  { background-color:#f0fff4; box-shadow:0 0 0 4px rgba(34,197,94,.35), var(--shadow); }
+        100% { background-color:#fff;    box-shadow:var(--shadow); }
+      }
+
+      .card:focus:not(.flash-success) {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring), var(--shadow);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .card.flash-success { animation: none; background-color:#f0fff4; }
+      }
+
       /* =========================
         Modals
       ========================= */
@@ -610,6 +628,24 @@
         if (!isoString) return "—";
         const date = new Date(isoString);
         return date.toLocaleString("en-SG", { dateStyle: "medium", timeStyle: "short" });
+      }
+
+      function flashCard(card) {
+        if (!card) return;
+
+        card.setAttribute('tabindex', '-1');
+
+        // Restart animation if class was left on
+        card.classList.remove('flash-success');
+        void card.offsetWidth; // force reflow
+        card.classList.add('flash-success');
+
+        // Focus + scroll into view
+        card.focus({ preventScroll: true });
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Clean up tabindex so it doesn't stay in tab order
+        setTimeout(() => card.removeAttribute('tabindex'), 1500);
       }
 
       /* =========================================================
@@ -1204,6 +1240,7 @@
             await cancelServiceRequest(card.dataset.id);
             await new Promise(r => setTimeout(r, 800));
             setCardState(card, STATUS.CANCELLED);
+            flashCard(card);
           }catch(err){
             console.error(err);
             alert("Failed to cancel request. Please try again.");
@@ -1239,6 +1276,7 @@
             await restoreServiceRequest(card.dataset.id);
             await new Promise(r => setTimeout(r, 800));
             setCardState(card, STATUS.ACTIVE);
+            flashCard(card);
           }catch(err){
             console.error(err);
             alert("Failed to restore request. Please try again.");
@@ -1254,6 +1292,15 @@
           confirm.textContent = originalText;
 
           closeRestoreModal();
+        });
+
+        // Flash updated card on save
+        document.addEventListener("request:update", (e) => {
+          const id = String(e.detail?.service_request_id ?? "");
+          const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          if (!card) return;
+
+          setTimeout(() => flashCard(card), 150); // delay slightly so modal can close
         });
 
         // Nav
