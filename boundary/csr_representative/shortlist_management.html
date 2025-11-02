@@ -604,7 +604,7 @@
             <!-- Shortlist button (on the left) -->
             <button type="button" class="btn outline shortlisted" id="viewShortlistBtn">
               <i class="fa-regular fa-bookmark"></i>
-              <span>Remove Shortlist</span>
+              <span>Shortlisted</span>
             </button>
 
             <!-- Close and Match button (on the right) -->
@@ -1212,19 +1212,12 @@
         set("date_created",   formatLocalDate(req?.date_created));
         set("date_completed", req?.status === "COMPLETED" ? formatLocalDate(req?.date_completed) : "—");
         
-        if (req.shortlisted) {
-          ViewDOM.shortlistBtn.classList.add('shortlisted');
-          const icon = ViewDOM.shortlistBtn.querySelector("i");
-          const label = ViewDOM.shortlistBtn.querySelector("span");
-          icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
-          if (label) label.textContent = "Shortlisted";
-        } else {
-          ViewDOM.shortlistBtn.classList.remove('shortlisted');
-          const icon = ViewDOM.shortlistBtn.querySelector("i");
-          const label = ViewDOM.shortlistBtn.querySelector("span");
-          icon?.classList.remove("fa-solid"); icon?.classList.add("fa-regular");
-          if (label) label.textContent = "Shortlist";
-        }
+        ViewDOM.shortlistBtn.classList.add('shortlisted');
+        const icon = ViewDOM.shortlistBtn.querySelector("i");
+        const label = ViewDOM.shortlistBtn.querySelector("span");
+        icon?.classList.remove("fa-regular");
+        icon?.classList.add("fa-solid");
+        if (label) label.textContent = "Shortlisted";
 
          if (req.status && req.status.toUpperCase() === "CANCELLED") {
           ViewDOM.matchBtn.disabled = true;
@@ -1386,6 +1379,7 @@
             const cardBadge = card.querySelector(".status-badge");
             applyStatusBadge(cardBadge, "COMPLETED");
             flashCard(card);
+            applyStatusFilter();
           }
         } catch (e) {
           console.error(e);
@@ -1420,10 +1414,7 @@
         }
 
         if (ViewDOM.shortlistBtn) {
-          ViewDOM.shortlistBtn.addEventListener("click", btn => {
-            if (btn.currentTarget.classList.contains('shortlisted')) removeShortlistCurrentRequest()
-            else shortlistCurrentRequest()
-          })
+          ViewDOM.shortlistBtn.addEventListener("click", removeShortlistCurrentRequest);
         }
 
         if (ViewDOM.matchBtn) {
