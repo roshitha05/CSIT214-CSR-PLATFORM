@@ -114,7 +114,7 @@
       }
       #viewShortlistBtn.shortlisted {
         background: #fef3c7; color: #92400e;
-        border-color: #fcd34d; cursor: default;
+        border-color: #fcd34d; cursor: pointer;
       }
 
       /* =========================
@@ -242,6 +242,10 @@
       .metric{ display:flex; align-items:center; gap:.45rem; font-size:.92rem; color:#555 }
       .metric i{ font-size:1rem }
       .metric .count{ min-width:1ch; text-align:right }
+
+      .metric-bookmark.is-mine { font-weight: 700; transform: translateY(-1px); }
+      .metric-bookmark.is-mine i { color: var(--accent-warm); }
+
       .actions{ margin-left:auto }
 
       /* -- Card Disabled -- */
@@ -250,6 +254,25 @@
         background: #cbd5e1 !important; color: #64748b !important;
         cursor: not-allowed !important; box-shadow: none !important;
       }
+
+      /* card flash */
+      .card.flash-success { animation: flashFade 1200ms ease-out; }
+
+      @keyframes flashFade {
+        0%   { background-color:#ecfdf5; box-shadow:0 0 0 0 rgba(34,197,94,.35), var(--shadow); }
+        40%  { background-color:#f0fff4; box-shadow:0 0 0 4px rgba(34,197,94,.35), var(--shadow); }
+        100% { background-color:#fff;    box-shadow:var(--shadow); }
+      }
+
+      .card:focus:not(.flash-success) {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring), var(--shadow);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .card.flash-success { animation: none; background-color:#f0fff4; }
+      }
+
       /* =========================
         View Modal
       ========================= */
@@ -494,7 +517,7 @@
                 <i class="fa-solid fa-eye" aria-hidden="true"></i>
                 <span class="count" data-field="view_count">0</span>
               </span>
-              <span class="metric" title="Total number of times shortlisted by volunteers">
+              <span class="metric metric-bookmark" title="Total number of times shortlisted by volunteers">
                 <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
                 <span class="count" data-field="shortlisted_by_count">0</span>
               </span>
@@ -670,6 +693,17 @@
         return { ok: res.ok, status: res.status, data };
       }
 
+      function flashCard(card) {
+        if (!card) return;
+        card.setAttribute('tabindex', '-1');
+        card.classList.remove('flash-success');
+        void card.offsetWidth;              // restart animation
+        card.classList.add('flash-success');
+        card.focus({ preventScroll: true }); // a11y
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => card.removeAttribute('tabindex'), 1500);
+      }
+
       /* =========================================================
         5) Category helpers (active vs archived)
       ========================================================= */
@@ -761,15 +795,32 @@
 
           await Promise.all(
             serviceRequests.map(async request => {
-              await fetchJSON(`
-                ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
-              )
+              await fetchJSON(`${SERVICE_REQUEST_API}/${request.service_request_id}/views`)
                 .then( res => request.view_count = res.data);
             
-              await fetchJSON(`
-                ${SHORTLISTS_API}/${request.service_request_id}/count`
-              )
+              await fetchJSON(`${SHORTLISTS_API}/${request.service_request_id}/count`)
                 .then( res => request.shortlisted_by_count = res.data);
+
+              // Check if this request was shortlisted by me
+              await fetchJSON(
+                `${SHORTLISTS_API}/search?` +
+                `service_request=${encodeURIComponent(request.service_request_id)}` +
+                `&shortlisted_by=${encodeURIComponent(localStorage.getItem('user_id') || "")}`
+              )
+                .then(res => {
+                  request.is_mine =
+                    Array.isArray(res?.data?.shortlists) && res.data.shortlists.length > 0;
+                })
+                .catch(() => { request.is_mine = false; });
+
+              // Populate matched_by for COMPLETED cards
+              if (String(request.status).toUpperCase() === "COMPLETED") {
+                await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`)
+                  .then( res => {
+                    const first = res?.data?.matches?.[0];
+                    request.matched_by = first?.matched_by || null;
+                  }).catch(() => {});
+              }
             })
           )
           
@@ -789,11 +840,22 @@
       async function searchServiceRequest() {
         let payload = "";
         let searchTerm = false;
+
+        // -- Auto-swap invalid date range (From > To) --
+        const fromVal = DOM.dateFrom.value;
+        const toVal   = DOM.dateTo.value;
+        if (fromVal && toVal && new Date(fromVal) > new Date(toVal)) {
+          // swap the DOM values
+          const tmp = DOM.dateFrom.value;
+          DOM.dateFrom.value = DOM.dateTo.value;
+          DOM.dateTo.value = tmp;
+        }
         
         // if (DOM.search.value !== "") {
         //   payload += `keyword=${encodeURIComponent(DOM.search.value)}&`;
         //   searchTerm = true;
         // }
+
         if (DOM.svc.value !== "") {
           payload += `category=${encodeURIComponent(DOM.svc.value)}&`;
           searchTerm = true;
@@ -826,15 +888,31 @@
         
         await Promise.all(
           serviceRequests.map(async request => {
-            await fetchJSON(`
-              ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
-            )
+            await fetchJSON(`${SERVICE_REQUEST_API}/${request.service_request_id}/views`)
               .then( res => request.view_count = res.data);
 
-            await fetchJSON(`
-              ${SHORTLISTS_API}/${request.service_request_id}/count`
-            )
+            await fetchJSON(`${SHORTLISTS_API}/${request.service_request_id}/count`)
               .then( res => request.shortlisted_by_count = res.data);
+
+            // Check if this request was shortlisted by me
+            await fetchJSON(
+              `${SHORTLISTS_API}/search?` +
+              `service_request=${encodeURIComponent(request.service_request_id)}` +
+              `&shortlisted_by=${encodeURIComponent(localStorage.getItem('user_id') || "")}`
+            )
+              .then(res => {
+                request.is_mine =
+                  Array.isArray(res?.data?.shortlists) && res.data.shortlists.length > 0;
+              })
+              .catch(() => { request.is_mine = false; });
+
+            if (String(request.status).toUpperCase() === 'COMPLETED') {
+              await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`)
+                .then(res => {
+                  const first = res?.data?.matches?.[0];
+                  request.matched_by = first?.matched_by || null;
+                }).catch(() => {});
+            }
           })
         )
 
@@ -946,6 +1024,21 @@
           node.querySelector('[data-field="view_count"]').textContent           = item.view_count ?? 0;
           node.querySelector('[data-field="shortlisted_by_count"]').textContent = item.shortlisted_by_count ?? 0;
 
+          // Check if this request was shortlisted by me
+          const bm = node.querySelector(".metric-bookmark");
+          const bmIcon = bm?.querySelector("i");
+          if (bm && bmIcon) {
+            if (item.is_mine) {
+              bm.classList.add("is-mine");
+              bmIcon.classList.remove("fa-regular");
+              bmIcon.classList.add("fa-solid");
+            } else {
+              bm.classList.remove("is-mine");
+              bmIcon.classList.remove("fa-solid");
+              bmIcon.classList.add("fa-regular");
+            }
+          }
+
           // Wire up the View button
           const viewBtn = node.querySelector(".btn.primary");
           const viewCount = node.querySelector('[data-field="view_count"]');
@@ -1040,7 +1133,7 @@
       }
 
       function applyFilter() {
-        const q = DOM.search.value || "";
+        const q = (DOM.search.value || "").toLowerCase();
         const cards = document.getElementsByClassName("card");
         for (const card of cards) {
           if (card.style.display == "none") continue;
@@ -1099,6 +1192,15 @@
           if (label) label.textContent = "Shortlist";
         }
 
+         if (req.status && req.status.toUpperCase() === "CANCELLED") {
+          ViewDOM.matchBtn.disabled = true;
+          ViewDOM.matchBtn.classList.add("matched");
+          const label = ViewDOM.matchBtn.querySelector("span");
+          // (Optional) also lock shortlist while cancelled:
+          // ViewDOM.shortlistBtn.disabled = true;
+          return;
+        }
+
         if (req.matched !== 'none') {
           ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
@@ -1139,14 +1241,27 @@
           const label = ViewDOM.shortlistBtn.querySelector("span");
           icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
           if (label) label.textContent = "Shortlisted";
+          ViewDOM.shortlistBtn.classList.add('shortlisted');
 
+          // Update Shortlist Count
           const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          if (card) flashCard(card);
+
           const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
           if (countNode) {
             const n = parseInt(countNode.textContent, 10);
             countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
           }
-          ViewDOM.shortlistBtn.classList.add('shortlisted');
+
+          // Highlight the bookmark metric on the card
+          const bookmarkMetric = card?.querySelector(".metric-bookmark");
+          if (bookmarkMetric) {
+            bookmarkMetric.classList.add("is-mine");
+            const icon = bookmarkMetric.querySelector("i");
+            icon?.classList.remove("fa-regular");
+            icon?.classList.add("fa-solid");
+          }
+
         } catch (e) {
           console.error(e);
           alert("Unable to shortlist this request. Please try again later.");
@@ -1162,20 +1277,27 @@
           const res = await removeShortlistRequest(id);
           if (!res.ok) throw new Error(`Remove shortlist failed (${res.status})`);
 
-          // UI updates
-          // const icon = ViewDOM.shortlistBtn.querySelector("i");
-          // const label = ViewDOM.shortlistBtn.querySelector("span");
-          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
-          // if (label) label.textContent = "Shortlisted";
+          // Update shortlist count
+          const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          if (card) flashCard(card);
+          
+          const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
+          if (countNode) {
+            const n = parseInt(countNode.textContent, 10);
+            countNode.textContent = Number.isFinite(n) ? String(Math.max(0, n - 1)) : "0";
+          }
 
-          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
-          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
-          // if (countNode) {
-          //   const n = parseInt(countNode.textContent, 10);
-          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
-          // }
+          // Update bookmark metric 
+          const bookmarkMetric = card?.querySelector(".metric-bookmark");
+          if (bookmarkMetric) {
+            bookmarkMetric.classList.remove("is-mine");
+            const iconMetric = bookmarkMetric.querySelector("i");
+            iconMetric?.classList.remove("fa-solid");
+            iconMetric?.classList.add("fa-regular");
+          }
+
+          // Update modal button UI
           ViewDOM.shortlistBtn.classList.remove('shortlisted');
-
           const icon = ViewDOM.shortlistBtn.querySelector("i");
           const label = ViewDOM.shortlistBtn.querySelector("span");
           icon?.classList.remove("fa-solid"); icon?.classList.add("fa-regular");
@@ -1208,42 +1330,23 @@
           //   const n = parseInt(countNode.textContent, 10);
           //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
           // }
+
+          // Update the modal UI immediately
           ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
           const label = ViewDOM.matchBtn.querySelector("span");
-          alert("Successfully matched")
-          window.location.reload();
+          if (label) label.textContent = "Matched — Completed";
+          
+          const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          if (card) {
+            card.dataset.status = "COMPLETED";
+            const cardBadge = card.querySelector(".status-badge");
+            applyStatusBadge(cardBadge, "COMPLETED");
+            flashCard(card);
+          }
         } catch (e) {
           console.error(e);
           alert("Unable to match this request. Please try again later.");
-        }
-      }
-
-      async function completeMatchCurrentRequest() {
-        const id = ViewDOM.modal?.dataset?.requestId;
-        if (!id || !ViewDOM.shortlistBtn) return;
-
-        try {
-          const res = await completeMatchRequest(id);
-          if (!res.ok) throw new Error(`Complete match failed (${res.status})`);
-
-          // UI updates
-          // const icon = ViewDOM.shortlistBtn.querySelector("i");
-          // const label = ViewDOM.shortlistBtn.querySelector("span");
-          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
-          // if (label) label.textContent = "Shortlisted";
-
-          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
-          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
-          // if (countNode) {
-          //   const n = parseInt(countNode.textContent, 10);
-          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
-          // }
-          alert("Match completed!");
-          window.location.reload();
-        } catch (e) {
-          console.error(e);
-          alert("Unable to complete match for this request. Please try again later.");
         }
       }
 

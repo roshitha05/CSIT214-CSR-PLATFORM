@@ -59,7 +59,7 @@
       }
 
       /* =========================
-        Controls (inputs & buttons)
+        Controls
       ========================= */
       .search-bar{ flex:1 1 auto; min-width:280px; }
       .search-bar input{
@@ -114,7 +114,7 @@
       }
       #viewShortlistBtn.shortlisted {
         background: #fef3c7; color: #92400e;
-        border-color: #fcd34d; cursor: default;
+        border-color: #fcd34d; cursor: pointer;
       }
 
       /* =========================
@@ -242,10 +242,39 @@
       .metric{ display:flex; align-items:center; gap:.45rem; font-size:.92rem; color:#555 }
       .metric i{ font-size:1rem }
       .metric .count{ min-width:1ch; text-align:right }
+
+      .metric-bookmark.is-mine { font-weight: 700; transform: translateY(-1px); }
+      .metric-bookmark.is-mine i { color: var(--accent-warm); }
+
       .actions{ margin-left:auto }
 
+      /* -- Card Disabled -- */
+      .card-disabled { opacity: 0.6; pointer-events: none; filter: grayscale(0.3); }
+      .card-disabled .btn.primary { 
+        background: #cbd5e1 !important; color: #64748b !important;
+        cursor: not-allowed !important; box-shadow: none !important;
+      }
+
+      /* card flash */
+      .card.flash-success { animation: flashFade 1200ms ease-out; }
+
+      @keyframes flashFade {
+        0%   { background-color:#ecfdf5; box-shadow:0 0 0 0 rgba(34,197,94,.35), var(--shadow); }
+        40%  { background-color:#f0fff4; box-shadow:0 0 0 4px rgba(34,197,94,.35), var(--shadow); }
+        100% { background-color:#fff;    box-shadow:var(--shadow); }
+      }
+
+      .card:focus:not(.flash-success) {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring), var(--shadow);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .card.flash-success { animation: none; background-color:#f0fff4; }
+      }
+
       /* =========================
-        View Modal (base + specific)
+        View Modal
       ========================= */
       /* Backdrop + shell */
       .modal{
@@ -261,7 +290,6 @@
       }
       /* Match card header look */
       .modal-header{
-        /* switched to the same blue as .card-header */
         background:#f3f8ff;
         border-bottom:1px solid var(--border);
         padding:1rem 1.25rem;
@@ -347,6 +375,9 @@
       /* Section labels & blocks */
       .view-section-label{
         margin:.25rem 0 .35rem; font-size:.85rem; font-weight:700; color:#334155;
+      }.view-section-label + .view-info-grid,
+      .view-section-label + .view-dates {
+        margin-top:.6rem; 
       }
       .view-desc{
         padding:.75rem .9rem; border-radius:10px;
@@ -486,7 +517,7 @@
                 <i class="fa-solid fa-eye" aria-hidden="true"></i>
                 <span class="count" data-field="view_count">0</span>
               </span>
-              <span class="metric" title="Total number of times shortlisted by volunteers">
+              <span class="metric metric-bookmark" title="Total number of times shortlisted by volunteers">
                 <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
                 <span class="count" data-field="shortlisted_by_count">0</span>
               </span>
@@ -572,7 +603,7 @@
 
             <!-- Shortlist button (on the left) -->
             <button type="button" class="btn outline shortlisted" id="viewShortlistBtn">
-              <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
+              <i class="fa-regular fa-bookmark"></i>
               <span>Remove Shortlist</span>
             </button>
 
@@ -629,8 +660,7 @@
         modal: $("viewModal"),
         closeBtn: $("viewCloseBtn"),
         matchBtn: $("viewMatchBtn"),
-        shortlistBtn: $('viewShortlistBtn'),
-        nBtn: $("viewShortlistBtn"),
+        shortlistBtn: $("viewShortlistBtn"),
         q: (name) => $("viewModal")?.querySelector(`[data-field="${name}"]`),
       };
 
@@ -661,6 +691,24 @@
         const ct  = res.headers.get("content-type") || "";
         let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
         return { ok: res.ok, status: res.status, data };
+      }
+
+      function flashCard(card) {
+        if (!card) return;
+
+        card.setAttribute('tabindex', '-1');
+
+        // Restart animation if class was left on
+        card.classList.remove('flash-success');
+        void card.offsetWidth; // force reflow
+        card.classList.add('flash-success');
+
+        // Focus + scroll into view
+        card.focus({ preventScroll: true });
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Clean up tabindex so it doesn't stay in tab order
+        setTimeout(() => card.removeAttribute('tabindex'), 1500);
       }
 
       /* =========================================================
@@ -746,47 +794,40 @@
 
       async function loadServiceRequests() {
         try {
-          // const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}`);
-          // if (!ok) throw new Error(`Service requests load failed (${status})`);
-          // const serviceRequests = Array.isArray(data) ? data
-          //     : Array.isArray(data?.items) ? data.items
-          //     : [];
-          const shortlisted = await fetchJSON(`${SHORTLISTS_API}/search?` +
-            `shortlisted_by=${localStorage.getItem('user_id')}`
-          )
-            .then ( res => res.data.shortlists);
-        
-          const serviceRequests = []
+          const me = localStorage.getItem("user_id" || "");
+          const { ok, status, data } = await fetchJSON(`${SHORTLISTS_API}/search?shortlisted_by=${encodeURIComponent(me)}`);
+          if (!ok) throw new Error(`Shortlists load failed (${status})`);
 
-          await Promise.all(
-            shortlisted.map( async shortlist => {
-              await fetchJSON(
-                `${SERVICE_REQUEST_API}/search?` +
-                `service_request_id=${shortlist.service_request.service_request_id}`
-              )
-                .then( res => {
-                  const request = res.data[0];
-                  request.shortlist_id = shortlist.shortlist_id;
-                  serviceRequests.unshift(request)
-                })
-            })
-          )
+          const rows = Array.isArray(data?.shortlists) ? data.shortlists : [];
+          const requests = [];
 
-          await Promise.all(
-            serviceRequests.map(async request => {
-              await fetchJSON(`
-                ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
-              )
-                .then( res => request.view_count = res.data);
-            
-              await fetchJSON(`
-                ${SHORTLISTS_API}/${request.service_request_id}/count`
-              )
-                .then( res => request.shortlisted_by_count = res.data);
-            })
-          )
+          await Promise.all(rows.map(async (row) => {
+            const srId = row?.service_request?.service_request_id;
+            if (!srId) return;
+            const r = await fetchJSON(`${SERVICE_REQUEST_API}/search?service_request_id=${encodeURIComponent(srId)}`)
+              .then(res => Array.isArray(res?.data) ? res.data[0] : null)
+              .catch(() => null);
+            if (r) {
+              r.shortlist_id = row.shortlist_id;
+              r.is_mine = true; // always true on this page
+              requests.push(r);
+            }
+          }));
+
+          await Promise.all(requests.map(async (req) => {
+            req.view_count = await fetchJSON(`${SERVICE_REQUEST_API}/${encodeURIComponent(req.service_request_id)}/views`)
+              .then(r => r?.data).catch(()=>0) ?? 0;
+            req.shortlisted_by_count = await fetchJSON(`${SHORTLISTS_API}/${encodeURIComponent(req.service_request_id)}/count`)
+              .then(r => r?.data).catch(()=>0) ?? 0;
+
+            if (String(req.status).toUpperCase() === "COMPLETED") {
+              req.matched_by = await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(req.service_request_id)}`)
+                .then(r => r?.data?.matches?.[0]?.matched_by || null)
+                .catch(()=>null);
+            }
+          }));
           
-          return serviceRequests;
+          return requests;
         } catch (e) {
           console.error(e);
           return [];
@@ -800,59 +841,119 @@
       }
 
       async function searchServiceRequest() {
-        let payload = "";
+        // ---- 1) Normalise dates ----
+        const fromVal = DOM.dateFrom.value;
+        const toVal   = DOM.dateTo.value;
+        if (fromVal && toVal && new Date(fromVal) > new Date(toVal)) {
+          const tmp = DOM.dateFrom.value;
+          DOM.dateFrom.value = DOM.dateTo.value;
+          DOM.dateTo.value   = tmp;
+        }
 
-        if (DOM.search.value !== "") 
-          payload += `title=${encodeURIComponent(DOM.search.value)}&`;
-        if (DOM.svc.value !== "") 
-          payload += `category=${encodeURIComponent(DOM.svc.value)}&`;
-        if (DOM.dateFrom.value !== "") 
-          payload += `date_from=${encodeURIComponent(DOM.dateFrom.value)}&`;
-        if (DOM.dateTo.value !== "") 
-          payload += `date_to=${encodeURIComponent(DOM.dateTo.value)}&`;
+        const me = localStorage.getItem('user_id') || "";
 
-        const shortlisted = await fetchJSON(
-            `${SHORTLISTS_API}/search?` +
-            `shortlisted_by=${localStorage.getItem('user_id')}` +
-            `&${payload}`
-        )
-          .then( res => res.data.shortlists )
-          .catch( e => { throw new Error(`Failed to load requests (${status})` )})
+        // ---- 2) Fetch my shortlist rows ----
+        // If your /shortlists/search supports category/date filters, append them.
+        // Otherwise we’ll filter client-side (handled below).
+        const qs = new URLSearchParams({ shortlisted_by: me });
+        if (DOM.svc.value)      qs.set("category", DOM.svc.value);
+        if (DOM.dateFrom.value) qs.set("date_from", DOM.dateFrom.value);
+        if (DOM.dateTo.value)   qs.set("date_to", DOM.dateTo.value);
 
-        const serviceRequests = []
+        const { ok, status, data } = await fetchJSON(`${SHORTLISTS_API}/search?${qs.toString()}`);
+        if (!ok) throw new Error(`Shortlists search failed (${status})`);
 
-        await Promise.all(
-          shortlisted.map( async shortlist => {
-            await fetchJSON(
-              `${SERVICE_REQUEST_API}/search?` +
-              `service_request_id=${shortlist.service_request.service_request_id}`
-            )
-              .then( res => {
-                const request = res.data[0];
-                request.shortlist_id = shortlist.shortlist_id;
-                serviceRequests.unshift(request)
-              })
-          })
-        )
+        const rows = Array.isArray(data?.shortlists) ? data.shortlists : [];
+        const serviceRequests = [];
 
-        await Promise.all(
-          serviceRequests.map(async request => {
-            await fetchJSON(`
-              ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
-            )
-              .then( res => request.view_count = res.data);
-          
-            await fetchJSON(`
-              ${SHORTLISTS_API}/${request.service_request_id}/count`
-            )
-              .then( res => request.shortlisted_by_count = res.data);
-          })
-        )
+        // ---- 3) For each shortlist row, get the request + hydrate metrics ----
+        await Promise.all(rows.map(async (row) => {
+          try {
+            // Prefer embedded object if present; else reconstruct from API.
+            const embedded = row?.service_request || null;
+            let request = null;
 
+            if (embedded && embedded.service_request_id) {
+              request = { ...embedded };
+            } else if (row?.service_request?.service_request_id) {
+              // Fallback if the row only contains the id
+              const id = row.service_request.service_request_id;
+              const detail = await fetchJSON(`${SERVICE_REQUEST_API}/${encodeURIComponent(id)}/detail`);
+              if (detail?.ok) request = detail.data;
+            }
+
+            if (!request?.service_request_id) return;
+
+            // Carry shortlist metadata forward
+            request.shortlist_id = row.shortlist_id;
+            request.is_mine = true;
+            request.shortlisted = true;
+
+            // Hydrate metrics
+            request.view_count = await fetchJSON(
+              `${SERVICE_REQUEST_API}/${encodeURIComponent(request.service_request_id)}/views`
+            ).then(r => r?.data).catch(() => 0) ?? 0;
+
+            request.shortlisted_by_count = await fetchJSON(
+              `${SHORTLISTS_API}/${encodeURIComponent(request.service_request_id)}/count`
+            ).then(r => r?.data).catch(() => 0) ?? 0;
+
+            // If completed, fetch who matched (same as your code)
+            if (String(request.status).toUpperCase() === 'COMPLETED') {
+              request.matched_by = await fetchJSON(
+                `${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`
+              ).then(res => res?.data?.matches?.[0]?.matched_by || null)
+              .catch(() => null);
+            }
+
+            serviceRequests.push(request);
+          } catch (_) { /* ignore a bad row */ }
+        }));
+
+        // ---- 4) Client-side filters ----
+        // (a) Status segmented control
+        if (currentStatus && currentStatus !== "ALL") {
+          const want = (currentStatus in STATUS) ? STATUS[currentStatus] : currentStatus;
+          // Keep only cards whose request.status matches the segmented selection
+          for (let i = serviceRequests.length - 1; i >= 0; i--) {
+            const st = String(serviceRequests[i]?.status || "").toUpperCase();
+            if (st !== String(want || "").toUpperCase()) serviceRequests.splice(i, 1);
+          }
+        }
+
+        // (b) Category filter (if backend didn’t apply it)
+        if (DOM.svc.value) {
+          const wantedCat = DOM.svc.value;
+          for (let i = serviceRequests.length - 1; i >= 0; i--) {
+            if (String(serviceRequests[i]?.category || "") !== wantedCat) serviceRequests.splice(i, 1);
+          }
+        }
+
+        // (c) Date range filter (Created date) — client-side mirror
+        const from = DOM.dateFrom.value ? new Date(DOM.dateFrom.value) : null;
+        const to   = DOM.dateTo.value   ? new Date(DOM.dateTo.value)   : null;
+        if (from || to) {
+          for (let i = serviceRequests.length - 1; i >= 0; i--) {
+            const created = new Date(serviceRequests[i]?.date_created || 0);
+            if (from && created < new Date(from.getFullYear(), from.getMonth(), from.getDate())) {
+              serviceRequests.splice(i, 1);
+              continue;
+            }
+            if (to) {
+              const toDayEnd = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999);
+              if (created > toDayEnd) {
+                serviceRequests.splice(i, 1);
+              }
+            }
+          }
+        }
+
+        // ---- 5) Render ----
         renderCards(serviceRequests);
-        applyStatusFilter();
-        applyFilter();
+        applyStatusFilter();  
+        applyFilter();        
       }
+
 
       async function postShortlistRequest(id){
         return fetchJSON(`${SHORTLISTS_API}`, {
@@ -924,46 +1025,102 @@
           const catChip = node.querySelector('[data-field="category_chip"]');
           applyCategoryChipStyle(catChip, item.category ?? "");
 
+          // Handle requester info
+          const user = item.user ?? {};
+          const createdByEl = node.querySelector('[data-field="created_by"]');
+          let createdByText = user.fullname ?? "—";
+
+          // Append (Suspended) if available
+          if (user.status && user.status.toUpperCase() === "SUSPENDED") {
+            createdByText += " (Suspended)";
+          }
+          createdByEl.textContent = createdByText;
+
           // Body
-          node.querySelector('[data-field="created_by"]').textContent = item.user?.fullname ?? "—";
           node.querySelector('[data-field="location"]').textContent   = item.user?.address ?? "—";
           node.querySelector('[data-field="description"]').textContent = item.description ?? "—";
           node.querySelector('[data-field="date_created"]').textContent   = formatLocalDate(item.date_created);
           node.querySelector('[data-field="date_completed"]').textContent =
             item.status === "COMPLETED" && item.date_completed ? formatLocalDate(item.date_completed) : "—";
 
+          // Add "Matched By: ..." only if completed
+          if (item.status === "COMPLETED" && item.matched_by?.fullname) {
+            const matchedRow = document.createElement("p");
+            matchedRow.className = "card-row";
+            matchedRow.innerHTML = `
+              <span class="card-label">Matched by:</span>
+              <span class="muted">${item.matched_by.fullname}</span>
+            `;
+            node.querySelector(".card-body").appendChild(matchedRow);
+          }
+
           // Metrics
           node.querySelector('[data-field="view_count"]').textContent           = item.view_count ?? 0;
           node.querySelector('[data-field="shortlisted_by_count"]').textContent = item.shortlisted_by_count ?? 0;
 
-          // Wire up the View button (already present in template)
-          const viewBtn = node.querySelector(".btn.primary");
-          viewBtn?.addEventListener("click", async ()=>{
-            const id = card.dataset.id;
-            try{
-              const data = await fetchServiceRequestDetail(id);
-
-              await fetchJSON(
-                `${MATCHES_API}/search?` +
-                `service_request=${data.service_request_id}`
-              )
-                .then( res => {
-                  if (res.data.matches.length > 0) 
-                    data.matched = res.data.matches[0].matched_by.fullname
-                  else data.matched = 'none';
-                })
-
-              populateViewModal(data);
-              openViewModal();
-            }catch(err){
-              console.error(err);
-              alert("Failed to load request details. Please try again.");
+          // Check if this request was shortlisted by me
+          const bm = node.querySelector(".metric-bookmark");
+          const bmIcon = bm?.querySelector("i");
+          if (bm && bmIcon) {
+            if (item.is_mine) {
+              bm.classList.add("is-mine");
+              bmIcon.classList.remove("fa-regular");
+              bmIcon.classList.add("fa-solid");
+            } else {
+              bm.classList.remove("is-mine");
+              bmIcon.classList.remove("fa-solid");
+              bmIcon.classList.add("fa-regular");
             }
-          });
+          }
+
+          // Wire up the View button
+          const viewBtn = node.querySelector(".btn.primary");
+          const viewCount = node.querySelector('[data-field="view_count"]');
+
+          // Disable card + button if user is suspended
+          if (user.status && user.status.toUpperCase() === "SUSPENDED") {
+            card.classList.add("card-disabled");
+            viewBtn.disabled = true;
+            viewBtn.title = "Requester account suspended — request unavailable.";
+          } else {
+            // Normal behavior: open modal
+            viewBtn?.addEventListener("click", async () => {
+              const id = card.dataset.id;
+              try {
+                const data = await fetchServiceRequestDetail(id);
+                
+                await fetchJSON(
+                  `${SHORTLISTS_API}/search?` +
+                  `service_request=${data.service_request_id}` +
+                  `&shortlisted_by=${localStorage.getItem('user_id')}`
+                )
+                  .then( res => {
+                    if (res.data.shortlists.length > 0) data.shortlisted = true;
+                    else data.shortlisted = false;
+                  })
+
+                await fetchJSON(
+                  `${MATCHES_API}/search?` +
+                  `service_request=${data.service_request_id}`
+                )
+                  .then( res => {
+                    if (res.data.matches.length > 0) 
+                      data.matched = res.data.matches[0].matched_by.fullname
+                    else data.matched = 'none';
+                  })
+                
+                populateViewModal(data);
+                viewCount.textContent = parseInt(viewCount.textContent) + 1;
+                openViewModal();
+              } catch (err) {
+                console.error(err);
+                alert("Failed to load request details. Please try again.");
+              }
+            });
+          }
 
           DOM.cardsWrap.appendChild(node);
         });
-
         applyStatusFilter();
       }
 
@@ -988,8 +1145,9 @@
             btn.setAttribute("aria-selected","true");
 
             currentStatus = (btn.dataset.status || "ALL").toUpperCase();
-            
-            applyStatusFilter();  
+
+            searchServiceRequest();
+            applyStatusFilter();
             applyFilter();
           });
         });
@@ -1009,7 +1167,7 @@
       }
 
       function applyFilter() {
-        const q = DOM.search.value || "";
+        const q = (DOM.search.value || "").toLowerCase();
         const cards = document.getElementsByClassName("card");
         for (const card of cards) {
           if (card.style.display == "none") continue;
@@ -1053,7 +1211,30 @@
 
         set("date_created",   formatLocalDate(req?.date_created));
         set("date_completed", req?.status === "COMPLETED" ? formatLocalDate(req?.date_completed) : "—");
-      
+        
+        if (req.shortlisted) {
+          ViewDOM.shortlistBtn.classList.add('shortlisted');
+          const icon = ViewDOM.shortlistBtn.querySelector("i");
+          const label = ViewDOM.shortlistBtn.querySelector("span");
+          icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
+          if (label) label.textContent = "Shortlisted";
+        } else {
+          ViewDOM.shortlistBtn.classList.remove('shortlisted');
+          const icon = ViewDOM.shortlistBtn.querySelector("i");
+          const label = ViewDOM.shortlistBtn.querySelector("span");
+          icon?.classList.remove("fa-solid"); icon?.classList.add("fa-regular");
+          if (label) label.textContent = "Shortlist";
+        }
+
+         if (req.status && req.status.toUpperCase() === "CANCELLED") {
+          ViewDOM.matchBtn.disabled = true;
+          ViewDOM.matchBtn.classList.add("matched");
+          const label = ViewDOM.matchBtn.querySelector("span");
+          // (Optional) also lock shortlist while cancelled:
+          // ViewDOM.shortlistBtn.disabled = true;
+          return;
+        }
+
         if (req.matched !== 'none') {
           ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
@@ -1085,7 +1266,6 @@
         const id = ViewDOM.modal?.dataset?.requestId;
         if (!id || !ViewDOM.shortlistBtn) return;
 
-        ViewDOM.shortlistBtn.disabled = true;
         try {
           const res = await postShortlistRequest(id);
           if (!res.ok) throw new Error(`Shortlist failed (${res.status})`);
@@ -1095,13 +1275,25 @@
           const label = ViewDOM.shortlistBtn.querySelector("span");
           icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
           if (label) label.textContent = "Shortlisted";
+          ViewDOM.shortlistBtn.classList.add('shortlisted');
 
+          // Update Shortlist Count
           const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
           const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
           if (countNode) {
             const n = parseInt(countNode.textContent, 10);
             countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
           }
+
+          // Highlight the bookmark metric on the card
+          const bookmarkMetric = card?.querySelector(".metric-bookmark");
+          if (bookmarkMetric) {
+            bookmarkMetric.classList.add("is-mine");
+            const icon = bookmarkMetric.querySelector("i");
+            icon?.classList.remove("fa-regular");
+            icon?.classList.add("fa-solid");
+          }
+
         } catch (e) {
           console.error(e);
           alert("Unable to shortlist this request. Please try again later.");
@@ -1118,23 +1310,46 @@
           const res = await removeShortlistRequest(id);
           if (!res.ok) throw new Error(`Remove shortlist failed (${res.status})`);
 
-          // UI updates
-          // const icon = ViewDOM.shortlistBtn.querySelector("i");
-          // const label = ViewDOM.shortlistBtn.querySelector("span");
-          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
-          // if (label) label.textContent = "Shortlisted";
+          // Find the card in the grid
+          const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
 
-          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
-          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
-          // if (countNode) {
-          //   const n = parseInt(countNode.textContent, 10);
-          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
+          // 1) Update the count
+          const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
+          if (countNode) {
+            const n = parseInt(countNode.textContent, 10);
+            countNode.textContent = Number.isFinite(n) ? String(Math.max(0, n - 1)) : "0";
+          }
+
+          // 2) Update the bookmark state before removal
+          const bookmarkMetric = card?.querySelector(".metric-bookmark");
+          if (bookmarkMetric) {
+            bookmarkMetric.classList.remove("is-mine");
+            const iconMetric = bookmarkMetric.querySelector("i");
+            iconMetric?.classList.remove("fa-solid");
+            iconMetric?.classList.add("fa-regular");
+          }
+
+          // 3) Remove the card from the page
+          if (card && card.parentElement) {
+            card.parentElement.removeChild(card);
+          }
+
+          // 4) Reset the modal button and close the modal
+          ViewDOM.shortlistBtn.classList.remove("shortlisted");
+          const icon = ViewDOM.shortlistBtn.querySelector("i");
+          const label = ViewDOM.shortlistBtn.querySelector("span");
+          icon?.classList.remove("fa-solid");
+          icon?.classList.add("fa-regular");
+          if (label) label.textContent = "Shortlist";
+          closeViewModal();
+
+          // Optional: show an empty state if no cards left
+          // if (!DOM.cardsWrap.querySelector(".card")) {
+          //   DOM.cardsWrap.innerHTML = `<p class="muted">No shortlisted requests.</p>`;
           // }
-          alert("Shortlist removed.");
-          window.location.reload();
         } catch (e) {
           console.error(e);
-          alert("Unable to shortlist this request. Please try again later.");
+          alert("Unable to remove shortlist. Please try again later.");
           ViewDOM.shortlistBtn.disabled = false;
         }
       }
@@ -1161,43 +1376,22 @@
           // }
           ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
+
           const label = ViewDOM.matchBtn.querySelector("span");
-          alert("Successfully matched")
-          window.location.reload();
+          if (label) label.textContent = "Matched — Completed";
+          
+          const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+          if (card) {
+            card.dataset.status = "COMPLETED";
+            const cardBadge = card.querySelector(".status-badge");
+            applyStatusBadge(cardBadge, "COMPLETED");
+            flashCard(card);
+          }
         } catch (e) {
           console.error(e);
           alert("Unable to match this request. Please try again later.");
         }
       }
-
-      async function completeMatchCurrentRequest() {
-        const id = ViewDOM.modal?.dataset?.requestId;
-        if (!id || !ViewDOM.shortlistBtn) return;
-
-        try {
-          const res = await completeMatchRequest(id);
-          if (!res.ok) throw new Error(`Complete match failed (${res.status})`);
-
-          // UI updates
-          // const icon = ViewDOM.shortlistBtn.querySelector("i");
-          // const label = ViewDOM.shortlistBtn.querySelector("span");
-          // icon?.classList.remove("fa-regular"); icon?.classList.add("fa-solid");
-          // if (label) label.textContent = "Shortlisted";
-
-          // const card = DOM.cardsWrap?.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
-          // const countNode = card?.querySelector('[data-field="shortlisted_by_count"]');
-          // if (countNode) {
-          //   const n = parseInt(countNode.textContent, 10);
-          //   countNode.textContent = Number.isFinite(n) ? String(n + 1) : "1";
-          // }
-          alert("Match completed!");
-          window.location.reload();
-        } catch (e) {
-          console.error(e);
-          alert("Unable to complete match for this request. Please try again later.");
-        }
-      }
-
 
       /* =========================================================
         11) Init & event bindings
@@ -1226,7 +1420,10 @@
         }
 
         if (ViewDOM.shortlistBtn) {
-          ViewDOM.shortlistBtn.addEventListener("click", removeShortlistCurrentRequest);
+          ViewDOM.shortlistBtn.addEventListener("click", btn => {
+            if (btn.currentTarget.classList.contains('shortlisted')) removeShortlistCurrentRequest()
+            else shortlistCurrentRequest()
+          })
         }
 
         if (ViewDOM.matchBtn) {
