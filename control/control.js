@@ -6,6 +6,7 @@ import ServiceRequestsEntity from '../entity/service-requests.js';
 import ShortlistsEntity from '../entity/shortlists.js';
 import MatchesEntity from '../entity/matches.js';
 import ReportsEntity from '../entity/reports.js';
+import HasherEntity from '../entity/hasher.js';
 
 export default class Control {
     constructor() {
@@ -20,6 +21,7 @@ export default class Control {
         this.shortlistsEntity = new ShortlistsEntity();
         this.matchesEntity = new MatchesEntity();
         this.reportsEntity = new ReportsEntity();
+        this.hasherEntity = new HasherEntity();
 
         this.createController();
     }

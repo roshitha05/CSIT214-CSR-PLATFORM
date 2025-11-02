@@ -1,4 +1,5 @@
 import Entity from "./entity.js";
+import HasherEntity from "./hasher.js";
 import UserProfilesEntity from "./user-profiles.js";
 import UsersEntity from "./users.js";
 
@@ -12,18 +13,17 @@ export default class AuthEntity extends Entity {
         const userProfilesEntity = new UserProfilesEntity();
 
         let user = await usersEntity.getUsers({ 
-            username: credentials.login,
-            password: credentials.password
+            username: credentials.login
         });
         if (user.length !== 1) {
             user = await usersEntity.getUsers({ 
-                email: credentials.login, 
-                password: credentials.password 
+                email: credentials.login
             });
         }
         if (user.length !== 1) return false;
         user = user[0];
 
+        if (!await new HasherEntity().verify(credentials.password, user.password)) return false;
         if (user.status.toLowerCase() !== 'active') return false;
         const userProfile = (await userProfilesEntity
             .getUserProfiles({ name: user.user_profile }))[0];

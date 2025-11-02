@@ -3,6 +3,7 @@ import { usersTable, userProfilesTable, categoriesTable, serviceRequestsTable, s
 import { users, categories, serviceRequests } from './seeds.js';
 import DB from '../database/db.js';
 import ShortlistsEntity from '../entity/shortlists.js';
+import HasherEntity from '../entity/hasher.js';
 
 const getEmail = (name) => `${name.replace(' ', '_')}@CSR.com`;
 const getPassword = (name) => name.replace(' ', '');
@@ -117,7 +118,7 @@ async function main(tx) {
             fullname: user,
             email: getEmail(user),
             username: getPassword(user),
-            password: getPassword(user),
+            password: await new HasherEntity().hash(getPassword(user)),
             phone_number: getPhoneNumber(),
             address: `Lorem ipsum dolor sit amet...`,
             date_of_birth: getDOB(),

@@ -7,6 +7,8 @@ export default class CreateUser extends Control {
 
     createController() {
         this.router.post('/', this.requireAuth("User Admin"), async (req, res, next) => {
+            req.body.password = await this.hasherEntity.hash(req.body.password);
+
             const success = await this.usersEntity
                 .insertUser({ ...req.body, status: 'ACTIVE' });
                 
