@@ -1,4 +1,4 @@
-import { and, eq, ilike } from 'drizzle-orm';
+import { and, eq, ilike, or } from 'drizzle-orm';
 import { userProfilesTable } from '../database/tables.js';
 import Entity from './entity.js';
 
@@ -26,6 +26,22 @@ export default class UserProfilesEntity extends Entity {
         }
 
         return await query;
+    }
+
+    async searchUserProfiles(filter) {
+        const searchPattern = `%${filter}%`;
+        
+        return await this.db
+            .select()
+            .from(userProfilesTable)
+            .where(
+                or(
+                    ilike(userProfilesTable.name, searchPattern),
+                    ilike(userProfilesTable.description, searchPattern),
+                    ilike(userProfilesTable.status, searchPattern),
+                    ilike(userProfilesTable.other, searchPattern),
+                )
+            );
     }
 
     async insertUserProfile(userProfile) {

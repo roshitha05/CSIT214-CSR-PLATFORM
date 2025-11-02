@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Platform Management Dashboard</title>
+  <title>Person-In-Need Dashboard</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"/>
 
   <style>
@@ -17,7 +17,7 @@
     *{ box-sizing:border-box; margin:0; padding:0; font-family:Poppins,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
     body{ min-height:100vh; display:flex; background:var(--bg); color:var(--text); }
 
-    /* ===== Sidebar ===== */
+    /* Sidebar */
     .sidebar{
       width:240px; background:var(--primary); color:var(--white);
       display:flex; flex-direction:column; padding:1.5rem 1rem; box-shadow:var(--shadow);
@@ -30,14 +30,14 @@
     .navlink:hover{ background:var(--accent); }
     .navlink[aria-current="page"]{ background:var(--accent-2); }
 
-    /* ===== Main ===== */
+    /* Main */
     .main{ flex:1; padding:2rem; display:flex; flex-direction:column; }
     .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; }
     .topbar h1{ font-size:1.6rem; font-weight:600; }
     .user-info{ display:flex; align-items:center; gap:10px; }
     .user-info img{ width:40px; height:40px; border-radius:50%; border:2px solid var(--accent); }
 
-    /* ===== Cards ===== */
+    /* Cards */
     .cards{
       display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem;
     }
@@ -51,7 +51,7 @@
     .card h3{ font-size:1.1rem; }
     .card p{ color:#666; font-size:.95rem; }
 
-    /* ===== Logout button ===== */
+    /* Logout button */
     .logout-btn{
       margin-top:auto; display:flex; gap:.5rem; align-items:center; justify-content:center;
       background:var(--accent-2); color:var(--white); padding:.75rem; border:0; border-radius:8px; cursor:pointer;
@@ -59,7 +59,7 @@
     }
     .logout-btn:hover{ background:#1f5f8b; }
 
-    /* ===== Modal =====*/
+    /* Modal */
     .modal{
       display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
       justify-content:center; align-items:center; z-index:1000;
@@ -89,10 +89,9 @@
 <body>
   <!-- Sidebar -->
   <aside class="sidebar">
-    <h2>Platform Management</h2>
+    <h2>Person-In-Need</h2>
     <a class="navlink" href="#" aria-current="page"><i class="fa-solid fa-house"></i><span>Home</span></a>
     <a class="navlink" href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a>
-    <a class="navlink" href="#"><i class="fa-solid fa-list"></i><span>Reports</span></a>
     <a class="navlink" href="#"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
 
     <button class="logout-btn" id="logoutBtn" type="button">
@@ -111,22 +110,16 @@
     </div>
 
     <section class="cards" aria-label="Quick actions">
-      <button class="card" type="button" data-href="/platform_management/create_category.html">
-        <i class="fa-solid fa-book"></i>
-        <h3>Create Category</h3>
-        <p>Add a new type of help request (e.g., Transport, Meals, etc.).</p>
+      <button class="card" type="button" data-href="/pin/create_request.html">
+        <i class="fa-solid fa-hand-holding-heart"></i>
+        <h3>Create Service Request</h3>
+        <p>Request help such as Transport, Meals, or other assistance.</p>
       </button>
 
-      <button class="card" type="button" data-href="/platform_management/category_management.html">
-        <i class="fa-solid fa-layer-group"></i>
-        <h3>Manage Categories</h3>
-        <p>Manage and review categories.</p>
-      </button>
-
-      <button class="card" type="button" data-href="/platform_management/report.html">
-        <i class="fa-solid fa-file-lines"></i>
-        <h3>Generate Reports</h3>
-        <p>Generate Daily, Weekly or Monthly reports.</p>
+      <button class="card" type="button" data-href="/pin/request_management.html">
+        <i class="fa-solid fa-list-check"></i>
+        <h3>Manage Service Requests</h3>
+        <p>View the status of your previous requests or update details.</p>
       </button>
     </section>
   </main>
@@ -210,7 +203,6 @@
       ui.confirm.textContent = "Logging out…";
 
       try{
-        await new Promise(res => setTimeout(res, 2000));
         const res = await fetchWithTimeout(LOGOUT_API, {
           method:"POST", mode:"cors", credentials:"include",
           headers:{ "Content-Type":"application/json" },

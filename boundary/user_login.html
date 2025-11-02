@@ -1,544 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
-    />
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Login</title>
-    <style>
-      /* =========================
-        Design Tokens
-      ========================== */
-      :root {
-        --bg: #f0f9ff;
-        --card: #ffffff;
-        --text: #1e293b;
-        --muted: #64748b;
-        --accent: #38bdf8;
-        --accent-2: #0ea5e9;
-        --danger: #ef4444;
-        --radius: 16px;
-        --ring: rgba(14, 165, 233, 0.3);
-      }
-
-      /* =========================
-        Base / Resets
-      ========================== */
-      * {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-      }
-      body {
-        font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        background: linear-gradient(180deg, #e0f2fe, var(--bg));
-        color: var(--text);
-        display: grid;
-        place-items: center;
-        padding: 24px;
-      }
-
-      /* =========================
-        Layout: Card Shell
-      ========================== */
-      .card {
-        width: 100%;
-        max-width: 420px;
-        background: var(--card);
-        border: 1px solid #e2e8f0;
-        border-radius: var(--radius);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-        text-align: center;
-      }
-
-      /* =========================
-        Header
-      ========================== */
-      .header {
-        padding: 24px 28px;
-        border-bottom: 1px solid #e2e8f0;
-        background: linear-gradient(180deg, #e0f2fe, #f8fafc);
-      }
-      .header h1 {
-        margin: 0;
-        font-size: 1.5rem;
-        color: var(--accent-2);
-      }
-      .header p {
-        margin: 4px 0 0;
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
-
-      /* =========================
-        Form & Fields
-      ========================== */
-      form {
-        padding: 28px;
-        text-align: left;
-      }
-      .row {
-        margin-bottom: 18px;
-      }
-      label {
-        display: inline-block;
-        margin-bottom: 6px;
-        font-weight: 600;
-      }
-
-      /* Text / Password Inputs */
-      input[type="text"],
-      input[type="password"] {
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid #cbd5e1;
-        background: #f8fafc;
-        color: var(--text);
-        font-size: 0.98rem;
-        transition: border-color 0.2s, box-shadow 0.2s;
-      }
-
-      /* Password Visibility Toggle */
-      .password-wrapper {
-        position: relative;
-      }
-      .password-wrapper input {
-        width: 100%;
-        padding-right: 2.5rem;
-      }
-      .password-wrapper i {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        color: var(--accent, #3498db);
-      }
-      .password-wrapper i:hover {
-        color: var(--accent-2);
-        transform: translateY(-50%) scale(1.1);
-      }
-
-      /* Focus States */
-      input:focus {
-        border-color: var(--accent-2);
-        box-shadow: 0 0 0 3px var(--ring);
-        outline: none;
-      }
-
-      /* Helper Text */
-      .hint {
-        margin-top: 6px;
-        font-size: 0.85rem;
-        color: var(--muted);
-      }
-
-      /* =========================
-        Actions & Buttons
-      ========================== */
-      .actions {
-        margin-top: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      button {
-        border: 0;
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s, transform 0.1s;
-        font-size: 1rem;
-      }
-      .btn-primary {
-        background: linear-gradient(180deg, var(--accent), var(--accent-2));
-        color: white;
-      }
-      .btn-primary:hover {
-        transform: scale(1.02);
-      }
-      .btn-secondary {
-        background: #f1f5f9;
-        color: var(--text);
-        border: 1px solid #cbd5e1;
-      }
-      .btn-secondary:hover {
-        background: #e2e8f0;
-      }
-
-      /* =========================
-        Status Messages
-      ========================== */
-      .error {
-        display: none;
-        color: var(--danger);
-        font-size: 0.9rem;
-        margin-top: 6px;
-      }
-      .success {
-        display: none;
-        margin-top: 10px;
-        padding: 12px 14px;
-        border-radius: 12px;
-        background: #dcfce7;
-        border: 1px solid #bbf7d0;
-        color: #166534;
-        font-size: 0.95rem;
-        text-align: center;
-      }
-
-      /* =========================
-        Footer
-      ========================== */
-      .footer {
-        padding: 18px 28px;
-        border-top: 1px solid #e2e8f0;
-        color: var(--muted);
-        font-size: 0.9rem;
-        text-align: center;
-      }
-
-      /* =========================
-        Responsive
-      ========================== */
-      @media (max-width: 420px) {
-        form,
-        .header,
-        .footer {
-          padding: 18px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card" role="region" aria-labelledby="login-title">
-      <div class="header">
-        <h1 id="login-title">Welcome Back</h1>
-        <p>Sign in to continue...</p>
-      </div>
-
-      <form id="loginForm" novalidate>
-        <div class="row">
-          <label for="username"
-            >Username / Email <span style="color: var(--muted)">*</span>
-          </label>
-          <input 
-            type="text" 
-            id="username" 
-            name="username" 
-            required 
-            aria-describedby="user-error" 
-            placeholder="Enter your username or email" 
-            autofocus 
-            autocomplete="username"
-          />
-          <div id="user-error" class="error">Please enter your username.</div>
-        </div>
-
-        <div class="form-group">
-          <label for="password"
-            >Password <span style="color: var(--muted)">*</span>
-          </label>
-          <div class="password-wrapper">
-            <input 
-              type="password" 
-              id="password" 
-              name="password" 
-              required 
-              aria-describedby="pass-error" 
-              placeholder="Enter your password" />
-            <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
-          </div>
-          <div id="pass-error" class="error">Please enter your password.</div>
-        </div>
-
-        <div class="actions">
-          <button class="btn-primary" type="submit" id="loginBtn">Login</button>
-          <button class="btn-secondary" type="reset">Clear</button>
-        </div>
-
-        <div id="success" class="success" role="status" aria-live="polite"></div>
-      </form>
-
-      <div class="footer">© 2025 Community Support Platform</div>
+<head>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <style>
+    :root{
+      --bg:#f0f9ff; --card:#fff; --text:#1e293b; --muted:#64748b;
+      --accent:#38bdf8; --accent-2:#0ea5e9; --danger:#ef4444;
+      --radius:16px; --ring:rgba(14,165,233,.3);
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; }
+    body{
+      font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background:linear-gradient(180deg,#e0f2fe,var(--bg));
+      color:var(--text); display:grid; place-items:center; padding:24px;
+    }
+    .card{
+      width:100%; max-width:420px; background:var(--card);
+      border:1px solid #e2e8f0; border-radius:var(--radius);
+      box-shadow:0 8px 24px rgba(0,0,0,.08); overflow:hidden; text-align:center;
+    }
+    .header{ padding:24px 28px; border-bottom:1px solid #e2e8f0; background:linear-gradient(180deg,#e0f2fe,#f8fafc); }
+    .header h1{ margin:0; font-size:1.5rem; color:var(--accent-2); }
+    .header p{ margin:4px 0 0; color:var(--muted); font-size:.95rem; }
+    form{ padding:28px; text-align:left; }
+    .row{ margin-bottom:18px; }
+    label{ display:inline-block; margin-bottom:6px; font-weight:600; }
+    input[type="text"], input[type="password"]{
+      width:100%; padding:12px 14px; border-radius:12px; border:1px solid #cbd5e1; background:#f8fafc;
+      color:var(--text); font-size:.98rem; transition:border-color .2s, box-shadow .2s;
+    }
+    input:focus{ border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring); outline:none; }
+    .password-wrapper{ position:relative; }
+    .password-wrapper input{ padding-right:2.5rem; }
+    .password-wrapper i{
+      position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer;
+      color:var(--accent);
+    }
+    .password-wrapper i:hover{ color:var(--accent-2); transform:translateY(-50%) scale(1.08); }
+    .hint{ margin-top:6px; font-size:.85rem; color:var(--muted); }
+    .actions{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
+    button{
+      border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer;
+      transition:background .2s, transform .1s; font-size:1rem;
+    }
+    .btn-primary{ background:linear-gradient(180deg,var(--accent),var(--accent-2)); color:#fff; }
+    .btn-primary:hover{ transform:scale(1.02); }
+    .btn-secondary{ background:#f1f5f9; color:var(--text); border:1px solid #cbd5e1; }
+    .btn-secondary:hover{ background:#e2e8f0; }
+    .error{ display:none; color:var(--danger); font-size:.9rem; margin-top:6px; }
+    .status{
+      display:none; margin:12px 0 0; padding:12px 14px; border-radius:12px;
+      font-size:.95rem; text-align:center; width:100%; box-sizing:border-box;
+    }
+    .footer{ padding:18px 28px; border-top:1px solid #e2e8f0; color:var(--muted); font-size:.9rem; text-align:center; }
+    @media (max-width:420px){ form,.header,.footer{ padding:18px; } .status{ margin:10px 0 0; } }
+  </style>
+</head>
+<body>
+  <div class="card" role="region">
+    <div class="header">
+      <h1>Welcome Back</h1>
+      <p>Sign in to continue…</p>
     </div>
 
-    <script>
-      // =========================
-      // Config
-      // =========================
-      const DEBUG = false; // turn on / off whenever
+    <form id="loginForm" novalidate>
+      <div class="row">
+        <label for="username">Username / Email <span style="color:var(--muted)">*</span></label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          required
+          aria-describedby="user-error"
+          placeholder="Enter your username or email"
+          autocomplete="username"
+          autofocus
+        />
+        <div id="user-error" class="error">Please enter your username or email.</div>
+      </div>
 
-      const API_URL = "http://127.0.0.1:80/api"
-      const LOGIN_API = `${API_URL}/login`;
+      <div class="row">
+        <label for="password">Password <span style="color:var(--muted)">*</span></label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            aria-describedby="pass-error"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+          />
+          <i class="fa-solid fa-eye-slash" id="togglePassword" aria-hidden="true" title="Show/Hide password"></i>
+        </div>
+        <div id="pass-error" class="error">Please enter your password.</div>
+      </div>
 
-      const ROLE_REDIRECT = {
-        "User Admin"          : "/user_admin/admin_dashboard.html",
-        "CSR Representative"  : "/csr_representative/csr_dashboard.html",
-        "Person-In-Need"      : "/pin/pin_dashboard.html",
-        "Platform Management" : "/platform_management/platform_dashboard.html"
+      <div class="actions">
+        <button class="btn-primary" type="submit" id="loginBtn">Login</button>
+        <button class="btn-secondary" type="reset">Clear</button>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </form>
+
+    <div class="footer">© 2025 Community Support Platform</div>
+  </div>
+
+  <script>
+    // ========= Config =========
+    const DEBUG = false;
+    const API_URL = "http://127.0.0.1:80/api";
+    const LOGIN_API = `${API_URL}/login`;
+
+    const ROLE_REDIRECT = {
+      "User Admin"         : "/user_admin/admin_dashboard.html",
+      "CSR Representative" : "/csr_representative/csr_dashboard.html",
+      "Person-In-Need"     : "/pin/pin_dashboard.html",
+      "Platform Management": "/platform_management/platform_dashboard.html",
+    };
+
+    // ========= DOM =========
+    const $ = (id) => document.getElementById(id);
+    const form = $("loginForm");
+    const btnLogin = $("loginBtn");
+    const statusBox = $("status");
+    const input = { loginId: $("username"), password: $("password") };
+    const err = { loginId: $("user-error"), password: $("pass-error") };
+    const togglePassword = $("togglePassword");
+
+    // ========= Helpers =========
+    const trim = (s) => String(s ?? "").trim();
+
+    function setStatus(kind, msg, assertive = false) {
+      statusBox.style.display = "block";
+      statusBox.style.whiteSpace = "pre-wrap";
+      statusBox.textContent = msg;
+      statusBox.setAttribute("aria-live", assertive ? "assertive" : "polite");
+
+      if (kind === "ok") {
+        statusBox.style.background = "#dcfce7";
+        statusBox.style.border = "1px solid #bbf7d0";
+        statusBox.style.color = "#166534";
+      } else if (kind === "err") {
+        statusBox.style.background = "#fee2e2";
+        statusBox.style.border = "1px solid #fecaca";
+        statusBox.style.color = "#991b1b";
+      } else {
+        statusBox.style.background = "#fef9c3";
+        statusBox.style.border = "1px solid #fde047";
+        statusBox.style.color = "#854d0e";
+      }
+    }
+    function clearStatus(){ statusBox.style.display="none"; statusBox.textContent=""; statusBox.setAttribute("aria-live","polite"); }
+
+    function focusFirstInvalid(){
+      for (const el of [input.loginId, input.password]) {
+        if (el.hasAttribute("aria-invalid")) { el.focus({ preventScroll:true }); return; }
+      }
+    }
+
+    function validateFields(){
+      const loginVal = trim(input.loginId.value);
+      const passVal = trim(input.password.value);
+      let valid = true;
+
+      if (!loginVal) {
+        err.loginId.style.display = "block";
+        input.loginId.setAttribute("aria-invalid","true");
+        valid = false;
+      } else {
+        err.loginId.style.display = "none";
+        input.loginId.removeAttribute("aria-invalid");
       }
 
-      // =========================
-      // DOM Helpers / Elements
-      // =========================
-      const $ = (id) => document.getElementById(id);
-      
-      const form      = $("loginForm");
-      const success   = $("success");
-      const submitBtn = $("loginBtn");
+      if (!passVal) {
+        err.password.style.display = "block";
+        input.password.setAttribute("aria-invalid","true");
+        valid = false;
+      } else {
+        err.password.style.display = "none";
+        input.password.removeAttribute("aria-invalid");
+      }
+      return valid;
+    }
 
-      const input = {
-        loginId:  $("username"),
-        password: $("password"),
+    // Live validation after first submit attempt
+    let hasSubmitted = false;
+    function attachLiveValidation(fields, validateFn, debounceMs = 200){
+      let timer = null;
+      fields.forEach(field => field.addEventListener("input", () => {
+        if (!hasSubmitted) return;
+        clearTimeout(timer);
+        timer = setTimeout(() => { clearStatus(); validateFn(); }, debounceMs);
+      }));
+    }
+    attachLiveValidation([input.loginId, input.password], validateFields);
+
+    // Password toggle
+    togglePassword.addEventListener("click", function(){
+      const isPwd = input.password.type === "password";
+      input.password.type = isPwd ? "text" : "password";
+      this.classList.toggle("fa-eye", isPwd);
+      this.classList.toggle("fa-eye-slash", !isPwd);
+    });
+
+    // ========= Network helpers =========
+    async function login(payload){
+      if (DEBUG){
+        setStatus("warn", `[DEBUG]\n\nPOST ${LOGIN_API}\n\n${JSON.stringify(payload, null, 2)}`);
+        return { ok:true, mock:true, user:{ user_id:"U123", username:"demo", fullname:"Demo User", user_profile:"User Admin" } };
       }
 
-      const err = {
-        loginId: $("user-error"),
-        password: $("pass-error"),
-      }
-
-      // =========================
-      // UI Status Helpers
-      // =========================
-      function showOk(message) {
-        success.style.display = "block";
-        success.style.background = "#dcfce7";
-        success.style.border = "1px solid #bbf7d0";
-        success.style.color = "#166534";
-        success.setAttribute("aria-live", "polite");
-        success.textContent = message;
-      }
-
-      function showErr(message) {
-        success.style.display = "block";
-        success.style.background = "#fee2e2";
-        success.style.border = "1px solid #fecaca";
-        success.style.color = "#991b1b";
-        success.setAttribute("aria-live", "assertive");
-        success.textContent = message;
-      }
-
-      function clearStatus() {
-        success.style.display = "none";
-        success.textContent = "";
-        success.setAttribute("aria-live", "polite");
-      }
-
-      // Debug Helper
-      function showDebug(payload) {
-        success.style.display = "block";
-        success.style.background = "#fef9c3";   
-        success.style.border = "1px solid #fde047";
-        success.style.color = "#854d0e";
-        success.style.whiteSpace = "pre-wrap";
-        success.textContent =
-          `[DEBUG]:\n\n` +
-          `This would POST to:\n${LOGIN_API}\n\n` +
-          `With values:\n${JSON.stringify(payload, null, 2)}`;
-      }
-
-      // =========================
-      // Password Visibility Toggle
-      // =========================
-      const togglePassword  = $("togglePassword");
-      togglePassword.addEventListener("click", function () {
-        const isPassword = input.password.type === "password";
-        input.password.type = isPassword ? "text" : "password";
-        this.classList.toggle("fa-eye", isPassword);
-        this.classList.toggle("fa-eye-slash", !isPassword);
+      const res = await fetch(LOGIN_API, {
+        method: "POST",
+        mode: "cors",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+      return res;
+    }
 
-      // =========================
-      // Validation
-      // =========================
-      let hasSubmitted = false;
-      let submitting = false;
+    async function displayServerMessage(res){
+      let body = null;
+      try { body = await res.clone().json(); } catch(_) {}
 
-      function focusFirstInvalid() {
-        const order = [ input.loginId, input.password ];
-        for (const el of order) {
-          if (el.hasAttribute("aria-invalid")) {
-            el.focus({ preventScroll: true });
-            return;
-          }
-        }
-      }
+      const msg = trim(body?.message || "");
+      if (res.status === 200){
+        const user = body?.user || {};
+        const role = trim(user.user_profile || "");
 
-      function validateFields() {
-        // Normalize for consistency
-        const loginVal = input.loginId.value.trim();
-        const passVal = input.password.value.trim();
+        // Persist identity for downstream pages
+        if (user.user_id)  localStorage.setItem("user_id", user.user_id);
+        if (user.username) localStorage.setItem("username", user.username);
+        if (user.fullname) localStorage.setItem("fullname", user.fullname);
+        if (role)          localStorage.setItem("role", role);
 
-        let valid = true;
-
-        // --- Login (Email / Login ID) Validation ---
-        if (!loginVal) {
-          err.loginId.style.display = "block";
-          input.loginId.setAttribute("aria-invalid", "true");
-          valid = false;
-        } else {
-          err.loginId.style.display = "none";
-          input.loginId.removeAttribute("aria-invalid");
-        }
-
-        // --- Password Validation ---
-        if (!passVal) {
-          err.password.style.display = "block";
-          input.password.setAttribute("aria-invalid", "true");
-          valid = false;
-        } else {
-          err.password.style.display = "none";
-          input.password.removeAttribute("aria-invalid");
-        }
-
-        return valid;
-      }
-
-      // =========================
-      // Live Validation
-      // =========================
-      function attachLiveValidation(fields, validateFn, debounceMs = 200) {
-        let timer = null;
-        fields.forEach(field =>
-          field.addEventListener("input", () => {
-            if (!hasSubmitted) return;
-            clearTimeout(liveTimer);
-            timer = setTimeout(() => {
-              clearStatus();
-              validateFn();
-            }, debounceMs);
-          })
-        )
-      }
-
-      attachLiveValidation([input.loginId, input.password], validateFields);
-
-      // =========================
-      // Server Message Display (Boundary)
-      // =========================
-      async function displayServerMessage(response) {
-        let body = null;
-        let serverMsg = "";
-
-        try {
-          body = await response.clone().json();
-          serverMsg = (body && body.message) ? String(body.message).trim() : "";
-        }
-        catch (_) {
-          // No / invalid JSON - ignore
-        }
-
-        if (response.status === 200) {
-          showOk(serverMsg || "Login successful.");
-
-          const user = body?.user || {};
-          const role = (user.user_profile || "").trim();
-
-          // Store name for dashboard
-          if (user.fullname) {
-            localStorage.setItem("fullname", user.fullname);
-          }
-          
-          // Find redirect target by role
-          const target = ROLE_REDIRECT[role];
-
-          if (!target) {
-            showErr("Logged in but no dashboard assigned. Please contact support.");
-            return;
-          }
-
-          // Redirect
-          setTimeout(() => { window.location.href = target; }, 800);
+        setStatus("ok", msg || "Login successful.");
+        const target = ROLE_REDIRECT[role];
+        if (!target){
+          setStatus("err", "Logged in but no dashboard assigned. Please contact support.", true);
           return;
         }
-
-        if (response.status === 400) { showErr(serverMsg || "Missing username or password."); return; }
-        if (response.status === 401) { showErr(serverMsg || "Invalid username or password."); return; }
-        if (response.status === 403) { showErr(serverMsg || "Invalid username or password."); return; }
-        if (response.status === 500) { showErr(serverMsg || "Server Error. Please try again later."); return; }
-
-        // Fallback for any other errors
-        showErr(serverMsg || `Unexpected Error: ${response.status}`);
+        setTimeout(() => { window.location.href = target; }, 800);
+        return;
       }
 
-      // =========================
-      // Submit
-      // =========================
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        
-        if (submitting) return;   // safeguard
-        submitting = true;
-        hasSubmitted = true;
-        clearStatus();
+      // Friendly errors
+      if (res.status === 400) return setStatus("err", msg || "Missing username or password.", true);
+      if (res.status === 401 || res.status === 403) return setStatus("err", msg || "Invalid username or password.", true);
+      if (res.status === 500) return setStatus("err", msg || "Server Error. Please try again later.", true);
 
-        if (!validateFields()) {
-          submitting = false;
-          focusFirstInvalid();
-          return;
-        }
+      setStatus("err", msg || `Unexpected Error: ${res.status}`, true);
+    }
 
-        submitBtn.disabled = true;
-        // submitBtn.textContent = "Logging in...";
+    // ========= Submit =========
+    let submitting = false;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (submitting) return;
 
-        // Build payload
-        const payload = {
-          login: input.loginId.value.trim(),
-          password: input.password.value.trim(),
-        };
+      hasSubmitted = true;
+      clearStatus();
 
-        if (DEBUG) {
-          showDebug(payload);
-          submitBtn.disabled = false;
-          submitting = false;
-          hasSubmitted = false;
-          return; // break early (don't go into fetch block)
-        }
+      if (!validateFields()){
+        focusFirstInvalid();
+        return;
+      }
 
-        try { // refer to /control/auth.js
-          const response = await fetch(LOGIN_API, {
-            method : "POST",
-            mode : "cors",
-            credentials : "include",
-            headers : { "Content-Type": "application/json" },
-            body : JSON.stringify(payload),
-          });
+      submitting = true;
+      form.setAttribute("aria-busy","true");
+      btnLogin.disabled = true; btnLogin.textContent = "Signing in…";
 
-          await displayServerMessage(response);
-        }
-        catch (error) {
-          console.error("Network Error: ", error);
-          showErr("Network Error. Please ensure the server is running.");
-        }
-        finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Login";
-          submitting = false;
-        }
-      });
+      const payload = {
+        login: trim(input.loginId.value),
+        password: trim(input.password.value),
+      };
 
-      // =========================
-      // Reset
-      // =========================
-      form.addEventListener('reset', () => {
-        Object.values(err).forEach(el => el.style.display = 'none');
-        Object.values(input).forEach(field => 
-          field.removeAttribute('aria-invalid')
-        );
-        clearStatus();
-        hasSubmitted = false;
+      try{
+        const res = await login(payload);
+        if (res?.mock){ setStatus("ok", "DEBUG: Logged in."); }
+        else          { await displayServerMessage(res); }
+      } catch(err){
+        console.error(err);
+        setStatus("err", "Network Error. Please ensure the server is running.", true);
+      } finally{
+        form.removeAttribute("aria-busy");
+        btnLogin.disabled = false; btnLogin.textContent = "Login";
         submitting = false;
-      });
-    </script>
-  </body>
+      }
+    });
+
+    // ========= Reset =========
+    form.addEventListener("reset", () => {
+      Object.values(err).forEach(el => el.style.display = "none");
+      [input.loginId, input.password].forEach(f => f.removeAttribute("aria-invalid"));
+      clearStatus();
+      hasSubmitted = false;
+      submitting = false;
+    });
+  </script>
+</body>
 </html>

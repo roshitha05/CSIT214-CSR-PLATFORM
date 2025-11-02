@@ -44,13 +44,15 @@ export const matchesTable = pgTable('matches', {
         .references(() => serviceRequestsTable.service_request_id, {
             onDelete: 'cascade'
         })
-        .notNull(),
+        .notNull()
+        .primaryKey(),
     matched_by: integer()
         .references(() => usersTable.user_id, {
             onDelete: 'cascade'
         })
         .notNull(),
     status: varchar({ length: 256 }).notNull(),
+    date_created: timestamp().defaultNow()
 });
 
 export const serviceRequestsTable = pgTable('service_requests', {
@@ -69,7 +71,9 @@ export const serviceRequestsTable = pgTable('service_requests', {
             onDelete: 'cascade'
         })
         .notNull(),
-    view_count: integer().default(0).notNull()
+    view_count: integer().default(0).notNull(),
+    date_created: timestamp().defaultNow(),
+    date_completed: timestamp()
 });
 
 export const shortlistsTable = pgTable('shortlists', {
@@ -83,5 +87,6 @@ export const shortlistsTable = pgTable('shortlists', {
         .references(() => usersTable.user_id, {
             onDelete: 'cascade'
         })
-        .notNull()
+        .notNull(),
+    date_created: timestamp().defaultNow()
 });

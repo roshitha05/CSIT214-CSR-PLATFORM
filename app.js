@@ -28,7 +28,34 @@ import CreateCategory from './control/categories/create-category.js';
 import GetCategories from './control/categories/get-categories.js';
 import SearchCategories from './control/categories/search-categories.js';
 import UpdateCategory from './control/categories/update-category.js';
-import DeleteCategory from './control/categories/delete-category.js';
+import ArchiveCategory from './control/categories/archive-category.js';
+import RestoreCategory from './control/categories/restore-category.js';
+
+import CreateServiceRequest from './control/service-requests/create-service-request.js';
+import DeleteServiceRequest from './control/service-requests/delete-service-request.js';
+import GetPinServiceRequests from './control/service-requests/get-pin-service-requests.js';
+import GetServiceRequestViews from './control/service-requests/get-service-request-views.js';
+import GetServiceRequests from './control/service-requests/get-service-requests.js';
+import SearchPinServiceRequests from './control/service-requests/search-pin-service-requests.js';
+import SearchServiceRequests from './control/service-requests/search-service-requests.js';
+import UpdateServiceRequest from './control/service-requests/update-service-request.js';
+import RestoreServiceRequest from './control/service-requests/restore-service-request.js';
+import RetrieveServiceRequest from './control/service-requests/retrieve-search-request.js';
+
+import GetShortlists from './control/shortlists/get-shortlists.js';
+import GetShortlistCount from './control/shortlists/get-shortlist-count.js';
+import InsertShortlist from './control/shortlists/insert-shortlist.js';
+import SearchShortlists from './control/shortlists/search-shortlists.js';
+import GetMatches from './control/matches/get-matches.js';
+import GetMatchesHistory from './control/matches/get-service-request-match-history.js';
+import SearchMatches from './control/matches/search-matches.js';
+import SearchMatchesHistory from './control/matches/search-service-request-match-history.js';
+import InsertMatch from './control/matches/insert-match.js';
+import CompleteMatch from './control/matches/complete-match.js';
+import RemoveShortlist from './control/shortlists/remove-shortlist.js';
+import GetDailyReport from './control/reports/get-daily-reports.js';
+import GetWeeklyReport from './control/reports/get-weekly-reports.js';
+import GetMonthlyReport from './control/reports/get-monthly-reports.js';
 
 export default class App {
     constructor() {
@@ -93,6 +120,10 @@ export default class App {
         const userProfilesRouter = express.Router();
         const usersRouter = express.Router();
         const categoriesRouter = express.Router();
+        const serviceRequestsRouter = express.Router();
+        const shortlistsRouter = express.Router();
+        const matchesRouter = express.Router();
+        const reportsRouter = express.Router();
 
         apiRouter.use('/', new Login().getRouter());
         apiRouter.use('/', new Logout().getRouter());
@@ -115,11 +146,44 @@ export default class App {
         categoriesRouter.use('/', new GetCategories().getRouter());
         categoriesRouter.use('/', new SearchCategories().getRouter());
         categoriesRouter.use('/', new UpdateCategory().getRouter());
-        categoriesRouter.use('/', new DeleteCategory().getRouter());
+        categoriesRouter.use('/', new ArchiveCategory().getRouter());
+        categoriesRouter.use('/', new RestoreCategory().getRouter());
+
+        serviceRequestsRouter.use('/', new CreateServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new DeleteServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new RestoreServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new RetrieveServiceRequest().getRouter());
+        serviceRequestsRouter.use('/', new SearchPinServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new SearchServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new GetPinServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new GetServiceRequestViews().getRouter());
+        serviceRequestsRouter.use('/', new GetServiceRequests().getRouter());
+        serviceRequestsRouter.use('/', new UpdateServiceRequest().getRouter());
+
+        shortlistsRouter.use('/', new GetShortlists().getRouter());
+        shortlistsRouter.use('/', new GetShortlistCount().getRouter());
+        shortlistsRouter.use('/', new InsertShortlist().getRouter());
+        shortlistsRouter.use('/', new SearchShortlists().getRouter());
+        shortlistsRouter.use('/', new RemoveShortlist().getRouter());
+
+        matchesRouter.use('/', new GetMatches().getRouter());
+        matchesRouter.use('/', new GetMatchesHistory().getRouter());
+        matchesRouter.use('/', new SearchMatches().getRouter());
+        matchesRouter.use('/', new SearchMatchesHistory().getRouter());
+        matchesRouter.use('/', new InsertMatch().getRouter());
+        matchesRouter.use('/', new CompleteMatch().getRouter());
+
+        reportsRouter.use('/', new GetDailyReport().getRouter());
+        reportsRouter.use('/', new GetWeeklyReport().getRouter());
+        reportsRouter.use('/', new GetMonthlyReport().getRouter());
 
         apiRouter.use('/user-profiles', userProfilesRouter);
         apiRouter.use('/users', usersRouter);
         apiRouter.use('/categories', categoriesRouter);
+        apiRouter.use('/service-requests', serviceRequestsRouter);
+        apiRouter.use('/shortlists', shortlistsRouter);
+        apiRouter.use('/matches', matchesRouter);
+        apiRouter.use('/reports', reportsRouter);
 
         this.app.use('/api', apiRouter);
         this.app.use(express.static('boundary'));

@@ -1,346 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>User Registration</title>
     <style>
       /* =========================
-        Design Tokens
+         Design Tokens
       ========================== */
       :root {
-        --bg: #f0f9ff;
-        --card: #fff;
-        --text: #1e293b;
-        --muted: #64748b;
-        --accent: #38bdf8;
-        --accent-2: #0ea5e9;
-        --danger: #ef4444;
-        --success-bg: #dcfce7;
-        --success-text: #166534;
-        --ring: rgba(14,165,233,.3);
-        --radius: 16px;
+        --bg:#f0f9ff;
+        --card:#fff;
+        --text:#1e293b;
+        --muted:#64748b;
+        --accent:#38bdf8;
+        --accent-2:#0ea5e9;
+        --danger:#ef4444;
+        --success-bg:#dcfce7;
+        --success-text:#166534;
+        --ring:rgba(14,165,233,.3);
+        --radius:16px;
       }
 
       /* =========================
-        Base / Layout
+         Base / Layout
       ========================== */
-      * { box-sizing: border-box; }
-      html, body { min-height: 100svh; }
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        background: linear-gradient(180deg, #e0f2fe, var(--bg));
-        color: var(--text);
-        display: grid;
-        place-items: start center;
-        padding: 24px;
-        overflow: auto;
+      *{ box-sizing:border-box; }
+      html,body{ min-height:100svh; }
+      body{
+        margin:0;
+        font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background:linear-gradient(180deg,#e0f2fe,var(--bg));
+        color:var(--text);
+        display:grid; place-items:start center;
+        padding:24px; overflow:auto;
       }
 
       /* =========================
-        Card
+         Card
       ========================== */
-      .card {
-        width: 100%;
-        max-width: 720px;
-        background: var(--card);
-        border: 1px solid #e2e8f0;
-        border-radius: var(--radius);
-        box-shadow: 0 8px 24px rgba(0,0,0,.08);
-        overflow: visible;
+      .card{
+        width:100%; max-width:720px;
+        background:var(--card);
+        border:1px solid #e2e8f0; border-radius:var(--radius);
+        box-shadow:0 8px 24px rgba(0,0,0,.08);
+        overflow:visible;
       }
 
       /* =========================
-        Header
+         Header
       ========================== */
-      .header {
-        padding: 24px 28px;
-        border-bottom: 1px solid #e2e8f0;
-        background: linear-gradient(180deg, #e0f2fe, #f8fafc);
+      .header{
+        padding:24px 28px;
+        border-bottom:1px solid #e2e8f0;
+        background:linear-gradient(180deg,#e0f2fe,#f8fafc);
       }
-      .header h1 { margin: 0 0 4px; font-size: 1.4rem; color: var(--accent-2); }
-      .header p  { margin: 0; color: var(--muted); font-size: .95rem; }
+      .header h1{ margin:0 0 4px; font-size:1.4rem; color:var(--accent-2); }
+      .header p { margin:0; color:var(--muted); font-size:.95rem; }
 
       /* =========================
-        Form & Fields
+         Form & Fields
       ========================== */
-      form { padding: 16px 20px 8px; }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px 16px;
+      form{ padding:16px 20px 8px; }
+      .grid{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:18px 16px;
       }
-      .row { display: flex; flex-direction: column; }
-      label { margin-bottom: 8px; font-weight: 600; color: var(--text); }
+      .row{ display:flex; flex-direction:column; }
+      label{ margin-bottom:8px; font-weight:600; color:var(--text); }
 
-      input, select, textarea {
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 12px;
-        background: #f8fafc;
-        border: 1px solid #cbd5e1;
-        color: var(--text);
-        font-size: .98rem;
-        transition: border-color .2s, box-shadow .2s;
+      input, select, textarea{
+        width:100%;
+        padding:12px 14px;
+        border-radius:12px;
+        background:#f8fafc;
+        border:1px solid #cbd5e1;
+        color:var(--text);
+        font-size:.98rem;
+        transition:border-color .2s, box-shadow .2s;
       }
-
-      /* Focus */
-      input:focus, select:focus, textarea:focus {
-        outline: none;
-        border-color: var(--accent-2);
-        box-shadow: 0 0 0 3px var(--ring);
+      input:focus, select:focus, textarea:focus{
+        outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
       }
-      textarea { min-height: 100px; resize: vertical; }
+      textarea{ min-height:100px; resize:vertical; }
 
-      /* Helper Text */
-      .hint  { margin-top: 6px; font-size: .85rem; color: var(--muted); }
-      .error { margin-top: 6px; color: var(--danger); font-size: .9rem; display: none; }
+      .hint{ margin-top:6px; font-size:.85rem; color:var(--muted); }
+      .error{ margin-top:6px; color:var(--danger); font-size:.9rem; display:none; }
 
       /* =========================
-        Password Toggle
+         Password Toggle
       ========================== */
-      .password-wrapper { position: relative; }
-      .password-wrapper input { padding-right: 2.5rem; }
-      .password-wrapper i {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--accent-2);
-        cursor: pointer;
-        background: none;
-        border: 0;
-        padding: 0;
+      .password-wrapper{ position:relative; }
+      .password-wrapper input{ padding-right:2.5rem; }
+      .password-wrapper i{
+        position:absolute; right:10px; top:50%; transform:translateY(-50%);
+        color:var(--accent-2); cursor:pointer; background:none; border:0; padding:0;
       }
-      .password-wrapper i:hover { transform: translateY(-50%) scale(1.05); }
+      .password-wrapper i:hover{ transform:translateY(-50%) scale(1.05); }
 
       /* =========================
-        Actions & Buttons
+         Actions & Buttons
       ========================== */
-      .actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 16px;
-        align-items: center;
-        flex-wrap: wrap;
+      .actions{
+        display:flex; gap:12px; margin-top:16px; align-items:center; flex-wrap:wrap;
       }
-      button {
-        border: 0;
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform .1s;
+      button{
+        border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer; transition:transform .1s;
       }
-      .btn-primary   { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #fff; }
-      .btn-primary:hover { transform: scale(1.02); }
-      .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid #cbd5e1; }
-      .btn-secondary:hover { background: #e2e8f0; }
+      .btn-primary{ background:linear-gradient(180deg,var(--accent),var(--accent-2)); color:#fff; }
+      .btn-primary:hover{ transform:scale(1.02); }
+      .btn-secondary{ background:#f1f5f9; color:var(--text); border:1px solid #cbd5e1; }
+      .btn-secondary:hover{ background:#e2e8f0; }
 
       /* =========================
-        Status Banners
+         Status Banners
       ========================== */
-      .success {
-        display: none;
-        padding: 12px 14px;
-        margin-top: 12px;
-        border-radius: 12px;
-        background: var(--success-bg);
-        border: 1px solid #bbf7d0;
-        color: var(--success-text);
-        font-size: .95rem;
+      .success{
+        display:none; padding:12px 14px; margin-top:12px;
+        border-radius:12px; background:var(--success-bg);
+        border:1px solid #bbf7d0; color:var(--success-text);
+        font-size:.95rem;
       }
 
       /* =========================
-        Footer
+         Footer
       ========================== */
-      .footer {
-        padding: 18px 28px;
-        border-top: 1px solid #e2e8f0;
-        color: var(--muted);
-        font-size: .9rem;
-        display: flex;
-        justify-content: space-between;
-        flex-wrap: wrap;
+      .footer{
+        padding:18px 28px; border-top:1px solid #e2e8f0;
+        color:var(--muted); font-size:.9rem; display:flex; justify-content:space-between; flex-wrap:wrap;
       }
 
       /* =========================
-        Responsive
+         Responsive
       ========================== */
-      @media (max-width: 640px) {
-        .grid { grid-template-columns: 1fr; }
-        .header, form, .footer { padding: 18px; }
+      @media (max-width:640px){
+        .grid{ grid-template-columns:1fr; }
+        .header, form, .footer{ padding:18px; }
       }
     </style>
   </head>
   <body>
-    <div class="card" role="region" aria-labelledby="title">
+    <div class="card" role="region">
       <div class="header">
-        <h1 id="title">User Registration</h1>
+        <h1>User Registration</h1>
         <p>Create an account to request help, represent users, or volunteer.</p>
       </div>
 
       <form id="registerForm" novalidate>
         <div class="grid">
-          <!-- 1. Name (required) -->
+          <!-- 1. Name -->
           <div class="row">
-            <label for="fullName">Full Name <span style="color: var(--muted)">*</span></label>
-            <input
-              id="fullName"
-              name="fullName"
-              type="text"
-              required
-              maxlength="64"
-              placeholder="e.g., Jane Doe"
-              autocomplete="name"
-              autofocus
-            />
-            <small class="hint">Required. Up to 64 characters.</small>
-            <div id="err-fullName" class="error">
-              Please enter your name (max 64 chars).
-            </div>
+            <label for="fullname">Full Name <span style="color:var(--muted)">*</span></label>
+            <input id="fullname" name="fullname" type="text" required placeholder="e.g., Jane Doe"
+                   aria-describedby="fullname-hint err-fullname" autocomplete="name" autofocus />
+            <small id="fullname-hint" class="hint">Required. Up to 64 characters.</small>
+            <div id="err-fullname" class="error">Please enter your name (max 64 chars).</div>
           </div>
 
-          <!-- 2. Login ID (required) -->
+          <!-- 2. Username -->
           <div class="row">
-            <label for="loginId">Login ID <span style="color: var(--muted)">*</span></label>
-            <input
-              id="loginId"
-              name="loginId"
-              type="text"
-              required
-              maxlength="32"
-              placeholder="e.g., janedoe123"
-              autocomplete="username"
-              pattern="^[A-Za-z0-9._-]{3,32}$"
-            />
-            <small class="hint"
-              >Required. 3–32 chars: letters, numbers, dot, underscore,
-              hyphen.</small
-            >
-            <div id="err-loginId" class="error">
-              Please enter a valid Login ID (3–32 allowed chars).
-            </div>
+            <label for="username">Username <span style="color:var(--muted)">*</span></label>
+            <input id="username" name="username" type="text" required placeholder="e.g., janedoe123"
+                   aria-describedby="username-hint err-username" autocomplete="username" />
+            <small id="username-hint" class="hint">Required. 3–32 chars: letters, numbers, dot, underscore, hyphen.</small>
+            <div id="err-username" class="error">Please enter a valid username (3–32 allowed chars).</div>
           </div>
 
-          <!-- 3. Email (required) -->
+          <!-- 3. Email -->
           <div class="row">
-            <label for="email">Email <span style="color: var(--muted)">*</span></label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              maxlength="254"
-              placeholder="you@example.com"
-              autocomplete="email"
-            />
-            <small class="hint">Required.</small>
-            <div id="err-email" class="error">
-              Please enter a valid email address.
-            </div>
+            <label for="email">Email <span style="color:var(--muted)">*</span></label>
+            <input id="email" name="email" type="email" required placeholder="you@example.com"
+                   aria-describedby="email-hint err-email" autocomplete="email" />
+            <small id="email-hint" class="hint">Required.</small>
+            <div id="err-email" class="error">Please enter a valid email address.</div>
           </div>
 
-          <!-- 4. Password (required) -->
+          <!-- 4. Password -->
           <div class="row">
-            <label for="password">Password <span style="color: var(--muted)">*</span></label>
+            <label for="password">Password <span style="color:var(--muted)">*</span></label>
             <div class="password-wrapper">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minlength="8"
-                maxlength="128"
-                autocomplete="new-password"
-                placeholder="At least 8 characters"
-              />
-              <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
+              <input id="password" name="password" type="password" required
+                     autocomplete="new-password" placeholder="At least 8 characters"
+                     aria-describedby="password-hint err-password" />
+              <i class="fa-solid fa-eye-slash" id="togglePassword" aria-label="Toggle password visibility"></i>
             </div>
-            <small class="hint">Required. Password should be at least 8 characters.</small>
+            <small id="password-hint" class="hint">Required. Password should be at least 8 characters.</small>
             <div id="err-password" class="error">Please enter a password (8–128 chars).</div>
           </div>
 
-          <!-- 5. Phone Number (required) -->
+          <!-- 5. Phone Number -->
           <div class="row">
-            <label for="phone">Phone Number <span style="color: var(--muted)">*</span></label>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              required
-              minlength = "8"
-              maxlength="8"
-              inputmode="tel"
-              placeholder="8123 4567"
-              autocomplete="tel"
-              pattern="^[+0-9()\-.\s]{6,20}$"
-            />
-            <small class="hint"
-              >Required. 8 digits</small
-            >
-            <div id="err-phone" class="error">
-              Please enter a valid phone number.
-            </div>
+            <label for="phone">Phone Number <span style="color:var(--muted)">*</span></label>
+            <input id="phone" name="phone" type="tel" required inputmode="tel" placeholder="8123 4567"
+                   aria-describedby="phone-hint err-phone" autocomplete="tel" />
+            <small id="phone-hint" class="hint">Required. 8 digits</small>
+            <div id="err-phone" class="error">Please enter a valid phone number.</div>
           </div>
 
-          <!-- 6. Address (required) -->
-          <div class="row" style="grid-column: 1 / -1">
-            <label for="address">Address <span style="color: var(--muted)">*</span></label>
-            <textarea
-              id="address"
-              name="address"
-              required
-              maxlength="255"
-              placeholder="Block/Street, Unit, Postal Code"
-              autocomplete="street-address"
-              spellcheck="false"
-            ></textarea>
-            <small class="hint">Required. Up to 255 characters.</small>
-            <div id="err-address" class="error">
-              Please enter your address (max 255 chars).
-            </div>
+          <!-- 6. Address -->
+          <div class="row" style="grid-column:1 / -1">
+            <label for="address">Address <span style="color:var(--muted)">*</span></label>
+            <textarea id="address" name="address" required
+                      placeholder="Block/Street, Unit, Postal Code"
+                      aria-describedby="hint-address err-address" autocomplete="street-address" spellcheck="false"></textarea>
+            <small id="hint-address" class="hint">Required. Up to 255 characters.</small>
+            <div id="err-address" class="error">Please enter your address (max 255 chars).</div>
           </div>
 
-          <!-- 7. DOB (required) -->
+          <!-- 7. DOB -->
           <div class="row">
-            <label for="dob">Date of Birth <span style="color: var(--muted)">*</span></label>
-            <input id="dob" name="dob" type="date" required max="" />
-            <small class="hint">Required.</small>
-            <div id="err-dob" class="error">
-              Please choose a valid date in the past.
-            </div>
+            <label for="dob">Date of Birth <span style="color:var(--muted)">*</span></label>
+            <input id="dob" name="dob" type="date" required max="" aria-describedby="hint-dob err-dob" />
+            <small id="hint-dob" class="hint">Required.</small>
+            <div id="err-dob" class="error">Please choose a valid date in the past.</div>
           </div>
 
-          <!-- 8. User Profile (role) required -->
+          <!-- 8. User Profile -->
           <div class="row">
-            <label for="profile">User Profile <span style="color: var(--muted)">*</span></label>
-            <select
-              id="profile"
-              name="profile"
-              required
-              aria-describedby="hint-profile err-profile"
-            >
+            <label for="profile">User Profile <span style="color:var(--muted)">*</span></label>
+            <select id="profile" name="profile" required aria-describedby="hint-profile err-profile">
               <option value="">Loading profiles…</option>
             </select>
-            <small id="hint-profile" class="hint"
-              >Required. Select a role.</small
-            >
+            <small id="hint-profile" class="hint">Required. Select a role.</small>
             <div id="err-profile" class="error">Please select a profile.</div>
           </div>
         </div>
 
         <div class="actions">
-          <button class="btn-primary" type="submit" id="submitBtn">
-            Create Account
-          </button>
+          <button class="btn-primary" type="submit" id="submitBtn">Create Account</button>
           <button class="btn-secondary" type="reset">Clear</button>
-          <button class="btn-secondary" type="button" id="returnDashboard">Return to Dashboard</button>
+          <button class="btn-secondary" type="button" onclick="returnToDashboard()">Return to Dashboard</button>
         </div>
 
         <div id="success" class="success" role="status" aria-live="polite"></div>
@@ -350,401 +241,424 @@
         <span>© 2025 Community Support Platform</span>
       </div>
     </div>
-  <script>
-    // =========================
-    // Config
-    // =========================
-    const DEBUG        = false; // toggle as needed
-    const API_URL      = "http://127.0.0.1:80/api";
-    const PROFILES_API = `${API_URL}/user-profiles`;
-    const REGISTER_API = `${API_URL}/users`;
 
-    // =========================
-    // DOM
-    // =========================
-    const $ = (id) => document.getElementById(id);
+    <script>
+      /* =========================================================
+         1) Config & constants
+      ========================================================= */
+      const DEBUG        = false;
+      const API_URL      = "http://127.0.0.1:80/api";
+      const PROFILES_API = `${API_URL}/user-profiles`;
+      const REGISTER_API = `${API_URL}/users`;
 
-    const form =      $("registerForm");
-    const success =   $("success");
-    const submitBtn = $("submitBtn");
+      // Validation constants
+      const NAME_MAX      = 64;
+      const USERNAME_MIN  = 3, USERNAME_MAX = 32;
+      const EMAIL_MAX     = 254;
+      const PHONE_LEN     = 8;
+      const PASSWORD_MIN  = 8, PASSWORD_MAX = 128;
 
-    const input = {
-      fullName: $("fullName"),
-      loginId:  $("loginId"),
-      email:    $("email"),
-      password: $("password"),
-      phone:    $("phone"),
-      address:  $("address"),
-      dob:      $("dob"),
-      profile:  $("profile"),
-    }
+      // Regex (new RegExp(...))
+      const USERNAME_RE = new RegExp(`^[A-Za-z0-9._-]{${USERNAME_MIN},${USERNAME_MAX}}$`);
+      const EMAIL_RE    = new RegExp('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$', 'i');
+      const PHONE_RE    = new RegExp(`^\\d{${PHONE_LEN}}$`);
 
-    const err = {
-      fullName: $("err-fullName"),
-      loginId:  $("err-loginId"),
-      email:    $("err-email"),
-      password: $("err-password"),
-      phone:    $("err-phone"),
-      address:  $("err-address"),
-      dob:      $("err-dob"),
-      profile:  $("err-profile"),
-    }
+      // Used to track whether a form was successfully submitted once
+      const formCompletedRef = { value:false };
 
-    // =========================
-    // UI Status Helpers
-    // =========================
-    function showOk(message) {
-      success.style.display = "block";
-      success.style.background = "#dcfce7";
-      success.style.border = "1px solid #bbf7d0";
-      success.style.color = "#166534";
-      success.setAttribute("aria-live", "polite");
-      success.textContent = message;
-    }
+      /* =========================================================
+         2) DOM
+      ========================================================= */
+      const $ = (id) => document.getElementById(id);
 
-    function showErr(message) {
-      success.style.display = "block";
-      success.style.background = "#fee2e2";
-      success.style.border = "1px solid #fecaca";
-      success.style.color = "#991b1b";
-      success.setAttribute("aria-live", "assertive");
-      success.textContent = message;
-    }
+      const form      = $("registerForm");
+      const success   = $("success");
+      const submitBtn = $("submitBtn");
 
-    function clearStatus() {
-      success.style.display = "none";
-      success.textContent = "";
-      success.setAttribute("aria-live", "polite");
-    }
-
-    // Debug Helper
-    function showDebug(payload) {
-      success.style.display = "block";
-      success.style.background = "#fef9c3";   
-      success.style.border = "1px solid #fde047";
-      success.style.color = "#854d0e";
-      success.style.whiteSpace = "pre-wrap";
-      success.textContent =
-        `[DEBUG]:\n\n` +
-        `This would POST to:\n${REGISTER_API}\n\n` +
-        `With values:\n${JSON.stringify(payload, null, 2)}`;
-    }
-
-    // =========================
-    // Utils
-    // =========================
-    const show       = (el, on) => { el.style.display = on ? "block" : "none"; };
-    const nonEmpty   = (s) => String(s ?? "").trim().length > 0;
-    const collapse   = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-    const lowerTrim  = (s) => collapse(s).toLowerCase();
-    const digitsOnly = (s) => String(s ?? "").replace(/\D/g, "");
-
-    let hasSubmitted = false;
-    let submitting   = false;
-    const formCompletedRef = { value: false };
-
-    // Accept past dates only
-    function pastDateOnly(value) {
-      const d = new Date(value);
-      const today = new Date();
-      d.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-      return d instanceof Date && !isNaN(d) && d < today;
-    }
-
-    // Keep DOB max to current date
-    (function setDobMaxToday() {
-      const today = new Date().toISOString().split("T")[0];
-      input.dob.setAttribute("max", today);
-    })();
-
-    // Toggle Password Show / Hide
-    const togglePassword = $("togglePassword");
-    togglePassword?.addEventListener("click", function () {
-      const type = input.password.type === "password" ? "text" : "password";
-      input.password.type = type;
-      this.classList.toggle("fa-eye");
-      this.classList.toggle("fa-eye-slash");
-    });
-
-    function focusFirstInvalid() {
-      const order = [
-        input.fullName, input.loginId, input.email, input.password,
-        input.phone, input.address, input.dob, input.profile
-      ];
-      for (const el of order) {
-        if (el.hasAttribute("aria-invalid")) {
-          el.focus({preventScroll: true});
-          return;
-        }
-      }
-    }
-
-    function attachLiveValidation(fields, validateFn, debounceMs = 200) {
-      let timer = null;
-      fields.forEach((field) => {
-        field.addEventListener("input", () => {
-          if (!hasSubmitted) return;
-          clearTimeout(timer);
-          timer = setTimeout(() => { 
-            clearStatus(); 
-            validateFn(); 
-          }, debounceMs);
-        });
-      });
-    }
-
-    function attachPostSuccessReset(inputs, form, clearFn, flagRef) {
-      Object.values(inputs).forEach((field) => {
-        field.addEventListener("focus", () => {
-          if (!flagRef.value) return;
-          form.reset();
-          clearFn();
-          Object.values(inputs).forEach((f) => f.removeAttribute("aria-invalid"));
-          flagRef.value = false;
-        });
-      });
-    }
-
-    attachLiveValidation(
-      [input.fullName, input.loginId, input.email, input.password, input.phone, input.address],
-      validateFields
-    );
-    [input.dob, input.profile].forEach((el) =>
-      el.addEventListener("change", () => { if (hasSubmitted) { clearStatus(); validateFields(); } })
-    );
-    attachPostSuccessReset(input, form, clearStatus, formCompletedRef);
-
-    // =========================
-    // Validation
-    // =========================
-    function validateFields() {
-      let valid = true;
-
-      const vName  = collapse(input.fullName.value);
-      const vLogin = lowerTrim(input.loginId.value);
-      const vEmail = lowerTrim(input.email.value);
-      const vPw    = input.password.value;
-      const vPhone = digitsOnly(input.phone.value);
-      const vAddr  = collapse(input.address.value);
-      const vDob   = input.dob.value;
-      const vProf  = collapse(input.profile.value);
-
-      // Full name: required, <= 64
-      const okName = nonEmpty(vName) && vName.length <= 64;
-      show(err.fullName, !okName);
-      input.fullName.toggleAttribute("aria-invalid", !okName);
-      valid &&= okName;
-
-      // Login ID: required, 3–32 allowed chars (lowercased for storage)
-      const okLogin = /^[a-z0-9._-]{3,32}$/.test(vLogin);
-      show(err.loginId, !okLogin);
-      input.loginId.toggleAttribute("aria-invalid", !okLogin);
-      valid &&= okLogin;
-
-      // Email: required, <= 254 and simple pattern
-      const okEmail = /\S+@\S+\.\S+/.test(vEmail) && vEmail.length <= 254;
-      show(err.email, !okEmail);
-      input.email.toggleAttribute("aria-invalid", !okEmail);
-      valid &&= okEmail;
-
-      // Password: 8–128
-      const okPw = vPw.length >= 8 && vPw.length <= 128;
-      show(err.password, !okPw);
-      input.password.toggleAttribute("aria-invalid", !okPw);
-      valid &&= okPw;
-
-      // Phone: exactly 8 digits (SG style)
-      const okPhone = /^\d{8}$/.test(vPhone);
-      show(err.phone, !okPhone);
-      input.phone.toggleAttribute("aria-invalid", !okPhone);
-      valid &&= okPhone;
-
-      // Address: required, <= 255
-      const okAddr = nonEmpty(vAddr) && vAddr.length <= 255;
-      show(err.address, !okAddr);
-      input.address.toggleAttribute("aria-invalid", !okAddr);
-      valid &&= okAddr;
-
-      // DOB: required, past
-      const okDob = nonEmpty(vDob) && pastDateOnly(vDob);
-      show(err.dob, !okDob);
-      input.dob.toggleAttribute("aria-invalid", !okDob);
-      valid &&= okDob;
-
-      // Profile: required
-      const okProf = nonEmpty(vProf);
-      show(err.profile, !okProf);
-      input.profile.toggleAttribute("aria-invalid", !okProf);
-      valid &&= okProf;
-
-      return valid;
-    }
-
-    // =========================
-    // Server Message Display (Boundary)
-    // =========================
-    async function displayServerMessage(response, { onSuccess } = {}) {
-      let body = null;
-      let serverMsg = "";
-
-      try {
-        // Try JSON first
-        const ct = response.headers.get("content-type") || "";
-        if (ct.includes("application/json")) {
-          body = await response.clone().json();
-          serverMsg = body?.message || body?.error || "";
-        } else {
-          serverMsg = (await response.clone().text()).trim();
-        }
-      } catch {
-        // ignore parse errors
-      }
-
-      // Success cases
-      if (response.status === 201 || response.status === 200) {
-        showOk(serverMsg || "Account created successfully.");
-        onSuccess?.(body);
-        return;
-      }
-
-      // Known error cases
-      if (response.status === 400) { showErr(serverMsg || "Registration failed. Please check your inputs."); return; }
-      if (response.status === 401) { showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
-      if (response.status === 409) { showErr(serverMsg || "This login ID or email already exists."); return; }
-
-      // Fallback
-      showErr(serverMsg || `Unexpected error: ${response.status}`);
-    }
-
-    // =========================
-    // Load roles (profiles)
-    // =========================
-    document.addEventListener("DOMContentLoaded", loadProfiles);
-
-    async function loadProfiles() {
-      const select = input.profile;
-      select.innerHTML = '<option value="">Loading profiles…</option>';
-      select.disabled  = true;
-
-      try {
-        const response = await fetch(PROFILES_API, {
-          method: "GET",
-          mode: "cors",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const data = await response.json();
-        const profiles = data.userProfiles || data.data || [];
-
-        select.innerHTML = "";
-        select.appendChild(new Option("Select a profile…", ""));
-
-        if (!Array.isArray(profiles) || profiles.length === 0) {
-          select.appendChild(new Option("No profiles available", ""));
-          select.disabled = true;
-          return;
-        }
-
-        profiles
-          .map(p => p?.name || p?.profile_name)
-          .filter(Boolean)
-          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-          .forEach((name) => select.appendChild(new Option(name, name)));
-
-        select.disabled = false;
-      } catch (e) {
-        console.error("Failed to load profiles:", e);
-        select.innerHTML = "";
-        select.appendChild(new Option("Error loading profiles", ""));
-        select.disabled = true;
-        showErr("Unable to load profiles. Please try again later.");
-      }
-    }
-
-    // =========================
-    // Submit
-    // =========================
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      if (submitting) return;
-      submitting = true;
-      hasSubmitted = true;
-      clearStatus();
-
-      if (!validateFields()) {
-        focusFirstInvalid();
-        submitting = false;
-        return;
-      }
-
-      submitBtn.disabled = true;
-
-      // Normalized payload
-      const payload = {
-        fullname     : collapse(input.fullName.value),
-        username     : lowerTrim(input.loginId.value),
-        email        : lowerTrim(input.email.value),
-        password     : input.password.value,
-        phone_number : digitsOnly(input.phone.value),
-        address      : collapse(input.address.value),
-        date_of_birth: input.dob.value,
-        user_profile : collapse(input.profile.value),
+      const input = {
+        fullname: $("fullname"),
+        username:  $("username"),
+        email:    $("email"),
+        password: $("password"),
+        phone:    $("phone"),
+        address:  $("address"),
+        dob:      $("dob"),
+        profile:  $("profile"),
       };
 
-      if (DEBUG) {
-        showDebug(payload);
-        submitBtn.disabled = false;
-        submitting = false;
-        hasSubmitted = false;
-        return;
+      const err = {
+        fullname: $("err-fullname"),
+        username:  $("err-username"),
+        email:    $("err-email"),
+        password: $("err-password"),
+        phone:    $("err-phone"),
+        address:  $("err-address"),
+        dob:      $("err-dob"),
+        profile:  $("err-profile"),
+      };
+
+      /* =========================================================
+         3) Status helpers
+      ========================================================= */
+      function showOk(message){
+        success.style.display = "block";
+        success.style.background = "#dcfce7";
+        success.style.border = "1px solid #bbf7d0";
+        success.style.color = "#166534";
+        success.setAttribute("aria-live","polite");
+        success.textContent = message;
+        formCompletedRef.value = true;
+      }
+      function showErr(message){
+        success.style.display = "block";
+        success.style.background = "#fee2e2";
+        success.style.border = "1px solid #fecaca";
+        success.style.color = "#991b1b";
+        success.setAttribute("aria-live","assertive");
+        success.textContent = message;
+      }
+      function clearStatus(){
+        success.style.display = "none";
+        success.textContent = "";
+        success.setAttribute("aria-live","polite");
       }
 
-      try {
-        const response = await fetch(REGISTER_API, {
-          method : "POST",
-          mode : "cors",
-          credentials : "include",
-          headers: { "Content-Type": "application/json" },
-          body : JSON.stringify(payload),
+      function showDebug(payload){
+        success.style.display = "block";
+        success.style.background = "#fef9c3";
+        success.style.border = "1px solid #fde047";
+        success.style.color = "#854d0e";
+        success.style.whiteSpace = "pre-wrap";
+        success.textContent =
+          `[DEBUG]:\n\nThis would POST to:\n${REGISTER_API}\n\nWith values:\n${JSON.stringify(payload,null,2)}`;
+      }
+
+      function attachPostSuccessReset(inputs, form, clearFn, flagRef){
+        Object.values(inputs).forEach((f)=>{
+          f.addEventListener("focus", ()=>{
+            if(!flagRef.value) return;
+            form.reset();
+            clearFn();
+            Object.values(inputs).forEach(el => el.removeAttribute("aria-invalid"));
+            flagRef.value = false;
+          });
         });
+      }
 
-        await displayServerMessage(response, {
-          onSuccess: () => {
-            formCompletedRef.value = true;
+      /* =========================================================
+         4) Utils
+      ========================================================= */
+      const show       = (el, on) => { el.style.display = on ? "block" : "none"; };
+      const collapse   = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
+      const nonEmpty   = (s) => collapse(s).length > 0;
+      const lowerTrim  = (s) => collapse(s).toLowerCase();
+      const digitsOnly = (s) => String(s ?? "").replace(/\D/g, "");
 
-            // Optionally redirect after success:
-            // setTimeout(() => window.location.href = "admin_dashboard.html", 900);
+      // State guards
+      let hasSubmitted = false;
+      let submitting   = false;
+
+      const isActive = (s) => String(s ?? "").toUpperCase() === "ACTIVE"; // filter and display ACTIVE user profiles
+
+      function pastDateOnly(value){
+        const d = new Date(value), today = new Date();
+        d.setHours(0,0,0,0); today.setHours(0,0,0,0);
+        return d instanceof Date && !isNaN(d) && d < today;
+      }
+
+      // Set DOB max to today
+      (function setDobMaxToday(){
+        const today = new Date().toISOString().split("T")[0];
+        input.dob.setAttribute("max", today);
+      })();
+
+      // Apply input constraints from constants (avoid drift)
+      (function applyRuntimeConstraints(){
+        input.fullname.maxLength = NAME_MAX;
+        input.username.maxLength = USERNAME_MAX;
+        input.email.maxLength    = EMAIL_MAX;
+        input.password.minLength = PASSWORD_MIN;
+        input.password.maxLength = PASSWORD_MAX;
+        input.phone.maxLength    = PHONE_LEN;
+        input.phone.minLength    = PHONE_LEN;
+
+        // Patterns
+        input.username.setAttribute("pattern", USERNAME_RE.source);
+        input.phone.setAttribute("pattern", PHONE_RE.source);
+      })();
+
+      // Toggle password visibility
+      $("togglePassword")?.addEventListener("click", function(){
+        const next = input.password.type === "password" ? "text" : "password";
+        input.password.type = next;
+        this.classList.toggle("fa-eye");
+        this.classList.toggle("fa-eye-slash");
+      });
+
+      /* =========================================================
+         5) Load roles (populate dropdown)
+      ========================================================= */
+      document.addEventListener("DOMContentLoaded", loadProfiles);
+
+      async function loadProfiles() {
+        const select = input.profile;
+        select.innerHTML = '<option value="">Loading profiles…</option>';
+        select.disabled = true;
+
+        try {
+          const res = await fetch(PROFILES_API, {
+            method:"GET", mode:"cors", credentials:"include",
+            headers:{ "Content-Type":"application/json" }
+          });
+          if(!res.ok) throw new Error(`HTTP ${res.status}`);
+
+          const data = await res.json();
+          const raw = data.userProfiles || data.data || [];
+          const active = (Array.isArray(raw) ? raw : [])
+            .map(p => ({ name: p?.name ?? p?.profile_name ?? "", status: p?.status ?? p?.profile_status ?? "" }))
+            .filter(p => p.name && isActive(p.status))
+            .sort((a,b)=> a.name.localeCompare(b.name, undefined, { sensitivity:"base" }));
+
+          const opts = [];
+          if(active.length === 0){
+            opts.push(new Option("No profiles available...", ""));
+            select.disabled = true;
+          }else{
+            opts.push(new Option("Select a profile...", ""));
+            active.forEach(p => opts.push(new Option(p.name, p.name)));
+            select.disabled = false;
           }
-        });
-      } catch (err) {
-        console.error("Network error: ", err);
-        showErr("Network error. Please ensure the server is running.");
-      } finally {
-        setTimeout(() => { submitBtn.disabled = false; submitting = false; }, 800);
+          select.replaceChildren(...opts);
+        }catch(e){
+          console.error("Failed to load profiles:", e);
+          select.replaceChildren(new Option("Error loading profiles", ""));
+          select.disabled = true;
+          showErr("Unable to load profiles. Please try again later.");
+        }
       }
-    });
 
-    // =========================
-    // Reset
-    // =========================
-    form.addEventListener("reset", () => {
-      Object.values(err).forEach((el) => (el.style.display = "none"));
-      Object.values(input).forEach((f) => f.removeAttribute("aria-invalid"));
-      clearStatus();
-      hasSubmitted = false;
-      formCompletedRef.value = false;                                    
-    });
+      /* =========================================================
+         6) Validation
+      ========================================================= */
+      function validateFullName(){
+        const v = collapse(input.fullname.value);
+        const ok = nonEmpty(v) && v.length <= NAME_MAX;
+        err.fullname.style.display = ok ? "none" : "block";
+        input.fullname.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
 
-    // =========================
-    // Navigation
-    // =========================
-    $("returnDashboard").addEventListener("click", () => {
-      window.location.href = "admin_dashboard.html";
-    });
-  </script>
-</body>
+      function validateUsername(){
+        const v = collapse(input.username.value);
+        const ok = nonEmpty(v) && USERNAME_RE.test(v);
+        err.username.style.display = ok ? "none" : "block";
+        input.username.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
+
+      function validateEmail(){
+        const v = lowerTrim(input.email.value);
+        const ok = nonEmpty(v) && EMAIL_RE.test(v) && v.length <= EMAIL_MAX;
+        err.email.style.display = ok ? "none" : "block";
+        input.email.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
+
+      function validatePassword(){
+        const v = input.password.value;
+        const ok = v.length >= PASSWORD_MIN && v.length <= PASSWORD_MAX;
+        err.password.style.display = ok ? "none" : "block";
+        input.password.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
+
+      function validatePhone(){
+        const v = digitsOnly(input.phone.value);
+        const ok = PHONE_RE.test(v);
+        err.phone.style.display = ok ? "none" : "block";
+        input.phone.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
+
+      function validateAddress(){
+        const v = collapse(input.address.value);
+        const ok = nonEmpty(v) && v.length <= 255;
+        err.address.style.display = ok ? "none" : "block";
+        input.address.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
+
+      function validateDob(){
+        const v = input.dob.value;
+        const ok = nonEmpty(v) && pastDateOnly(v);
+        err.dob.style.display = ok ? "none" : "block";
+        input.dob.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
+
+      function validateProfile(){
+        const v = collapse(input.profile.value);
+        const ok = nonEmpty(v);
+        err.profile.style.display = ok ? "none" : "block";
+        input.profile.toggleAttribute("aria-invalid", !ok);
+        return ok;
+      }
+
+      function validateForm(){
+        const a = validateFullName();
+        const b = validateUsername();
+        const c = validateEmail();
+        const d = validatePassword();
+        const e = validatePhone();
+        const f = validateAddress();
+        const g = validateDob();
+        const h = validateProfile();
+        if(!a){ input.fullname.focus({preventScroll:true}); return false; }
+        if(!b){ input.username.focus({preventScroll:true}); return false; }
+        if(!c){ input.email.focus({preventScroll:true}); return false; }
+        if(!d){ input.password.focus({preventScroll:true}); return false; }
+        if(!e){ input.phone.focus({preventScroll:true}); return false; }
+        if(!f){ input.address.focus({preventScroll:true}); return false; }
+        if(!g){ input.dob.focus({preventScroll:true}); return false; }
+        if(!h){ input.profile.focus({preventScroll:true}); return false; }
+        return true;
+      }
+
+      // Gentle live validation after first submit
+      function attachLiveValidation(){
+        const map = new Map([
+          [input.fullname, validateFullName],
+          [input.username, validateUsername],
+          [input.email,    validateEmail],
+          [input.password, validatePassword],
+          [input.phone,    validatePhone],
+          [input.address,  validateAddress],
+          [input.dob,      validateDob],
+          [input.profile,  validateProfile],
+        ]);
+
+        let timer;
+      
+        map.forEach((fn, el) => {
+          if (!el) return;
+          
+          el.addEventListener("input", () => {
+            if (!hasSubmitted) return;
+            clearTimeout(timer);
+            timer = setTimeout(() => { clearStatus(); fn(); }, 300);
+          });
+
+          ["blur", "change"].forEach(evt => {
+            el.addEventListener(evt, () => {
+              if (!hasSubmitted) return;
+              clearTimeout(timer); clearStatus(); fn();
+            });
+          });
+        });
+      }
+
+      /* =========================================================
+         7) Server message boundary
+      ========================================================= */
+      async function displayServerMessage(response, { onSuccess } = {}){
+        let body=null, msg="";
+        try{
+          const ct = response.headers.get("content-type") || "";
+          if(ct.includes("application/json")){
+            body = await response.clone().json();
+            msg = body?.message || body?.error || "";
+          }else{
+            msg = (await response.clone().text()).trim();
+          }
+        }catch{}
+
+        if(response.status === 201 || response.status === 200){
+          showOk(msg || "Account created successfully.");
+          onSuccess?.(body);
+          return;
+        }
+        if(response.status === 400){ showErr(msg || "Registration failed. Please check your inputs."); return; }
+        if(response.status === 401){ showErr(msg || "Unauthorized. Please log in and try again."); return; }
+        if(response.status === 409){ showErr(msg || "This username or email already exists."); return; }
+
+        showErr(msg || `Unexpected error: ${response.status}`);
+      }
+
+      /* =========================================================
+         8) Submit
+      ========================================================= */
+      form.addEventListener("submit", async (e)=>{
+        e.preventDefault();
+        if(submitting) return;
+        submitting = true;
+        hasSubmitted = true;
+        clearStatus();
+
+        if(!validateForm()){
+          submitting = false;
+          return;
+        }
+
+        submitBtn.disabled = true;
+
+        const payload = {
+          fullname      : collapse(input.fullname.value),
+          username      : collapse(input.username.value),
+          email         : lowerTrim(input.email.value),
+          password      : input.password.value,
+          phone_number  : digitsOnly(input.phone.value),
+          address       : collapse(input.address.value),
+          date_of_birth : input.dob.value,
+          user_profile  : collapse(input.profile.value),
+        };
+
+        if(DEBUG){
+          showDebug(payload);
+          submitBtn.disabled = false;
+          submitting = false;
+          hasSubmitted = false;
+          return;
+        }
+
+        try{
+          const res = await fetch(REGISTER_API, {
+            method:"POST",
+            mode:"cors",
+            credentials:"include",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify(payload),
+          });
+          await displayServerMessage(res, {
+            onSuccess: ()=>{ formCompletedRef.value = true; }
+          });
+        }catch(err){
+          console.error("Network error:", err);
+          showErr("Network error. Please ensure the server is running.");
+        }finally{
+          setTimeout(()=>{ submitBtn.disabled = false; submitting = false; }, 800);
+        }
+      });
+
+      /* =========================================================
+         9) Reset & Nav
+      ========================================================= */
+      form.addEventListener("reset", ()=>{
+        Object.values(err).forEach(el => el.style.display = "none");
+        Object.values(input).forEach(f => f.removeAttribute("aria-invalid"));
+        clearStatus();
+        hasSubmitted = false;
+        formCompletedRef.value = false;
+      });
+
+      function returnToDashboard(){ window.location.href = "admin_dashboard.html"; }
+
+      /* =========================================================
+        10) Boot
+      ========================================================= */
+      (async function init(){
+        attachLiveValidation();
+        attachPostSuccessReset(input, form, clearStatus, formCompletedRef);
+      })();
+    </script>
+  </body>
 </html>

@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Requests</title>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css" />
+    
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+
+    <style>
+      /* =========================
+        Design Tokens
+      ========================= */
+      :root{
+        --bg-light:#f7f9fc; --primary:#34495e; --secondary:#2c3e50;
+        --accent:#3498db; --accent-2:#2980b9; --text-dark:#2c3e50; --text-light:#fff;
+        --shadow:0 4px 10px rgba(0,0,0,.1); --border:#eef2f7;
+        --danger:#ef4444; --ring:rgba(14,165,233,.3);
+        --tray-max: 980px; --input-h: 40px; --radius: 12px;
+      }
+
+      /* =========================
+        Base / Reset
+      ========================= */
+      *{ box-sizing:border-box }
+      html,body{ height:100% }
+      body{
+        margin:0;
+        font-family:"Poppins",sans-serif;
+        background:var(--bg-light);
+        color:var(--text-dark);
+      }
+      button:disabled,.btn:disabled{ opacity:.55 !important; cursor:not-allowed !important; }
+      :focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring) }
+
+      /* =========================
+        Layout
+      ========================= */
+      .main{ min-height:100%; display:flex; flex-direction:column; gap:1.25rem; padding:2rem }
+
+      .topbar{ display:flex; justify-content:space-between; align-items:center; gap:1rem }
+      .topbar h1{ font-size:1.6rem; font-weight:600; margin:0; color:var(--accent-2); }
+
+      .controls-tray{
+        display:flex; align-items:center; gap:.6rem;
+        max-width:820px; width:min(100%, var(--tray-max));
+      }
+      .search-bar{ flex:1 1 auto; min-width:280px; }
+      .search-bar input{
+        width:100%; height:var(--input-h);
+        padding:.6rem 1rem; border:1px solid #cbd5e1; border-radius:10px;
+        outline:none; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.03);
+      }
+      .search-bar input:focus{ border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring); }
+
+      #btnBackToDash{
+        height:var(--input-h);
+        padding:0 .95rem; border-radius:10px; border:1px solid #cbd5e1;
+        background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.03);
+        display:inline-flex; align-items:center; gap:.45rem;
+        font-size:.85rem; font-weight:600; color:var(--secondary); white-space:nowrap;
+      }
+      #btnBackToDash:hover{ background:#f8fafc; }
+
+      /* =========================
+        Buttons
+      ========================= */
+      .btn{
+        height:var(--input-h);
+        padding:0 .9rem;
+        border-radius:10px;
+        border:none;
+        cursor:pointer;
+        font-size:.85rem;
+        font-weight:600;
+        display:inline-flex;
+        align-items:center;
+        gap:.45rem;
+      }
+      .btn.primary{ background:var(--accent); color:#fff }
+      .btn.primary:hover{ background:var(--accent-2) }
+      .btn.ghost{ background:#eef2f7; color:#34495e }
+      .btn.outline{
+        background:#fff; border:1px solid #cbd5e1; color:var(--secondary);
+        box-shadow:0 1px 2px rgba(0,0,0,.03);
+      }
+      .btn.outline:hover{ background:#f8fafc; }
+
+      /* =========================
+        Filters
+      ========================= */
+      .filters{
+        background:#fff; border:1px solid var(--border); border-radius:var(--radius);
+        padding:.9rem; box-shadow:0 2px 8px rgba(0,0,0,.04);
+        display:flex; flex-direction:column; gap:.8rem;
+      }
+
+      /* Row 1: Filters + Status chips */
+      .filters .row-top{
+        display:grid; align-items:center; column-gap:.6rem; row-gap:.5rem;
+        grid-template-columns: auto 1fr; /* title | chips fill */
+      }
+      .filters .section-title{
+        display:flex; align-items:center; gap:.5rem; padding:.35rem .6rem; border-radius:999px;
+        background:#f1f5f9; color:#475569; font-size:.82rem; font-weight:600;
+      }
+      .segmented{ display:flex; gap:.5rem; align-items:center; flex-wrap:wrap }
+      .filter-btn{
+        padding:.35rem .9rem; background:#fff; border:1px solid var(--accent);
+        border-radius:999px; color:var(--accent); height:34px; display:inline-flex; align-items:center;
+      }
+      .filter-btn.active,.filter-btn:hover{
+        background:var(--accent); color:#fff; box-shadow:0 0 0 3px var(--ring); border-color:var(--accent);
+      }
+      .filters .spacer{ display:block; width:12px; }
+
+      /* Search (Row 2) should fill its grid cell + show icon */
+      .search-bar.in-filters{ position:relative; width:100%; }
+      .search-bar.in-filters .fa-magnifying-glass{
+        position:absolute; left:12px; top:50%; transform:translateY(-50%);
+        pointer-events:none; color:#94a3b8; font-size:.95rem;
+      }
+      .search-bar.in-filters input{
+        width:100%; height:var(--input-h);
+        padding:.6rem 1rem .6rem 2.25rem; /* room for the icon */
+        border:1px solid #cbd5e1; border-radius:10px; background:#fff;
+        box-shadow:0 1px 2px rgba(0,0,0,.03);
+      }
+      .search-bar.in-filters input:focus{ border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring); }
+
+      /* Field group keeps label + control together */
+      .field{
+        display:grid;
+        grid-template-columns:max-content 1fr;
+        align-items:center;
+        column-gap:.6rem;
+        min-width:240px;
+      }
+      .filter-label{ font-size:.85rem; color:#64748b; white-space:nowrap }
+      .select,.input{
+        height:var(--input-h); padding:0 12px; border-radius:10px; font-size:.92rem;
+        border:1px solid #cbd5e1; background:#fff; color:var(--text-dark);
+        transition:border-color .2s, box-shadow .2s; width:100%;
+      }
+      .select:focus,.input:focus{ outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring) }
+      .input[type="date"]{ min-width:200px; }
+      .range-sep{ text-align:center; color:#94a3b8; user-select:none; }
+
+      /* Row 2 (outer grid): Search | spacer | Service | From | dash | To | Reset */
+      .filters .row-bottom{
+        display:grid; align-items:center; column-gap:1rem; row-gap:.6rem; margin-top:.5rem;
+        grid-template-columns:
+          minmax(360px,1.6fr)
+          12px
+          minmax(260px,1fr)
+          minmax(240px,1fr)
+          12px
+          minmax(240px,1fr)
+          auto;
+      }
+      .reset-inline{ justify-self:start; }
+
+      /* =========================
+        Card Grid
+      ========================= */
+      .cards{
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+        gap:1.5rem; align-items:stretch;
+      }
+
+      /* =========================
+        Card
+      ========================= */
+      .card{
+        background:#fff; border-radius:12px; box-shadow:var(--shadow);
+        transition:transform .3s, box-shadow .3s;
+        display:flex; flex-direction:column; height:100%;
+      }
+      .card:hover{ transform:translateY(-5px); box-shadow:0 6px 15px rgba(0,0,0,.15) }
+
+      .card-header{
+        display:flex; justify-content:space-between; align-items:center;
+        padding:1rem 1.25rem; border-bottom:1px solid var(--border);
+        column-gap:.75rem; background:#f3f8ff;
+        border-top-left-radius:12px; border-top-right-radius:12px;
+      }
+      .card-head-left{ display:flex; flex-direction:column; gap:.35rem; min-width:0; flex:1 1 auto; }
+      .card-meta{ display:flex; gap:.5rem; align-items:center; flex-wrap:wrap }
+
+      .card-title{
+        font-size:1.1rem; font-weight:700; color:var(--accent-2);
+        margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        padding-right:.75rem; max-width:34ch;
+      }
+
+      .status-badge{
+        flex:0 0 auto; font-size:.85rem; padding:.35rem .75rem; white-space: nowrap;
+        border-radius:999px; font-weight:600; border:1px solid #e6eef8; line-height: 1;
+      }
+      .status-ACTIVE{ background:#ecf5ff; color:#1f6fba; border-color:#d6e9ff }
+      .status-COMPLETED{ background:#edf9f0; color:#1f8a4d; border-color:#d9f2e0 }
+      .status-CANCELLED{ background:#fee2e2; color:#991b1b; border-color:#fca5a5 }
+
+      .id-pill{
+        font-size:.72rem; padding:.25rem .5rem; border-radius:999px;
+        background:#eef4ff; color:#476099; border:1px solid #dfe8ff;
+      }
+      .category-chip{
+        font-size:.72rem; padding:.25rem .5rem; border-radius:999px;
+        background:#f1f5f9; color:#475569; border:1px solid #e2e8f0;
+      }
+
+      .card-body{ padding:1rem 1.25rem 0; background:#fff; flex:1 1 auto }
+      .card-row{ display:flex; gap:.5rem; margin:.35rem 0; flex-wrap:wrap; align-items:flex-start }
+      .card-label{ font-weight:600; color:var(--secondary) }
+      .muted{ color:#666 }
+      .card-row [data-field]{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
+
+      [data-field="description"]{
+        display:-webkit-box; -webkit-box-orient:vertical;
+        overflow:hidden; word-break:break-word;
+        -webkit-line-clamp:3;
+      }
+
+      .card-footer{
+        display:flex; justify-content:space-between; align-items:center; gap:1rem;
+        padding:.9rem 1.25rem; border-top:1px solid var(--border); margin-top:auto; background:#fbfcff;
+      }
+      .metrics{ display:flex; align-items:center; gap:1rem; }
+      .metric{ display:flex; align-items:center; gap:.45rem; font-size:.92rem; color:#555; }
+      .metric i{ font-size:1rem; }
+      .metric .count{ min-width:1ch; text-align:right; }
+
+      /* action buttons */
+      .actions{ display:flex; gap:.5rem; }
+      .btn.edit{ background:var(--accent); color:#fff; }
+      .btn.edit:hover{ background:var(--accent-2); }
+      .btn-cancel-request{ background:var(--danger); color:#fff; }
+      .btn-cancel-request:hover{ opacity:.9; }
+      .btn-restore-request{ background:#22c55e; color:#fff; }
+      .btn-restore-request:hover{ opacity:.9; }
+
+      /* =========================
+        Modals
+      ========================= */
+      /* Backdrop */
+      .modal { 
+        display:none; position:fixed; inset:0; z-index:2000;
+        background:rgba(0,0,0,.35); /* match request page */
+        justify-content:center; align-items:center; padding:32px;
+      }
+
+      /* Shell */
+      .modal-content{
+        width:100%; max-width:760px; background:#fff; border-radius:16px;
+        box-shadow:0 8px 24px rgba(0,0,0,.25); overflow:hidden;
+        padding:0; /* header/body/footer handle spacing */
+      }
+
+      /* Header */
+      .modal-header{
+        display:flex; align-items:center; justify-content:space-between;
+        padding:1.25rem 1.75rem; border-bottom:1px solid #e2e8f0; background:#f7fbff;
+      }
+      .modal-title{ font-size:1.1rem; font-weight:700; margin:0; color:#2c3e50; }
+      .modal-close{
+        background:transparent; border:none; font-size:1.2rem; cursor:pointer;
+        line-height:1; padding:.25rem; color:#666;
+      }
+
+      /* Body */
+      .modal-body{
+        padding:1.25rem 1.75rem; display:grid; gap:22px; margin-top:2px;
+        max-height:70vh; overflow:auto;
+      }
+
+      /* Footer */
+      .modal-footer{
+        display:flex; justify-content:flex-end; gap:.75rem;
+        padding:1.25rem 1.75rem; border-top:1px solid #e2e8f0; background:#fbfcff;
+      }
+
+      /* Fields */
+      .modal-input,
+      .modal-textarea{
+        width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px;
+        padding:12px 14px; line-height:1.45; font-size:1rem; font-family:inherit;
+        transition:border-color .15s, box-shadow .15s;
+      }
+      .modal-textarea{ min-height:140px; resize:vertical; padding:12px 14px; }
+      .modal-input:focus, .modal-textarea:focus{
+        outline:none; border-color:var(--accent-2); box-shadow:0 0 0 3px var(--ring);
+      }
+
+      /* Buttons */
+      .btn-cancel{
+        background:#eef2f7; color:#34495e; border:1px solid #cbd5e1;
+        padding:0 0.9rem; height:40px; border-radius:10px; font-weight:600; cursor:pointer;
+      }
+      .btn-primary{
+        background:var(--accent-2); color:#fff; padding:0 0.9rem; height:40px;
+        border-radius:10px; font-weight:600; cursor:pointer; border:none;
+      }
+      .btn-primary:hover{ opacity:.9; }
+
+      /* Errors / hint */
+      .error{ display:none; margin-top:6px; color:var(--danger); font-size:.9rem; }
+      .hint { display:block; margin-top:2px; font-size:.85rem; color:var(--muted); }
+
+      /* =========================
+        Responsive
+      ========================= */
+      @media (max-width: 980px){
+        .filters .row-top{ grid-template-columns: auto 1fr; }
+        .filters .row-bottom{
+          grid-template-columns: 1fr; /* stack */
+        }
+        .search-bar.in-filters{ grid-column: 1 / -1; }
+        .range-sep{ display:none; }
+        .reset-inline{ justify-self:start; }
+        .field{ min-width: unset; }
+      }
+      @media (max-width: 900px){
+        /* reserved for future tweaks */
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="main">
+
+      <div class="topbar">
+        <h1>Manage Requests</h1>
+        <button type="button" class="btn outline" id="btnBackToDash">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          <span>Return to Dashboard</span>
+        </button>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filters" id="filtersBar">
+        <!-- Row 1: Filters chip + status + search -->
+        <div class="row-top">
+          <span class="section-title"><i class="fa-solid fa-filter"></i> Filters</span>
+          <div class="segmented" role="tablist" aria-label="Status">
+            <button class="filter-btn active" data-status="ALL" role="tab" aria-selected="true">All</button>
+            <button class="filter-btn" data-status="ACTIVE" role="tab">Active</button>
+            <button class="filter-btn" data-status="CANCELLED" role="tab">Cancelled</button>
+            <button class="filter-btn" data-status="COMPLETED" role="tab">Completed</button>
+          </div>
+        </div>
+
+        <!-- Row 2: Search + Service + Date range + Reset -->
+        <div class="row-bottom" aria-label="Additional filters">
+          <div class="search-bar in-filters">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="text" id="search" placeholder="Search Requests..." aria-label="Search requests" oninput="searchServiceRequest()"/>
+          </div>
+
+          <span class="spacer"></span>
+
+          <div class="field">
+            <label class="filter-label" for="svc">Service</label>
+            <select id="svc" class="select" onchange="searchServiceRequest()" >
+              <option value="">All services</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="filter-label" id="dateFromLbl" for="from">From</label>
+            <input type="date" id="from" class="input" onchange="searchServiceRequest()" />
+          </div>
+
+          <span class="range-sep" aria-hidden="true">–</span>
+
+          <div class="field">
+            <label class="filter-label" id="dateToLbl" for="to">To</label>
+            <input type="date" id="to" class="input" onchange="searchServiceRequest()" />
+          </div>
+
+          <button class="btn ghost reset-inline" id="resetFilters">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="cards" id="cards"></div>
+
+      <!-- Template used to render cards -->
+      <template id="card-template">
+        <article class="card" data-status="">
+          <header class="card-header">
+            <div class="card-head-left">
+              <h3 class="card-title"></h3>
+              <div class="card-meta">
+                <span class="id-pill" data-field="service_request_id"></span>
+              </div>
+            </div>
+            <span class="status-badge"></span>
+          </header>
+
+          <div class="card-body">
+            <p class="card-row"><span class="card-label">Category:</span> <span data-field="category" class="muted"></span></p>
+            <p class="card-row"><span class="card-label">Description:</span> <span data-field="description" class="muted"></span></p>
+            <p class="card-row"><span class="card-label">Date created:</span> <span data-field="date_created" class="muted"></span></p>
+            <p class="card-row"><span class="card-label">Date completed:</span> <span data-field="date_completed" class="muted"></span></p>
+          </div>
+
+          <footer class="card-footer">
+            <div class="metrics" aria-label="Request metrics">
+              <span class="metric" title="Views">
+                <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                <span class="count" data-field="view_count">0</span>
+              </span>
+              <span class="metric" title="Number of times shortlisted by volunteers">
+                <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
+                <span class="count" data-field="shortlisted_by_count">0</span>
+              </span>
+            </div>
+
+            <div class="actions">
+              <button class="btn edit">Edit</button>
+            </div>
+          </footer>
+        </article>
+      </template>
+
+      <!-- Edit Modal (request_management styling) -->
+      <div class="modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title" id="editTitle">Edit Request</h2>
+          </div>
+
+          <div class="modal-body">
+
+            <!-- Hidden ID -->
+            <input type="hidden" id="edit_id" />
+
+            <!-- Title -->
+            <div class="form-row">
+              <label for="editName">Title <span style="color:var(--muted)">*</span></label>
+              <input type="text" id="editName" class="modal-input" placeholder="Title of request"/>
+              <small class="hint">Required. 1–80 characters.</small>
+              <div id="editErr-title" class="error">Please enter a valid title (1–80 characters).</div>
+            </div>
+
+            <!-- Category -->
+            <div class="form-row">
+              <label for="editCategory">Category <span style="color:var(--muted)">*</span></label>
+              <select class="modal-input" id="editCategory" name="category" required></select>
+              <small class="hint">Choose the most accurate category.</small>
+              <div id="editErr-category" class="error">Please select a category.</div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-row">
+              <label for="editDesc">Description <span style="color:var(--muted)">*</span></label>
+              <textarea id="editDesc" class="modal-textarea" placeholder="Short description"></textarea>
+              <small class="hint">Required. Up to 255 characters.</small>
+              <div id="editErr-desc" class="error">Description must be 255 characters or fewer.</div>
+            </div>
+
+            <div id="statusMsg" class="success" role="status" aria-live="polite" style="display:none;"></div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel"  id="editModalCancelBtn">Cancel</button>
+            <button type="button" class="btn-primary" id="editModalSaveBtn">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancel Modal -->
+      <div class="modal" id="cancelModal" role="dialog" aria-modal="true" aria-labelledby="cancelTitle">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title" id="cancelTitle">Confirm Cancel</h2>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to cancel this service request?</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel" id="cancelModalCancelBtn">Cancel</button>
+            <button class="btn-primary btn-danger" id="cancelModalConfirmBtn">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Restore Modal -->
+      <div class="modal" id="restoreModal" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title" id="restoreTitle">Confirm Restore</h2>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to restore this service request?</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel"  id="restoreModalCancelBtn">Cancel</button>
+            <button class="btn-primary" id="restoreModalConfirmBtn">Restore</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <script>
+      /* =========================================================
+        1) Config & constants
+      ========================================================= */
+      const DEBUG               = false;
+      const API_URL             = "http://127.0.0.1:80/api";
+      const CATEGORIES_API      = `${API_URL}/categories`;
+      const SERVICE_REQUEST_API = `${API_URL}/service-requests`;
+      const SHORTLISTS_API      = `${API_URL}/shortlists`;
+
+      const STATUS    = { ACTIVE:"ACTIVE", COMPLETED:"COMPLETED", CANCELLED:"CANCELLED" };
+      const TITLE_MAX = 80;
+      const DESC_MAX  = 255;
+
+      /* =========================================================
+        2) DOM helpers & references
+      ========================================================= */
+      const $  = (id) => document.getElementById(id);
+      const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+      const DOM = {
+        // Lists & templates
+        cardsWrap: $("cards"),
+        tpl: $("card-template"),
+
+        // Filters + status segmented
+        filterBtns: $$(".segmented .filter-btn"),
+        filtersBar: $("filtersBar"),
+        search: $("search"),
+        svc: $("svc"),
+        dateFrom: $("from"),
+        dateTo: $("to"),
+        dateFromLbl: $("dateFromLbl"),
+        dateToLbl: $("dateToLbl"),
+        resetBtn: $("resetFilters"),
+
+        // Edit modal
+        editModal: $("editModal"),
+        editId: $("edit_id"),
+        editTitle: $("editName"),
+        editCategory: $("editCategory"),
+        editDescription: $("editDesc"),
+        editCancel: $("editModalCancelBtn"),
+        editSave: $("editModalSaveBtn"),
+
+        // Cancel modal
+        cancelModal: $("cancelModal"),
+        cancelCancel: $("cancelModalCancelBtn"),
+        cancelConfirm: $("cancelModalConfirmBtn"),
+
+        // Restore modal
+        restoreModal: $("restoreModal"),
+        restoreCancel: $("restoreModalCancelBtn"),
+        restoreConfirm: $("restoreModalConfirmBtn"),
+
+        // Nav
+        backToDashBtn: $("btnBackToDash"),
+      };
+
+      /* =========================================================
+        3) State
+      ========================================================= */
+      let categoriesActive = [];          // ACTIVE names (sorted) — used for Service filter
+      let categoriesAllMap = new Map();   // name -> status (ACTIVE/ARCHIVED)
+      let currentEditCard  = null;
+
+      // confirmation modals
+      let pendingCancelCard  = null;
+      let pendingRestoreCard = null;
+
+      // current filter tab
+      let currentStatus = "ALL";          // "ALL" | "ACTIVE" | "CANCELLED" | "COMPLETED"
+
+      /* =========================================================
+        4) Utilities
+      ========================================================= */
+      const log = (...a)=>{ if (DEBUG) console.log("[requests]", ...a); };
+      const collapse = (s)=>String(s ?? "").replace(/\s+/g," ").trim();
+
+      async function fetchJSON(url, options={}) {
+        const res = await fetch(url, { credentials:"include", mode:"cors", ...options });
+        const ct  = res.headers.get("content-type") || "";
+        let data=null; try{ data = ct.includes("application/json") ? await res.json() : await res.text(); }catch{}
+        return { ok: res.ok, status: res.status, data };
+      }
+
+      // field error helpers
+      function setError(el, errEl, msg){ if(!el||!errEl)return; errEl.textContent=msg; errEl.style.display="block"; el.setAttribute("aria-invalid","true"); }
+      function clearError(el, errEl){ if(!el||!errEl)return; errEl.style.display="none"; el.removeAttribute("aria-invalid"); }
+
+      function applyStatusBadge(badgeEl, status) {
+        badgeEl.className = "status-badge";
+        const s = String(status||"").toUpperCase();
+        badgeEl.classList.add(`status-${s}`);
+        badgeEl.textContent = s.charAt(0) + s.slice(1).toLowerCase();
+      }
+
+      function formatLocalDate(isoString) {
+        if (!isoString) return "—";
+        const date = new Date(isoString);
+        return date.toLocaleString("en-SG", { dateStyle: "medium", timeStyle: "short" });
+      }
+
+      /* =========================================================
+        4.1) Category helpers (DRY)
+      ========================================================= */
+      function isCategoryArchived(name) {
+        const st = categoriesAllMap.get(name);
+        return !!name && st && st !== "ACTIVE";
+      }
+
+      function labelCategory(name) {
+        if (!name) return "";
+        return isCategoryArchived(name) ? `${name} (Archived)` : name;
+      }
+
+      /**
+       * Populate a <select> with categories from categoriesAllMap.
+       * - Active first (A→Z), then Archived (A→Z) with "(Archived)" suffix
+       * - Keeps currentValue selected if present
+       * - Optionally includes an "All services" first option
+       */
+      function populateCategorySelect(selectEl, { includeAll = false, currentValue = "", archivedMode="all" } = {}) {
+        if (!selectEl) return;
+
+        // Partition active vs archived using categoriesAllMap
+        const active = [];
+        const archived = [];
+        for (const [name, st] of categoriesAllMap.entries()) {
+          if (!name) continue;
+          (st === "ACTIVE" ? active : archived).push(name);
+        }
+        active.sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+        archived.sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+
+        // Build options
+        selectEl.innerHTML = "";
+        if (includeAll) {
+          const all = document.createElement("option");
+          all.value = "";
+          all.textContent = "All services";
+          selectEl.appendChild(all);
+        }
+
+        const addOption = (name, isArchived) => {
+          const o = document.createElement("option");
+          o.value = name;
+          o.textContent = isArchived ? `${name} (Archived)` : name;
+          if (isArchived) o.dataset.archived = "true";
+          selectEl.appendChild(o);
+        };
+
+        // Always display ACTIVE categories first
+        active.forEach(n => addOption(n, false));
+        
+        // Archived categories
+        if (archivedMode === "all") {
+          archived.forEach(n => addOption(n, true));
+        } else if (archivedMode === "currentOnly" && currentValue && categoriesAllMap.get(currentValue) !== "ACTIVE") {
+          // Only include the current archived value (once)
+          addOption(currentValue, true);
+        }
+
+        // Keep selection if possible
+        const canSelect = [...selectEl.options].some(o => o.value === currentValue);
+        if (currentValue && canSelect) {
+          selectEl.value = currentValue;
+        } else if (selectEl.options.length) {
+          selectEl.value = selectEl.options[0].value;
+        }
+      }
+
+      /* Thin wrappers to preserve previous call sites */
+      function setSvcOptions() {
+        populateCategorySelect(DOM.svc, { includeAll: true, currentValue: DOM.svc?.value || "", archivedMode: "all", });
+      }
+      function setCategoryOptions(_activeNames, currentValue = "") {
+        populateCategorySelect(DOM.editCategory, { includeAll: false, currentValue, archivedMode: "currentOnly", });
+      }
+
+      /* =========================================================
+        5) API layer
+      ========================================================= */
+      async function loadCategories() {
+        try {
+          const { ok, status, data } = await fetchJSON(CATEGORIES_API);
+          if (!ok) throw new Error(`Categories load failed (${status})`);
+
+          const list = Array.isArray(data?.categories) ? data.categories : [];
+          categoriesAllMap = new Map(
+            list
+              .map(c => [ String(c?.name || ""), String(c?.status || "").toUpperCase() ])
+              .filter(([name]) => !!name)
+          );
+
+          categoriesActive = [...categoriesAllMap.entries()]
+            .filter(([, st]) => st === "ACTIVE")
+            .map(([name]) => name)
+            .sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+
+          
+          // Populate Service Filter (active first, archived after)
+          setSvcOptions();
+        } catch (e) {
+          console.error(e);
+          categoriesAllMap.clear();
+          categoriesActive = [];
+          setSvcOptions([]); // will render just the "All services" option
+        }
+      }
+
+      async function loadServiceRequests() {
+        try {
+          const uid = localStorage.getItem('user_id');
+          if (!uid) { console.warn("No user_id in localStorage; showing empty list."); return []; }
+
+          const { ok, status, data } = await fetchJSON(`${SERVICE_REQUEST_API}/${encodeURIComponent(uid)}`); // fetch requests by user ID
+          if (!ok) throw new Error(`Service requests load failed (${status})`);
+          const serviceRequests = Array.isArray(data) ? data : [];
+
+          // Views count (robust)
+          await Promise.all(
+            serviceRequests.map(async (request) => {
+              try {
+                const vr = await fetchJSON(`${SERVICE_REQUEST_API}/${request.service_request_id}/views`);
+                request.view_count = vr.ok
+                  ? (typeof vr.data === "number" ? vr.data : (vr.data?.count ?? 0))
+                  : 0;
+
+                await fetchJSON(`
+                  ${SHORTLISTS_API}/${request.service_request_id}/count`
+                )
+                  .then( res => request.shortlisted_by_count = res.data);
+              } catch { request.view_count = 0; }
+            })
+          );
+          return serviceRequests;
+        } catch (e) {
+          console.error(e);
+          return [];
+        }
+      }
+
+      async function cancelServiceRequest(service_request_id) {
+        const { ok, status } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${service_request_id}`,
+          { method: 'DELETE' }
+        );
+        if (!ok) throw new Error(`Service request cancellation failed (${status})`);
+      }
+
+      async function restoreServiceRequest(service_request_id) {
+        const { ok, status } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${service_request_id}/restore`,
+          { method: 'POST' }
+        );
+        if (!ok) throw new Error(`Service request restoration failed (${status})`);
+      }
+
+      async function editServiceRequest(service_request_id, payload) {
+        const { ok, status } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${service_request_id}`,
+          { 
+            method: 'PUT', 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          }
+        );
+        if (!ok) throw new Error(`Service request update failed (${status})`);
+      }
+
+      async function searchServiceRequest() {
+        let payload = "";
+
+        if (DOM.search.value !== "") 
+          payload += `keyword=${encodeURIComponent(DOM.search.value)}&`;
+        if (DOM.svc.value !== "") 
+          payload += `category=${encodeURIComponent(DOM.svc.value)}&`;
+        if (DOM.dateFrom.value !== "") 
+          payload += `date_from=${encodeURIComponent(DOM.dateFrom.value)}&`;
+        if (DOM.dateTo.value !== "") 
+          payload += `date_to=${encodeURIComponent(DOM.dateTo.value)}&`;
+
+        const { ok, status, data } = await fetchJSON(
+          `${SERVICE_REQUEST_API}/${localStorage.getItem('user_id')}/search?${payload}`
+        );
+        if(!ok) throw new Error(`Failed to load requests (${status})`);
+
+        const serviceRequests = Array.isArray(data) ? data
+          : Array.isArray(data?.items) ? data.items
+          : [];
+        
+        await Promise.all(
+          serviceRequests.map(async request => {
+            await fetchJSON(`
+              ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
+            )
+              .then( res => request.view_count = res.data);
+          })
+        )
+
+        renderCards(serviceRequests);
+      }
+
+      /* =========================================================
+        6) Edit modal (open/close, populate, validation)
+      ========================================================= */
+      function openEditModal(){
+        DOM.editModal.style.display="flex";
+        clearError(DOM.editTitle, $("editErr-title"));
+        clearError(DOM.editDescription, $("editErr-desc"));
+      }
+      function closeEditModal(){
+        DOM.editModal.style.display="none";
+        DOM.editId.value = "";
+        DOM.editTitle.value = "";
+        DOM.editDescription.value = "";
+      }
+
+      function populateEditModalFromCard(cardEl){
+        const id          = cardEl.dataset.id;
+        const title       = cardEl.querySelector(".card-title")?.textContent?.trim() || "";
+        const categoryEl  = cardEl.querySelector('[data-field="category"]');
+        const category    = categoryEl?.dataset?.categoryName ?? "";
+        const description = cardEl.querySelector('[data-field="description"]')?.textContent?.trim() || "";
+
+        DOM.editId.value          = id;
+        DOM.editTitle.value       = title;
+        DOM.editDescription.value = description;
+
+        setCategoryOptions(categoriesActive, category);
+      }
+
+      function validateTitleInline(){
+        const el = DOM.editTitle, err = $("editErr-title");
+        const v = collapse(el.value);
+        if (v.length===0 || v.length>TITLE_MAX){ setError(el,err,`Please enter a valid name (1–${TITLE_MAX} characters).`); return false; }
+        clearError(el,err); return true;
+      }
+      function validateCategoryInline(){
+        const el = DOM.editCategory, err = $("editErr-category");
+        const v = (el.value||"").trim();
+        if (!v){ setError(el,err,"Please select a category."); return false; }
+        clearError(el,err); return true;
+      }
+      function validateDescriptionInline(){
+        const el = DOM.editDescription, err = $("editErr-desc");
+        const v = el.value.trim();
+        if (v.length===0 || v.length>DESC_MAX){ setError(el,err,`Description must be 1–${DESC_MAX} characters.`); return false; }
+        clearError(el,err); return true;
+      }
+      function validateEditForm(){
+        const a=validateTitleInline(), b=validateCategoryInline(), c=validateDescriptionInline();
+        if(!a){ DOM.editTitle.focus({preventScroll:true}); return false; }
+        if(!b){ DOM.editCategory.focus({preventScroll:true}); return false; }
+        if(!c){ DOM.editDescription.focus({preventScroll:true}); return false; }
+        return true;
+      }
+
+      /* =========================================================
+        7) Cancel / Restore confirmation modals
+      ========================================================= */
+      function openCancelModal(card){
+        pendingCancelCard = card;
+        DOM.cancelModal.style.display = "flex";
+        document.body.style.overflow = "hidden";
+        DOM.cancelConfirm?.focus({ preventScroll:true });
+      }
+      function closeCancelModal(){
+        DOM.cancelModal.style.display = "none";
+        document.body.style.overflow = "";
+        pendingCancelCard = null;
+      }
+
+      function openRestoreModal(card){
+        pendingRestoreCard = card;
+        DOM.restoreModal.style.display = "flex";
+        document.body.style.overflow = "hidden";
+        DOM.restoreConfirm?.focus({ preventScroll:true });
+      }
+      function closeRestoreModal(){
+        DOM.restoreModal.style.display = "none";
+        document.body.style.overflow = "";
+        pendingRestoreCard = null;
+      }
+
+      /* =========================================================
+        8) Rendering (cards & footer actions)
+      ========================================================= */
+      function refreshFooterActionsForState(card, { editBtn, actionBtn }) {
+        const status = card.dataset.status;
+        editBtn.style.display = "";
+        actionBtn.style.display = "";
+
+        if (status === STATUS.ACTIVE) {
+          editBtn.disabled = false;
+          actionBtn.disabled = false;
+          actionBtn.className = "btn btn-cancel-request";
+          actionBtn.textContent = "Cancel Request";
+        } else if (status === STATUS.CANCELLED) {
+          editBtn.disabled = true;
+          actionBtn.disabled = false;
+          actionBtn.className = "btn btn-restore-request";
+          actionBtn.textContent = "Restore Request";
+        } else if (status === STATUS.COMPLETED) {
+          editBtn.disabled = true;
+          actionBtn.disabled = true;
+          actionBtn.className = "btn btn-cancel-request";
+          actionBtn.textContent = "Cancel Request";
+        }
+      }
+
+      function setCardState(card, nextStatus) {
+        card.dataset.status = nextStatus;
+        applyStatusBadge(card.querySelector(".status-badge"), nextStatus);
+        const editBtn   = card.querySelector(".btn.edit");
+        const actionBtn = card.querySelector(".btn-cancel-request, .btn-restore-request")
+                        || card.querySelector(".actions button");
+        refreshFooterActionsForState(card, { editBtn, actionBtn });
+
+        // Re-apply list filtering so the card may hide/show based on currentStatus
+        applyStatusFilter();
+      }
+
+      function renderCards(items=[]) {
+        DOM.cardsWrap.innerHTML = "";
+        items.forEach((item)=>{
+          const node = DOM.tpl.content.cloneNode(true);
+          const card = node.querySelector(".card");
+
+          card.dataset.id     = item.service_request_id;
+          card.dataset.status = item.status;
+
+          node.querySelector(".card-title").textContent = item.title || "(Untitled request)";
+          node.querySelector('[data-field="service_request_id"]').textContent = `#${item.service_request_id}`;
+          applyStatusBadge(node.querySelector(".status-badge"), item.status);
+
+          // Category: show label with "(Archived)" when needed, but keep raw name in data attribute
+          const catSpan = node.querySelector('[data-field="category"]');
+          catSpan.textContent = labelCategory(item.category ?? "");
+          catSpan.dataset.categoryName = item.category ?? ""; // <-- raw category name is preserved here
+
+          node.querySelector('[data-field="description"]').textContent     = item.description ?? "";
+          node.querySelector('[data-field="date_created"]').textContent    = formatLocalDate(item.date_created);
+          node.querySelector('[data-field="date_completed"]').textContent  = 
+            item.status === "COMPLETED"
+              ? formatLocalDate(item.date_completed)
+              : "—";
+              
+          node.querySelector('[data-field="view_count"]').textContent      = item.view_count ?? 0;
+          node.querySelector('[data-field="shortlisted_by_count"]').textContent = item.shortlisted_by_count ?? 0;
+
+          const editBtn    = node.querySelector(".btn.edit");
+          const actionSlot = node.querySelector(".actions");
+          const actionBtn  = document.createElement("button");
+          actionBtn.className   = "btn btn-cancel-request";
+          actionBtn.textContent = "Cancel Request";
+
+          // Edit modal
+          editBtn.addEventListener("click", ()=>{
+            if (editBtn.disabled) return;
+            currentEditCard = card;
+            populateEditModalFromCard(card);
+            openEditModal();
+          });
+
+          // Cancel/Restore with confirmation modals
+          actionBtn.addEventListener("click", ()=>{
+            if (actionBtn.disabled) return;
+            const current = card.dataset.status;
+            if (current === STATUS.ACTIVE) {
+              openCancelModal(card);
+            } else if (current === STATUS.CANCELLED) {
+              openRestoreModal(card);
+            }
+          });
+
+          actionSlot.appendChild(actionBtn);
+          refreshFooterActionsForState(card, { editBtn, actionBtn });
+          DOM.cardsWrap.appendChild(node);
+        });
+
+        applyStatusFilter();
+      }
+
+      /* =========================================================
+        9) Filters (status segmented control + labels)
+      ========================================================= */
+      function applyStatusFilter(){
+        const want = currentStatus === "ALL" ? null : STATUS[currentStatus];
+        $$("#cards .card").forEach((card)=>{
+          const st = String(card.dataset.status || "").toUpperCase();
+          card.style.display = (!want || st === want) ? "" : "none";
+        });
+      }
+
+      function wireStatusButtons(){
+        DOM.filterBtns.forEach((btn)=>{
+          btn.addEventListener("click", ()=>{
+            DOM.filterBtns.forEach(b => { 
+              b.classList.remove("active"); 
+              b.setAttribute("aria-selected","false"); 
+            });
+            btn.classList.add("active");
+            btn.setAttribute("aria-selected","true");
+
+            currentStatus = (btn.dataset.status || "ALL").toUpperCase();
+            applyStatusFilter();
+          });
+        });
+      }
+
+      function resetFilters(){
+        if (DOM.search) DOM.search.value = "";
+        if (DOM.svc) DOM.svc.value = "";
+        if (DOM.dateFrom) DOM.dateFrom.value = "";
+        if (DOM.dateTo) DOM.dateTo.value = "";
+
+        // Re-query the backend with empty params to repopulate
+        if (typeof searchServiceRequest === "function") {
+          searchServiceRequest();
+        }
+
+        applyStatusFilter();
+      }
+
+      /* =========================================================
+        10) Init & event bindings
+      ========================================================= */
+      (async function init(){
+        wireStatusButtons();     // hook status buttons
+        await loadCategories();  // load categories for the Service filter
+        const serviceRequests = await loadServiceRequests();
+        renderCards(serviceRequests);   // render initial list
+        applyStatusFilter();            // ensure UI state & labels are correct
+
+        (function setDateMaxToday() {
+          const today = new Date().toISOString().split("T")[0];
+          if (DOM.dateFrom) DOM.dateFrom.setAttribute("max", today);
+          if (DOM.dateTo)   DOM.dateTo.setAttribute("max", today);
+        })();
+
+        // Reset button
+        if (DOM.resetBtn) {
+          DOM.resetBtn.addEventListener("click", (e)=>{
+            e.preventDefault();
+            resetFilters();
+          });
+        }
+
+        // Edit modal close
+        DOM.editCancel.addEventListener("click", closeEditModal);
+
+        // Live validation
+        DOM.editTitle.addEventListener("input",  validateTitleInline);
+        DOM.editTitle.addEventListener("blur",   validateTitleInline);
+        DOM.editDescription.addEventListener("input", validateDescriptionInline);
+        DOM.editDescription.addEventListener("blur",  validateDescriptionInline);
+
+        // Edit Modal (Save changes)
+        DOM.editSave.addEventListener("click", async ()=>{
+          if (!currentEditCard) return;
+          if (!validateEditForm()) return;
+
+          const id          = DOM.editId.value;
+          const title       = collapse(DOM.editTitle.value);
+          const category    = DOM.editCategory.value;
+          const description = collapse(DOM.editDescription.value);
+
+          // Grab button to modify UI state
+          const saveBtn = DOM.editSave;
+          const cancelBtn = DOM.editCancel;
+          const originalBtnText = saveBtn.textContent;
+
+          // Check if any changes were made
+          const originalTitle       = currentEditCard.querySelector(".card-title").textContent.trim();
+          const originalCategory    = currentEditCard.querySelector('[data-field="category"]').dataset.categoryName;
+          const originalDescription = currentEditCard.querySelector('[data-field="description"]').textContent.trim();
+
+          const noChanges =
+            originalTitle       === title &&
+            originalCategory    === category &&
+            originalDescription === description;
+          
+          if (noChanges) {
+            // Nothing changed - skip API call entirely
+            closeEditModal();
+            return;
+          }
+
+          try {
+
+            // Lock UI and update button text
+            saveBtn.disabled = true;
+            cancelBtn.disabled = true;
+            DOM.editTitle.disabled = true;
+            DOM.editCategory.disabled = true;
+            DOM.editDescription.disabled = true;
+
+            saveBtn.textContent = "Saving...";
+
+            // Post the updated values to the API
+            await editServiceRequest(id, { title, category, description });
+            await new Promise(r => setTimeout(r, 800));
+
+            currentEditCard.querySelector(".card-title").textContent = title || "(Untitled request)";
+            // Update Category (both the visible label and the raw name)
+            const catSpan = currentEditCard.querySelector('[data-field="category"]');
+            catSpan.textContent = labelCategory(category);       // e.g., "Childcare Support (Archived)"
+            catSpan.dataset.categoryName = category;            // raw value (no "(Archived)")
+            currentEditCard.querySelector('[data-field="description"]').textContent = description;
+
+            const detail = { service_request_id:Number(id), title, category, description };
+            document.dispatchEvent(new CustomEvent("request:update",{ detail }));
+          } catch (e) {
+            console.error(e);
+            alert("Failed to save changes. Please try again.");
+
+            // Restore controls on failure
+            saveBtn.disabled = false;
+            cancelBtn.disabled = false;
+            DOM.editTitle.disabled = false;
+            DOM.editCategory.disabled = false;
+            DOM.editDescription.disabled = false;
+            saveBtn.textContent = originalBtnText;
+            return;
+          }
+
+          // Re-enable controls
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          DOM.editTitle.disabled = false;
+          DOM.editCategory.disabled = false;
+          DOM.editDescription.disabled = false;
+          saveBtn.textContent = originalBtnText;
+
+          closeEditModal();
+        });
+
+        // Cancel Modal
+        DOM.cancelCancel.addEventListener("click", closeCancelModal);
+        DOM.cancelConfirm.addEventListener("click", async ()=>{
+          if(!pendingCancelCard) return;
+
+          const card    = pendingCancelCard;
+          const confirm = DOM.cancelConfirm;
+          const cancel  = DOM.cancelCancel;
+          const originalText = confirm.textContent;
+
+          // Lock UI
+          confirm.disabled = true;
+          cancel.disabled  = true;
+          confirm.textContent = "Cancelling...";
+
+          try{
+            await cancelServiceRequest(card.dataset.id);
+            await new Promise(r => setTimeout(r, 800));
+            setCardState(card, STATUS.CANCELLED);
+          }catch(err){
+            console.error(err);
+            alert("Failed to cancel request. Please try again.");
+            confirm.disabled = false;
+            cancel.disabled  = false;
+            confirm.textContent = originalText;
+            return;
+          }
+
+          // Unlock UI
+          confirm.disabled = false;
+          cancel.disabled  = false;
+          confirm.textContent = originalText;
+          closeCancelModal();
+        });
+
+        // Restore Modal
+        DOM.restoreCancel.addEventListener("click", closeRestoreModal);
+        DOM.restoreConfirm.addEventListener("click", async ()=>{
+          if(!pendingRestoreCard) return;
+
+          const card    = pendingRestoreCard;
+          const confirm = DOM.restoreConfirm;
+          const cancel  = DOM.restoreCancel;
+          const originalText = confirm.textContent;
+
+          // Lock UI
+          confirm.disabled = true;
+          cancel.disabled  = true;
+          confirm.textContent = "Restoring...";
+
+          try{
+            await restoreServiceRequest(card.dataset.id);
+            await new Promise(r => setTimeout(r, 800));
+            setCardState(card, STATUS.ACTIVE);
+          }catch(err){
+            console.error(err);
+            alert("Failed to restore request. Please try again.");
+            confirm.disabled = false;
+            cancel.disabled  = false;
+            confirm.textContent = originalText;
+            return;
+          }
+
+          // Unlock UI
+          confirm.disabled = false;
+          cancel.disabled  = false;
+          confirm.textContent = originalText;
+
+          closeRestoreModal();
+        });
+
+        // Nav
+        DOM.backToDashBtn.addEventListener("click", () => { window.location.href = "/pin/pin_dashboard.html"; });
+      })();
+    </script>
+  </body>
+</html>
+
+
+
+
+

@@ -2,6 +2,10 @@ import express from 'express';
 import UsersEntity from '../entity/users.js';
 import UserProfilesEntity from '../entity/user-profiles.js';
 import CategoriesEntity from '../entity/categories.js';
+import ServiceRequestsEntity from '../entity/service-requests.js';
+import ShortlistsEntity from '../entity/shortlists.js';
+import MatchesEntity from '../entity/matches.js';
+import ReportsEntity from '../entity/reports.js';
 
 export default class Control {
     constructor() {
@@ -12,6 +16,10 @@ export default class Control {
         this.userProfileEntity = new UserProfilesEntity();
         this.usersEntity = new UsersEntity();
         this.categoriesEntity = new CategoriesEntity();
+        this.serviceRequestsEntity = new ServiceRequestsEntity();
+        this.shortlistsEntity = new ShortlistsEntity();
+        this.matchesEntity = new MatchesEntity();
+        this.reportsEntity = new ReportsEntity();
 
         this.createController();
     }

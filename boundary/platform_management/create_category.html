@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Create User Profile</title>
+  <title>Create Category</title>
   <style>
     /* =========================
       Design Tokens
@@ -67,7 +67,6 @@
       background: #f8fafc; border: 1px solid #cbd5e1; color: var(--text);
       font-size: .98rem; transition: border-color .2s, box-shadow .2s;
     }
-
     input:focus, textarea:focus {
       outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 3px var(--ring);
     }
@@ -90,7 +89,7 @@
     /* =========================
       Status Banner
     ========================== */
-    .success { display: none; padding: 12px 14px; margin-top: 14px; border-radius: 12px; background: var(--success-bg); border: 1px solid #bbf7d0; color: var(--success-text); font-size: .95rem; }
+    .status { display: none; padding: 12px 14px; margin-top: 14px; border-radius: 12px; font-size: .95rem; }
 
     /* =========================
       Footer
@@ -106,33 +105,25 @@
 <body>
   <div class="card" role="region">
     <div class="header">
-      <h1>Create User Profile</h1>
-      <p>Fill in the details below to add a new profile or role.</p>
+      <h1>Create Category</h1>
+      <p>Add a new category (e.g., Emergency Assistance, Transport).</p>
     </div>
 
-    <form id="profileForm" novalidate>
+    <form id="categoryForm" novalidate>
       <!-- Name (Required) -->
       <div class="row">
         <label for="name">Name <span style="color:var(--muted)">*</span></label>
-        <input id="name" name="name" type="text" placeholder="e.g., User Admin, CSR Representative" required aria-describedby="name-hint err-name" autofocus />
+        <input id="name" name="name" type="text" placeholder="e.g., Transport Help" required aria-describedby="name-hint err-name" autofocus />
         <small id="name-hint" class="hint">Required. 1–64 characters.</small>
-        <div id="err-name" class="error">Please enter a valid, unique profile name.</div>
+        <div id="err-name" class="error">Please enter a valid category name.</div>
       </div>
 
-      <!-- Description (optional) -->
+      <!-- Description (Required) -->
       <div class="row">
-        <label for="description">Description</label>
-        <textarea id="description" name="description" placeholder="Optional. Short description of this role." aria-describedby="desc-hint err-desc"></textarea>
-        <small id="desc-hint" class="hint">Optional. Up to 255 characters.</small>
-        <div id="err-desc" class="error">Description must be 255 characters or fewer.</div>
-      </div>
-
-      <!-- Other (optional) -->
-      <div class="row">
-        <label for="other">Other</label>
-        <input id="other" name="other" type="text" placeholder="Optional notes or extra details." aria-describedby="oth-hint err-oth" />
-        <small id="oth-hint" class="hint">Examples: “Emergency Contact”, “Case Manager”, “Senior Volunteer”.</small>
-        <div id="err-oth" class="error">Other info must be 128 characters or fewer.</div>
+        <label for="description">Description <span style="color:var(--muted)">*</span></label>
+        <textarea id="description" name="description" placeholder="Short description of this category." required aria-describedby="desc-hint err-desc"></textarea>
+        <small id="desc-hint" class="hint">Required. Up to 255 characters.</small>
+        <div id="err-desc" class="error">Please enter a valid description (max 255 characters).</div>
       </div>
 
       <div class="actions">
@@ -141,7 +132,7 @@
         <button class="btn-secondary" type="button" onclick="returnToDashboard()">Return to Dashboard</button>
       </div>
 
-      <div id="status" class="success" role="status" aria-live="polite"></div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
     </form>
 
     <div class="footer">
@@ -153,12 +144,11 @@
     /* =========================================================
       1) Config & constants
     ========================================================= */
-    const DEBUG        = false;
-    const API_URL      = "http://127.0.0.1:80/api";
-    const PROFILES_API = `${API_URL}/user-profiles`;
+    const DEBUG           = false;
+    const API_URL         = "http://127.0.0.1:80/api";
+    const CATEGORIES_API  = `${API_URL}/categories`;
 
-    // Limits
-    const NAME_MAX = 64, DESC_MAX = 255, OTHER_MAX = 128;
+    const NAME_MAX = 64, DESC_MAX = 255;
 
     // Used to track whether a form was successfully submitted once
     const formCompletedRef = { value:false };
@@ -167,19 +157,17 @@
       2) DOM
     ========================================================= */
     const $ = (id) => document.getElementById(id);
-    const form      = $("profileForm");
+    const form      = $("categoryForm");
     const submitBtn = $("submitBtn");
     const statusEl  = $("status");
 
     const input = {
       name:        $("name"),
       description: $("description"),
-      other:       $("other"),
     };
     const err = {
       name:        $("err-name"),
       description: $("err-desc"),
-      other:       $("err-oth"),
     };
 
     /* =========================================================
@@ -196,7 +184,7 @@
       statusEl.style.background = "#dcfce7";
       statusEl.style.border = "1px solid #bbf7d0";
       statusEl.style.color = "#166534";
-      statusEl.style.marginTop = "14px"; // a little breathing room
+      statusEl.style.marginTop = "14px";
       statusEl.setAttribute("aria-live", "polite");
       statusEl.textContent = msg;
       formCompletedRef.value = true;
@@ -216,7 +204,7 @@
       statusEl.style.border = "1px solid #fde047";
       statusEl.style.color = "#854d0e";
       statusEl.style.whiteSpace = "pre-wrap";
-      statusEl.textContent = `[DEBUG]\nPOST ${PROFILES_API}\n\n${JSON.stringify(payload, null, 2)}`;
+      statusEl.textContent = `[DEBUG]\nPOST ${CATEGORIES_API}\n\n${JSON.stringify(payload, null, 2)}`;
     }
     function clearStatus(){
       statusEl.style.display = "none";
@@ -224,13 +212,11 @@
       statusEl.setAttribute("aria-live", "polite");
     }
 
-    // Apply input constraints from constants (avoid drift)
+    // Apply runtime constraints from constants (avoid drift)
     (function applyRuntimeConstraints(){
       const set = (el, prop, val) => { if (el && val != null) el[prop] = val; };
-
       set(input.name,        "maxLength", NAME_MAX);
       set(input.description, "maxLength", DESC_MAX);
-      set(input.other,       "maxLength", OTHER_MAX);
     })();
 
     // After success, focus in any field resets the form once
@@ -259,27 +245,17 @@
 
     function validateDesc(){
       const v = collapse(input.description.value);
-      const ok = v.length <= DESC_MAX; // optional
+      const ok = nonEmpty(v) && v.length <= DESC_MAX;
       err.description.style.display = ok ? "none" : "block";
       input.description.toggleAttribute("aria-invalid", !ok);
-      return ok;
-    }
-
-    function validateOther(){
-      const v = collapse(input.other.value);
-      const ok = v.length <= OTHER_MAX; // optional
-      err.other.style.display = ok ? "none" : "block";
-      input.other.toggleAttribute("aria-invalid", !ok);
       return ok;
     }
 
     function validateForm(){
       const a = validateName();
       const b = validateDesc();
-      const c = validateOther();
       if(!a){ input.name.focus({preventScroll:true}); return false; }
       if(!b){ input.description.focus({preventScroll:true}); return false; }
-      if(!c){ input.other.focus({preventScroll:true}); return false; }
       return true;
     }
 
@@ -288,14 +264,12 @@
       const map = new Map([
         [input.name,        validateName],
         [input.description, validateDesc],
-        [input.other,       validateOther],
       ]);
 
       let timer;
-      
       map.forEach((fn, el) => {
         if (!el) return;
-        
+
         el.addEventListener("input", () => {
           if (!hasSubmitted) return;
           clearTimeout(timer);
@@ -326,13 +300,12 @@
 
       if(response.status === 201 || response.status === 200){
         const okFlag = body === true || body === "true" || !body; // accept boolean true or empty
-        if(okFlag){ showOk(serverMsg || "Profile created successfully!"); onSuccess?.(body); return; }
-        showErr(serverMsg || "Unexpected response from server (expected true). "); return;
+        if(okFlag){ showOk(serverMsg || "Category created successfully!"); onSuccess?.(body); return; }
+        showErr(serverMsg || "Unexpected response from server (expected true)."); return;
       }
-      if(response.status === 400){ showErr(serverMsg || "Failed to create profile. Please check the inputs."); return; }
+      if(response.status === 400){ showErr(serverMsg || "Failed to create category. Please check the inputs."); return; }
       if(response.status === 401){ showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
       if(response.status === 403){ showErr(serverMsg || "Forbidden. You do not have permission for this action."); return; }
-      if(response.status === 409){ showErr(serverMsg || "A profile with that name already exists."); return; }
 
       showErr(serverMsg || `Unexpected Error: ${response.status}`);
     }
@@ -351,13 +324,12 @@
       const payload = {
         name:        collapse(input.name.value),
         description: collapse(input.description.value),
-        other:       collapse(input.other.value),
       };
 
       if(DEBUG){ showDebug(payload); submitBtn.disabled=false; submitting=false; hasSubmitted=false; return; }
 
       try{
-        const res = await fetch(PROFILES_API, {
+        const res = await fetch(CATEGORIES_API, {
           method: "POST", mode: "cors", credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -377,7 +349,7 @@
       clearStatus(); hasSubmitted = false; formCompletedRef.value = false;
     });
 
-    function returnToDashboard(){ window.location.href = "admin_dashboard.html"; }
+    function returnToDashboard(){ window.location.href = "platform_dashboard.html"; }
 
     /* =========================================================
       7) Boot
