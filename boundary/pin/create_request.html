@@ -424,7 +424,25 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        await displayServerMessage(res, { onSuccess: ()=>{ formCompletedRef.value = true; } });
+        await displayServerMessage(res, { 
+          onSuccess: ()=> { 
+            formCompletedRef.value = true; 
+
+            // Manually clear fields
+            // form.reset()  // <- don't call this as it clears the success banner as well
+            input.category.value = "";
+            input.title.value = "";
+            input.description.value = "";
+            input.categoryDesc.value = "";
+
+            // Hide any inline errors and ARIA flags
+            Object.values(err).forEach(el => el.style.display = "none");
+            Object.values(input).forEach(el => el.removeAttribute("aria-invalid"));
+
+            // stop live-validation from running immediately
+            hasSubmitted = false;
+          } 
+        });
       }catch(err){
         console.error("Network error:", err);
         showErr("Network error. Please ensure the server is running.");
