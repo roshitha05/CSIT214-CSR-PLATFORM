@@ -1,13 +1,16 @@
 {
-  "admin": {
-    "username": "IsabellaGray",
-    "password": "IsabellaGray",
-    "email": "IsabellaGray@CSR.com"
-  },
+  "adminUA":  { "username": "IsabellaGray", "password": "IsabellaGray" },
+  "adminCSR": { "username": "LiamCarter",   "password": "LiamCarter" },
+
   "create": {
+    "profile": {
+      "name": "CSR Representative",
+      "description": "Handles verification and assignment of incoming service requests.",
+      "status": "ACTIVE"
+    },
     "user": {
       "fullname": "Sophia Lim",
-      "email": "sophia.lim@example.com",
+      "email": "sophia.lim@CSR.com",
       "username": "SophiaLim",
       "password": "Soph!a#2025",
       "phone_number": "93456789",
@@ -15,11 +18,6 @@
       "date_of_birth": "1999-05-14",
       "status": "ACTIVE",
       "user_profile": "CSR Representative"
-    },
-    "profile": {
-      "name": "CSR Representative",
-      "description": "Handles verification and assignment of incoming service requests.",
-      "status": "ACTIVE"
     }
   }
 }
