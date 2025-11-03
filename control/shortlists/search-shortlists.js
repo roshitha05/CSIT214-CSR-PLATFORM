@@ -22,7 +22,7 @@ export default class SearchShortlists extends Control {
                     delete shortlist.shortlisted_by.password;
                 })
             );
-            console.log(shortlists)
+            
             res.status(200).send({ shortlists });
         });
     };

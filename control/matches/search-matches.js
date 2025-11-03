@@ -8,7 +8,7 @@ export default class SearchMatches extends Control {
     createController() {
         this.router.get('/search', async (req, res, next) => {
             const matches = await this.matchesEntity
-                .getMatches(req.query);
+                .searchMatches(req.query);
 
             await Promise.all(
                 matches.map( async match => {

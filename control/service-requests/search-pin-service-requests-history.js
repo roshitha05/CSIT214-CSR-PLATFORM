@@ -23,6 +23,9 @@ export default class SearchPinServiceRequestsHistory extends Control {
                     }
                 )
             )
+            serviceRequests = serviceRequests.filter(serviceRequest => 
+                this.containsKeyword(serviceRequest, req.query.keyword)
+            );
 
             return res.status(200).send(serviceRequests);
         });

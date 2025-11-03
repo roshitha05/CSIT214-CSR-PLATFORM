@@ -9,6 +9,7 @@ export default class SearchServiceRequestsHistory extends Control {
         this.router.get('/history/search', async (req, res, next) => {
             let serviceRequests = await this.serviceRequestsEntity
                 .searchServiceRequests({ ...req.query, status: "COMPLETED" });
+
             await Promise.all(
                 serviceRequests.map( async serviceRequest => {
                     delete serviceRequest.view_count
@@ -19,6 +20,9 @@ export default class SearchServiceRequestsHistory extends Control {
                     }
                 )
             )
+            serviceRequests = serviceRequests.filter(serviceRequest => 
+                this.containsKeyword(serviceRequest, req.query.keyword)
+            );
 
             return res.status(200).send(serviceRequests);
         });

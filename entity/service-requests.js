@@ -31,7 +31,7 @@ export default class ServiceRequestsEntity extends Entity {
     async searchServiceRequests(filters) {
         const conditions = [];
         const keywordConditions = []
-
+        
         if (filters.keyword !== undefined) {
             const search = `%${filters.keyword}%`;
 
