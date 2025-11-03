@@ -19,11 +19,10 @@ export default class SearchShortlists extends Control {
 
                     shortlist.service_request = serviceRequest[0];
                     shortlist.shortlisted_by = user[0];
-
                     delete shortlist.shortlisted_by.password;
                 })
             );
-
+            console.log(shortlists)
             res.status(200).send({ shortlists });
         });
     };

@@ -875,6 +875,7 @@
 
             if (embedded && embedded.service_request_id) {
               request = { ...embedded };
+              request.user = { ...row.shortlisted_by }
             } else if (row?.service_request?.service_request_id) {
               // Fallback if the row only contains the id
               const id = row.service_request.service_request_id;

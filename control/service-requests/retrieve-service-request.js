@@ -19,7 +19,7 @@ export default class RetrieveServiceRequest extends Control {
                 user_id: serviceRequest.created_by
             }))[0]
             serviceRequest.user = user
-
+            
             return res.status(200).send(serviceRequest);
         });
     }

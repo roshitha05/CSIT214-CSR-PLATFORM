@@ -40,7 +40,7 @@ import SearchPinServiceRequests from './control/service-requests/search-pin-serv
 import SearchServiceRequests from './control/service-requests/search-service-requests.js';
 import UpdateServiceRequest from './control/service-requests/update-service-request.js';
 import RestoreServiceRequest from './control/service-requests/restore-service-request.js';
-import RetrieveServiceRequest from './control/service-requests/retrieve-search-request.js';
+import RetrieveServiceRequest from './control/service-requests/retrieve-service-request.js';
 import GetServiceRequestsHistory from './control/service-requests/get-service-request-history.js';
 import SearchServiceRequestsHistory from './control/service-requests/search-service-request-history.js';
 
