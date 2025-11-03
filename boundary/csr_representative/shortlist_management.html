@@ -800,7 +800,7 @@
 
           const rows = Array.isArray(data?.shortlists) ? data.shortlists : [];
           const requests = [];
-
+          
           await Promise.all(rows.map(async (row) => {
             const srId = row?.service_request?.service_request_id;
             if (!srId) return;

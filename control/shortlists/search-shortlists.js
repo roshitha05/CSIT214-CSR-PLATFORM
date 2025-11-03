@@ -9,7 +9,6 @@ export default class SearchShortlists extends Control {
         this.router.get('/search', async (req, res, next) => {
             const shortlists = await this.shortlistsEntity
                 .searchShortlists(req.query);
-            
             await Promise.all(
                 shortlists.map( async shortlist => {
                     const serviceRequest = await this.serviceRequestsEntity

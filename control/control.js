@@ -72,6 +72,7 @@ export default class Control {
     }
 
     containsKeyword(obj, keyword) {
+        if (!keyword) return obj;
         if (typeof obj === 'string') {
             return obj.toLowerCase().includes(keyword);
         }
