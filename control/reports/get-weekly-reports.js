@@ -7,11 +7,7 @@ export default class GetWeeklyReport extends Control {
 
     createController() {
         this.router.post('/weekly', async (req, res, next) => {
-            const from = new Date(req.body.date)
-            const to = new Date(req.body.date)
-            to.setDate(from.getDate() + 7)
-
-            const report = await this.reportsEntity.getReport(from, to)
+            const report = await this.reportsEntity.getReport(req.body.date, "weekly");
 
             res.status(200).send(report);
         });

@@ -75,7 +75,6 @@ export default class ShortlistsEntity extends Entity {
 
         await Promise.all(
             shortlists.map( async shortlist => {
-                console.log(shortlist)
                 const serviceRequest = await new ServiceRequestsEntity()
                     .getServiceRequests({ service_request_id: shortlist.service_request })
                 const user = await new UsersEntity()

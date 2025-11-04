@@ -9,9 +9,19 @@ export default class ReportsEntity extends Entity {
         super();
     }
 
-    async getReport(date, to) {
-        console.log(date)
-        console.log(to)
+    async getReport(date, type) {
+        let from = new Date(date)
+        let to = new Date(from)
+            
+        switch (type) {
+            case 'daily':
+                to.setDate(from.getDate() + 1);
+            case 'weekly':
+                to.setDate(from.getDate() + 7);
+            case 'monthly':
+                to.setMonth(from.getMonth() + 1);
+        }
+
         const requestsCreated = (await new ServiceRequestsEntity()
             .searchServiceRequests({
                 date_from: date,

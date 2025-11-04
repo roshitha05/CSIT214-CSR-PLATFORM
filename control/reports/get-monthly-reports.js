@@ -7,11 +7,7 @@ export default class GetMonthlyReport extends Control {
 
     createController() {
         this.router.post('/monthly', async (req, res, next) => {
-            const from = new Date(req.body.date)
-            const to = new Date(req.body.date)
-            to.setMonth(from.getMonth() + 1)
-
-            const report = await this.reportsEntity.getReport(from, to)
+            const report = await this.reportsEntity.getReport(req.body.date, "monthly");
 
             res.status(200).send(report);
         });

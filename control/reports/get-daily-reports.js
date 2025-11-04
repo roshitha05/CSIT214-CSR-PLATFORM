@@ -7,11 +7,7 @@ export default class GetDailyReport extends Control {
 
     createController() {
         this.router.post('/daily', async (req, res, next) => {
-            const from = new Date(req.body.date)
-            const to = new Date(from)
-            to.setDate(from.getDate() + 1)
-
-            const report = await this.reportsEntity.getReport(from, to)
+            const report = await this.reportsEntity.getReport(req.body.date, "daily");
 
             res.status(200).send(report);
         });
