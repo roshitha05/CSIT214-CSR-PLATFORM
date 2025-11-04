@@ -25,13 +25,19 @@ export default class UserProfilesEntity extends Entity {
             query = query.where(and(...conditions));
         }
 
-        return await query;
+        const userProfiles = await query;
+
+        userProfiles.map(userProfile => 
+            delete userProfile.password
+        );
+
+        return userProfiles;
     }
 
     async searchUserProfiles(filter) {
         const searchPattern = `%${filter}%`;
         
-        return await this.db
+        const userProfiles = await this.db
             .select()
             .from(userProfilesTable)
             .where(
@@ -42,6 +48,12 @@ export default class UserProfilesEntity extends Entity {
                     ilike(userProfilesTable.other, searchPattern),
                 )
             );
+
+        userProfiles.map(userProfile => 
+            delete userProfile.password
+        );
+
+        return userProfiles;
     }
 
     async insertUserProfile(userProfile) {

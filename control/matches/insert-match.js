@@ -18,7 +18,8 @@ export default class InsertMatch extends Control {
                     { 
                         status: "COMPLETED",
                         date_completed: new Date()
-                    });
+                    }
+                );
 
             if (success) return res.status(200).send(true)
             res.status(400).send(false)

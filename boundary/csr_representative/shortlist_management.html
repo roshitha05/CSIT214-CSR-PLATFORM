@@ -800,8 +800,9 @@
 
           const rows = Array.isArray(data?.shortlists) ? data.shortlists : [];
           const requests = [];
-          
+
           await Promise.all(rows.map(async (row) => {
+            console.log(row)
             const srId = row?.service_request?.service_request_id;
             if (!srId) return;
             const r = await fetchJSON(`${SERVICE_REQUEST_API}/search?service_request_id=${encodeURIComponent(srId)}`)
@@ -875,7 +876,6 @@
 
             if (embedded && embedded.service_request_id) {
               request = { ...embedded };
-              request.user = { ...row.shortlisted_by }
             } else if (row?.service_request?.service_request_id) {
               // Fallback if the row only contains the id
               const id = row.service_request.service_request_id;

@@ -13,19 +13,6 @@ export default class SearchPinServiceRequestsHistory extends Control {
                     created_by: req.params.user_id, 
                     status: "COMPLETED" 
                 });
-            await Promise.all(
-                serviceRequests.map( async serviceRequest => {
-                    delete serviceRequest.view_count
-                    serviceRequest.user = (await this.usersEntity
-                        .getUsers({ 
-                            user_id: serviceRequest.created_by 
-                        }))[0]
-                    }
-                )
-            )
-            serviceRequests = serviceRequests.filter(serviceRequest => 
-                this.containsKeyword(serviceRequest, req.query.keyword)
-            );
 
             return res.status(200).send(serviceRequests);
         });

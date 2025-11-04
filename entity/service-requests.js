@@ -1,6 +1,7 @@
 import { eq, and, ilike, gt, or, lt, asc, gte, lte } from 'drizzle-orm';
 import { serviceRequestsTable } from '../database/tables.js';
 import Entity from './entity.js';
+import UsersEntity from './users.js';
 
 
 export default class ServiceRequestsEntity extends Entity {
@@ -25,7 +26,25 @@ export default class ServiceRequestsEntity extends Entity {
                 .where(and(...conditions));
         }
 
-        return await query;
+        const serviceRequests = await query;
+
+        await Promise.all(
+            serviceRequests.map( async serviceRequest => {
+                serviceRequest.user = (await new UsersEntity()
+                    .getUsers({ 
+                        user_id: serviceRequest.created_by 
+                    }))[0]
+                }
+            )
+        )
+
+        return serviceRequests;
+    }
+
+    async getServiceRequestView(service_request_id) {
+        return await this.db.select({ view_count: serviceRequestsTable.view_count })
+            .from(serviceRequestsTable)
+            .where(eq(serviceRequestsTable.service_request_id, service_request_id))
     }
 
     async searchServiceRequests(filters) {
@@ -67,7 +86,7 @@ export default class ServiceRequestsEntity extends Entity {
         if (filters.status !== undefined)
             conditions.push(ilike(serviceRequestsTable.status, filters.status));
 
-        return await this.db
+        let serviceRequests = await this.db
             .select()
             .from(serviceRequestsTable)
             .where(
@@ -77,6 +96,22 @@ export default class ServiceRequestsEntity extends Entity {
                 )
             )
             .orderBy(serviceRequestsTable.service_request_id);
+
+        await Promise.all(
+            serviceRequests.map( async serviceRequest => {
+                serviceRequest.user = (await new UsersEntity()
+                    .getUsers({ 
+                        user_id: serviceRequest.created_by 
+                    }))[0]
+                }
+            )
+        )
+
+        serviceRequests = serviceRequests.filter(serviceRequest => 
+            this.containsKeyword(serviceRequest, filters.keyword)
+        );
+        
+        return serviceRequests;
     }
 
     async insertServiceRequest(serviceRequest) {

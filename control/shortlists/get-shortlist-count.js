@@ -8,9 +8,9 @@ export default class GetShortlistCount extends Control {
     createController() {
         this.router.get('/:service_request/count', async (req, res, next) => {
             const shortlists = await this.shortlistsEntity
-                .getShortlists({ service_request: req.params.service_request });
+                .getShortlistCount(req.params.service_request);
 
-            res.status(200).send(shortlists.length);
+            res.status(200).send(shortlists[0].count);
         });
     };
 }

@@ -1,6 +1,8 @@
 import { eq, and, gte, lte, ilike } from 'drizzle-orm';
 import { matchesTable } from '../database/tables.js';
 import Entity from './entity.js';
+import ServiceRequestsEntity from './service-requests.js';
+import UsersEntity from './users.js';
 
 
 export default class MatchesEntity extends Entity {
@@ -25,7 +27,23 @@ export default class MatchesEntity extends Entity {
                 .where(and(...conditions));
         }
 
-        return await query;
+        const matches = await query;
+
+        await Promise.all(
+            matches.map( async match => {
+                const serviceRequest = await new ServiceRequestsEntity()
+                    .getServiceRequests({ service_request_id: match.service_request })
+                const user = await new UsersEntity()
+                    .getUsers({ user_id: match.matched_by })
+
+                match.service_request = serviceRequest[0];
+                match.matched_by = user[0];
+
+                delete match.matched_by.password;                    
+            })
+        );
+
+        return matches;
     }
 
     async searchMatches(filters) {
@@ -42,13 +60,29 @@ export default class MatchesEntity extends Entity {
         if (filters.date_to !== undefined)
             conditions.push(lte(matchesTable.date_created, new Date(filters.date_to)));
 
-        return await this.db
+        const matches = await this.db
             .select()
             .from(matchesTable)
             .where(
                 and(...conditions)
             )
             .orderBy(matchesTable.service_request);
+
+        await Promise.all(
+            matches.map( async match => {
+                const serviceRequest = await new ServiceRequestsEntity()
+                    .getServiceRequests({ service_request_id: match.service_request })
+                const user = await new UsersEntity()
+                    .getUsers({ user_id: match.matched_by })
+
+                match.service_request = serviceRequest[0];
+                match.matched_by = user[0];
+
+                delete match.matched_by.password;                    
+            })
+        );
+
+        return matches;
     }
 
     async insertMatch(match) {

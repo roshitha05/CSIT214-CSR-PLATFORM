@@ -1,6 +1,8 @@
-import { eq, and, lte, gte } from 'drizzle-orm';
+import { eq, and, lte, gte, count } from 'drizzle-orm';
 import { shortlistsTable } from '../database/tables.js';
 import Entity from './entity.js';
+import ServiceRequestsEntity from './service-requests.js';
+import UsersEntity from './users.js';
 
 
 export default class ShortlistsEntity extends Entity {
@@ -24,7 +26,29 @@ export default class ShortlistsEntity extends Entity {
             query = query.where(and(...conditions));
         }
 
-        return await query;
+        const shortlists = await query;
+
+        await Promise.all(
+            shortlists.map( async shortlist => {
+                const serviceRequest = await new ServiceRequestsEntity()
+                    .getServiceRequests({ server_request_id: shortlist.service_request })
+                const user = await new UsersEntity()
+                    .getUsers({ user_id: shortlist.shortlisted_by })
+
+                shortlist.service_request = serviceRequest[0];
+                shortlist.shortlisted_by = user[0];
+
+                delete shortlist.shortlisted_by.password;                    
+            })
+        );
+
+        return shortlists;
+    }
+
+    async getShortlistCount(service_request) {
+        return await this.db.select({ count: count() })
+            .from(shortlistsTable)
+            .where(eq(shortlistsTable.service_request, service_request));
     }
 
     async searchShortlists(filters) {
@@ -41,13 +65,30 @@ export default class ShortlistsEntity extends Entity {
         if (filters.date_to !== undefined)
             conditions.push(lte(shortlistsTable.date_created, new Date(filters.date_to)));
 
-        return await this.db
+        const shortlists = await this.db
             .select()
             .from(shortlistsTable)
             .where(
                 and(...conditions)
             )
             .orderBy(shortlistsTable.shortlist_id);
+
+        await Promise.all(
+            shortlists.map( async shortlist => {
+                console.log(shortlist)
+                const serviceRequest = await new ServiceRequestsEntity()
+                    .getServiceRequests({ service_request_id: shortlist.service_request })
+                const user = await new UsersEntity()
+                    .getUsers({ user_id: shortlist.shortlisted_by })
+
+                shortlist.service_request = serviceRequest[0];
+                shortlist.shortlisted_by = user[0];
+
+                delete shortlist.shortlisted_by.password;                    
+            })
+        );
+
+        return shortlists;
     }
 
     async insertShortlist(shortlist) {

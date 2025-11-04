@@ -10,10 +10,6 @@ export default class SearchUserProfiles extends Control {
             const userProfiles = await this.userProfileEntity
                 .searchUserProfiles(req.query.keyword);
 
-            userProfiles.map(userProfile => 
-                delete userProfile.password
-            );
-
             res.status(200).send({ userProfiles });
         });
     }

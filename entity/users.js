@@ -1,6 +1,7 @@
 import { eq, and, or, ilike } from 'drizzle-orm';
 import { usersTable } from '../database/tables.js';
 import Entity from './entity.js';
+import HasherEntity from './hasher.js';
 
 
 export default class UsersEntity extends Entity {
@@ -45,6 +46,8 @@ export default class UsersEntity extends Entity {
     }
 
     async insertUser(user) {
+        user.password = await new HasherEntity().hash(user.password);
+
         if (await this.emailExists(user.email)) return false;
         if (await this.usernameExists(user.username)) return false;
 

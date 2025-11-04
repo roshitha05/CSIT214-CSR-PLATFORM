@@ -10,10 +10,6 @@ export default class GetUserProfiles extends Control {
             let userProfiles = await this.userProfileEntity
                 .getUserProfiles();
 
-            userProfiles.map(userProfile => 
-                delete userProfile.password
-            );
-
             res.status(200).send({ userProfiles });
         });
     }

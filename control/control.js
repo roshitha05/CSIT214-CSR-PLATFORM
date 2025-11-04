@@ -70,15 +70,4 @@ export default class Control {
     getRouter() {
         return this.router;
     }
-
-    containsKeyword(obj, keyword) {
-        if (!keyword) return obj;
-        if (typeof obj === 'string') {
-            return obj.toLowerCase().includes(keyword);
-        }
-        if (typeof obj === 'object' && obj !== null) {
-            return Object.values(obj).some(value => this.containsKeyword(value, keyword));
-        }
-        return false;
-    }
 }
