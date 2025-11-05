@@ -1179,6 +1179,42 @@
       /* =========================================================
         10) View Modal:
       ========================================================= */
+      async function loadViewModel(card) {
+        const id = card.dataset.id;
+          try {
+            const data = await fetchServiceRequestDetail(id);
+            
+            await fetchJSON(
+              `${SHORTLISTS_API}/search?` +
+              `service_request=${data.service_request_id}` +
+              `&shortlisted_by=${localStorage.getItem('user_id')}`
+            )
+              .then( res => {
+                if (res.data.shortlists.length > 0) data.shortlisted = true;
+                else data.shortlisted = false;
+              })
+
+            await fetchJSON(
+              `${MATCHES_API}/search?` +
+              `service_request=${data.service_request_id}`
+            )
+              .then( res => {
+                if (res.data.matches.length > 0) 
+                  data.matched = res.data.matches[0].matched_by.fullname
+                else data.matched = 'none';
+              })
+            
+            populateViewModal(data);
+            const viewCount = card.getElementsByClassName("count");
+            viewCount.textContent = parseInt(viewCount.textContent) + 1;
+            closeViewModal();
+            openViewModal();
+          } catch (err) {
+            console.error(err);
+            alert("Failed to load request details. Please try again.");
+          }
+      }
+      
       function populateViewModal(req){
         const u = req?.user || {};
 
@@ -1380,6 +1416,7 @@
             applyStatusBadge(cardBadge, "COMPLETED");
             flashCard(card);
             applyStatusFilter();
+            loadViewModel(card);
           }
         } catch (e) {
           console.error(e);
