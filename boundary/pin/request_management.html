@@ -863,15 +863,31 @@
         
         await Promise.all(
           serviceRequests.map(async request => {
-            await fetchJSON(`
-              ${SERVICE_REQUEST_API}/${request.service_request_id}/views`
-            )
+            await fetchJSON(`${SERVICE_REQUEST_API}/${request.service_request_id}/views`)
               .then( res => request.view_count = res.data);
 
-            await fetchJSON(`
-              ${SHORTLISTS_API}/${request.service_request_id}/count`
-            )
+            await fetchJSON(`${SHORTLISTS_API}/${request.service_request_id}/count`)
               .then( res => request.shortlisted_by_count = res.data);
+
+            // Check if this request was shortlisted by me
+            await fetchJSON(
+              `${SHORTLISTS_API}/search?` +
+              `service_request=${encodeURIComponent(request.service_request_id)}` +
+              `&shortlisted_by=${encodeURIComponent(localStorage.getItem('user_id') || "")}`
+            )
+              .then(res => {
+                request.is_mine =
+                  Array.isArray(res?.data?.shortlists) && res.data.shortlists.length > 0;
+              })
+              .catch(() => { request.is_mine = false; });
+
+            if (String(request.status).toUpperCase() === 'COMPLETED') {
+              await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`)
+                .then(res => {
+                  const first = res?.data?.matches?.[0];
+                  request.matched_by = first?.matched_by.fullname || null;
+                }).catch(() => {});
+            }
           })
         )
 
