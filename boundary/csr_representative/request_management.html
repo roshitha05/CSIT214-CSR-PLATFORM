@@ -1133,8 +1133,24 @@
               `service_request=${data.service_request_id}`
             )
               .then( res => {
-                if (res.data.matches.length > 0) 
-                  data.matched = res.data.matches[0].matched_by.fullname
+                res = res.data.matches;
+                if (res.length > 0) {
+                  res = res[0];
+                  data.matched = res.matched_by.fullname
+                  card.querySelector('[data-field="date_completed"]').textContent =
+                    res.status === "COMPLETED" && res.service_request.date_completed ? formatLocalDate(res.service_request.date_completed) : "—";
+
+                  // Add "Matched By: ..." only if completed
+                  if (res.status === "COMPLETED" && res.matched_by?.fullname) {
+                    const matchedRow = document.createElement("p");
+                    matchedRow.className = "card-row";
+                    matchedRow.innerHTML = `
+                      <span class="card-label">Matched by:</span>
+                      <span class="muted">${res.matched_by.fullname}</span>
+                    `;
+                    card.querySelector(".card-body").appendChild(matchedRow);
+                  }
+                }
                 else data.matched = 'none';
               })
             
