@@ -61,9 +61,9 @@ export default class ShortlistsEntity extends Entity {
         if (filters.shortlisted_by !== undefined)
             conditions.push(eq(shortlistsTable.shortlisted_by, filters.shortlisted_by));
         if (filters.date_from !== undefined)
-            conditions.push(gte(shortlistsTable.date_created, new Date(filters.date_from)));
+            conditions.push(gte(shortlistsTable.date_created, new Date(filters.date_from + 'T00:00:00+08:00')));
         if (filters.date_to !== undefined)
-            conditions.push(lte(shortlistsTable.date_created, new Date(filters.date_to)));
+            conditions.push(lte(shortlistsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00')));
 
         const shortlists = await this.db
             .select()
