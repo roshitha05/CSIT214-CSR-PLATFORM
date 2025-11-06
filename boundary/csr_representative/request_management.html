@@ -1155,7 +1155,7 @@
               })
             
             populateViewModal(data);
-            const viewCount = card.getElementsByClassName("count");
+            const viewCount = card.getElementsByClassName("count")[0];
             viewCount.textContent = parseInt(viewCount.textContent) + 1;
             closeViewModal();
             openViewModal();
