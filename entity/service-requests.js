@@ -69,6 +69,7 @@ export default class ServiceRequestsEntity extends Entity {
                     .push(eq(serviceRequestsTable.view_count, intKeyword));
             }
         }
+        console.log(filters.date_from)
         if (filters.service_request_id !== undefined)
             conditions.push(eq(serviceRequestsTable.service_request_id, filters.service_request_id));
         if (filters.created_by !== undefined)
@@ -76,13 +77,13 @@ export default class ServiceRequestsEntity extends Entity {
         if (filters.category !== undefined)
             conditions.push(ilike(serviceRequestsTable.category, filters.category));
         if (filters.date_from !== undefined)
-            conditions.push(gte(serviceRequestsTable.date_created, new Date(filters.date_from)));
+            conditions.push(gte(serviceRequestsTable.date_created, new Date(filters.date_from + 'T00:00:00+08:00')));
         if (filters.date_to !== undefined)
-            conditions.push(lte(serviceRequestsTable.date_created, new Date(filters.date_to)));
+            conditions.push(lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00')));
         if (filters.date_completed_from !== undefined)
-            conditions.push(gte(serviceRequestsTable.date_completed, new Date(filters.date_completed_from)));
+            conditions.push(gte(serviceRequestsTable.date_completed, new Date(filters.date_completed_from + 'T00:00:00+08:00')));
         if (filters.date_completed_to !== undefined)
-            conditions.push(lte(serviceRequestsTable.date_completed, new Date(filters.date_completed_to)));
+            conditions.push(lte(serviceRequestsTable.date_completed, new Date(filters.date_completed_to + 'T00:00:00+08:00')));
         if (filters.status !== undefined)
             conditions.push(ilike(serviceRequestsTable.status, filters.status));
 
