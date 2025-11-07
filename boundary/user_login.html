@@ -228,9 +228,9 @@
     async function displayServerMessage(res){
       let body = null;
       try { body = await res.clone().json(); } catch(_) {}
-
+      
       const msg = trim(body?.message || "");
-      if (res.status === 200){
+      if (res.ok === true){
         const user = body?.user || {};
         const role = trim(user.user_profile || "");
 
@@ -249,13 +249,7 @@
         setTimeout(() => { window.location.href = target; }, 800);
         return;
       }
-
-      // Friendly errors
-      if (res.status === 400) return setStatus("err", msg || "Missing username or password.", true);
-      if (res.status === 401 || res.status === 403) return setStatus("err", msg || "Invalid username or password.", true);
-      if (res.status === 500) return setStatus("err", msg || "Server Error. Please try again later.", true);
-
-      setStatus("err", msg || `Unexpected Error: ${res.status}`, true);
+      setStatus("err", msg || "Invalid username or password.", true);
     }
 
     // ========= Submit =========
