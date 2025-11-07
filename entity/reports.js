@@ -12,14 +12,17 @@ export default class ReportsEntity extends Entity {
     async getReport(date, type) {
         let from = new Date(date)
         let to = new Date(from)
-            
+
         switch (type) {
             case 'daily':
                 to.setDate(from.getDate() + 1);
+                break;
             case 'weekly':
                 to.setDate(from.getDate() + 7);
+                break;
             case 'monthly':
                 to.setMonth(from.getMonth() + 1);
+                break;
         }
 
         from = from.toISOString().split('T')[0];
