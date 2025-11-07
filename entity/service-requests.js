@@ -1,4 +1,4 @@
-import { eq, and, ilike, gt, or, lt, asc, gte, lte } from 'drizzle-orm';
+import { eq, and, ilike, gt, or, lt, asc, gte, lte, isNull } from 'drizzle-orm';
 import { serviceRequestsTable } from '../database/tables.js';
 import Entity from './entity.js';
 import UsersEntity from './users.js';
@@ -69,7 +69,6 @@ export default class ServiceRequestsEntity extends Entity {
                     .push(eq(serviceRequestsTable.view_count, intKeyword));
             }
         }
-        console.log(filters.date_from)
         if (filters.service_request_id !== undefined)
             conditions.push(eq(serviceRequestsTable.service_request_id, filters.service_request_id));
         if (filters.created_by !== undefined)
@@ -77,21 +76,19 @@ export default class ServiceRequestsEntity extends Entity {
         if (filters.category !== undefined)
             conditions.push(ilike(serviceRequestsTable.category, filters.category));
         if (filters.date_from !== undefined) {
-            conditions.push(
-                and(
-                    gte(serviceRequestsTable.date_created, new Date(filters.date_from + 'T00:00:00+08:00')),
-                    gte(serviceRequestsTable.date_completed, new Date(filters.date_from + 'T00:00:00+08:00'))
+            conditions.push(gte(serviceRequestsTable.date_created, new Date(filters.date_from + 'T00:00:00+08:00')))
+            conditions.push( 
+                or(
+                    gte(serviceRequestsTable.date_completed, new Date(filters.date_from + 'T00:00:00+08:00')),
+                    isNull(serviceRequestsTable.date_completed)
                 )
-            );
+            )
         }
         if (filters.date_to !== undefined) {
             conditions.push(
-                and(
-                    lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00')),
-                    lte(serviceRequestsTable.date_completed, new Date(filters.date_to + 'T00:00:00+08:00'))
-                )
-                
-            );
+                lte(serviceRequestsTable.date_completed, new Date(filters.date_to + 'T00:00:00+08:00')),
+                lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00'))
+            )
         }
         if (filters.date_completed_from !== undefined)
             conditions.push(gte(serviceRequestsTable.date_completed, new Date(filters.date_completed_from + 'T00:00:00+08:00')));
