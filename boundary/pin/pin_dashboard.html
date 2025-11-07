@@ -203,6 +203,7 @@
       ui.confirm.textContent = "Logging out…";
 
       try{
+        await new Promise(res => setTimeout(res, 2000)); 
         const res = await fetchWithTimeout(LOGOUT_API, {
           method:"POST", mode:"cors", credentials:"include",
           headers:{ "Content-Type":"application/json" },
