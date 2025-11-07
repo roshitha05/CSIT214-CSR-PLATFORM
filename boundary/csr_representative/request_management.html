@@ -906,17 +906,29 @@
               })
               .catch(() => { request.is_mine = false; });
 
-            if (String(request.status).toUpperCase() === 'COMPLETED') {
-              await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`)
-                .then(res => {
-                  const first = res?.data?.matches?.[0];
-                  request.matched_by = first?.matched_by || null;
-                }).catch(() => {});
-            }
+            // if (String(request.status).toUpperCase() === 'COMPLETED') {
+            //   await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`)
+            //     .then(res => {
+            //       const first = res?.data?.matches?.[0];
+            //       request.matched_by = first?.matched_by || null;
+            //     }).catch(() => {});
+            // }
           })
         )
+        if (currentStatus === 'COMPLETED') {
+        var filteredRequests = await fetchJSON(
+            `${MATCHES_API}/search?` +
+            `&matched_by=${encodeURIComponent(localStorage.getItem('user_id') || "")}`
+          )
+          .then(res => {
+            const serviceRequestIds = res.data.matches.map(match => match.service_request.service_request_id);
+            return serviceRequests.filter(request => 
+              serviceRequestIds.includes(request.service_request_id)  // <-- return this condition
+            );
+          });
+        }
 
-        renderCards(serviceRequests);
+        renderCards(filteredRequests?? serviceRequests);
         applyStatusFilter();
         applyFilter();
       }

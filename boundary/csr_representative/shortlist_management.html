@@ -947,9 +947,21 @@
             }
           }
         }
+        if (currentStatus === 'COMPLETED') {
+        var filteredRequests = await fetchJSON(
+            `${MATCHES_API}/search?` +
+            `&matched_by=${encodeURIComponent(localStorage.getItem('user_id') || "")}`
+          )
+          .then(res => {
+            const serviceRequestIds = res.data.matches.map(match => match.service_request.service_request_id);
+            return serviceRequests.filter(request => 
+              serviceRequestIds.includes(request.service_request_id)  // <-- return this condition
+            );
+          });
+        }
 
         // ---- 5) Render ----
-        renderCards(serviceRequests);
+        renderCards(filteredRequests ?? serviceRequests);
         applyStatusFilter();  
         applyFilter();        
       }

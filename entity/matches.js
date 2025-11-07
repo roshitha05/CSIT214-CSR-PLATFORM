@@ -53,8 +53,8 @@ export default class MatchesEntity extends Entity {
             conditions.push(ilike(matchesTable.status, `%${filters.status}%`));
         if (filters.service_request !== undefined)
             conditions.push(eq(matchesTable.service_request, filters.service_request));
-        if (filters.shortlisted_by !== undefined)
-            conditions.push(eq(matchesTable.shortlisted_by, filters.shortlisted_by));
+        if (filters.matched_by !== undefined)
+            conditions.push(eq(matchesTable.matched_by, filters.matched_by));
         if (filters.date_from !== undefined)
             conditions.push(gte(matchesTable.date_created, new Date(filters.date_from + 'T00:00:00+08:00')));
         if (filters.date_to !== undefined)
