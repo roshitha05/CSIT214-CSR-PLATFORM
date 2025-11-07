@@ -820,11 +820,11 @@
             req.shortlisted_by_count = await fetchJSON(`${SHORTLISTS_API}/${encodeURIComponent(req.service_request_id)}/count`)
               .then(r => r?.data).catch(()=>0) ?? 0;
 
-            if (String(req.status).toUpperCase() === "COMPLETED") {
-              req.matched_by = await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(req.service_request_id)}`)
-                .then(r => r?.data?.matches?.[0]?.matched_by || null)
-                .catch(()=>null);
-            }
+            // if (String(req.status).toUpperCase() === "COMPLETED") {
+            //   req.matched_by = await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(req.service_request_id)}`)
+            //     .then(r => r?.data?.matches?.[0]?.matched_by || null)
+            //     .catch(()=>null);
+            // }
           }));
           
           return requests;
@@ -1044,15 +1044,14 @@
             item.status === "COMPLETED" && item.date_completed ? formatLocalDate(item.date_completed) : "—";
 
           // Add "Matched By: ..." only if completed
-          if (item.status === "COMPLETED" && item.matched_by?.fullname) {
-            const matchedRow = document.createElement("p");
-            matchedRow.className = "card-row";
-            matchedRow.innerHTML = `
-              <span class="card-label">Matched by:</span>
-              <span class="muted">${item.matched_by.fullname}</span>
-            `;
-            node.querySelector(".card-body").appendChild(matchedRow);
-          }
+          // if (item.status === "COMPLETED" && item.matched_by?.fullname) {
+          //   const matchedRow = document.createElement("p");
+          //   matchedRow.className = "card-row";
+          //   matchedRow.innerHTML = `
+          //     <span class="card-label">Matched</span>
+          //   `;
+          //   node.querySelector(".card-body").appendChild(matchedRow);
+          // }
 
           // Metrics
           node.querySelector('[data-field="view_count"]').textContent           = item.view_count ?? 0;
@@ -1207,15 +1206,15 @@
                     res.status === "COMPLETED" && res.service_request.date_completed ? formatLocalDate(res.service_request.date_completed) : "—";
 
                   // Add "Matched By: ..." only if completed
-                  if (res.status === "COMPLETED" && res.matched_by?.fullname) {
-                    const matchedRow = document.createElement("p");
-                    matchedRow.className = "card-row";
-                    matchedRow.innerHTML = `
-                      <span class="card-label">Matched by:</span>
-                      <span class="muted">${res.matched_by.fullname}</span>
-                    `;
-                    card.querySelector(".card-body").appendChild(matchedRow);
-                  }
+                  // if (res.status === "COMPLETED" && res.matched_by?.fullname) {
+                  //   const matchedRow = document.createElement("p");
+                  //   matchedRow.className = "card-row";
+                  //   matchedRow.innerHTML = `
+                  //     <span class="card-label">Matched by:</span>
+                  //     <span class="muted">${res.matched_by.fullname}</span>
+                  //   `;
+                  //   card.querySelector(".card-body").appendChild(matchedRow);
+                  // }
                 }
                 else data.matched = 'none';
               })
@@ -1284,7 +1283,7 @@
           ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
           const label = ViewDOM.matchBtn.querySelector("span");
-          if (label) label.textContent = `Matched by: ${req.matched}`;
+          if (label) label.textContent = `Matched`;
         } 
         else {
           ViewDOM.matchBtn.disabled = false;
