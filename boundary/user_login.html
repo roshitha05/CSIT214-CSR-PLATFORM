@@ -163,7 +163,7 @@
       }
     }
 
-    function validateFields(){
+    function validateForm(){
       const loginVal = trim(input.loginId.value);
       const passVal = trim(input.password.value);
       let valid = true;
@@ -198,7 +198,7 @@
         timer = setTimeout(() => { clearStatus(); validateFn(); }, debounceMs);
       }));
     }
-    attachLiveValidation([input.loginId, input.password], validateFields);
+    attachLiveValidation([input.loginId, input.password], validateForm);
 
     // Password toggle
     togglePassword.addEventListener("click", function(){
@@ -261,7 +261,7 @@
       hasSubmitted = true;
       clearStatus();
 
-      if (!validateFields()){
+      if (!validateForm()){
         focusFirstInvalid();
         return;
       }
