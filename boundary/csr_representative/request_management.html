@@ -813,14 +813,14 @@
                 })
                 .catch(() => { request.is_mine = false; });
 
-              // Populate matched_by for COMPLETED cards
-              if (String(request.status).toUpperCase() === "COMPLETED") {
-                await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`)
-                  .then( res => {
-                    const first = res?.data?.matches?.[0];
-                    request.matched_by = first?.matched_by || null;
-                  }).catch(() => {});
-              }
+//              // Populate matched_by for COMPLETED cards
+//              if (String(request.status).toUpperCase() === "COMPLETED") {
+//                await fetchJSON(`${MATCHES_API}/search?service_request=${encodeURIComponent(request.service_request_id)}`)
+//                  .then( res => {
+//                    const first = res?.data?.matches?.[0];
+//                    request.matched_by = first?.matched_by || null;
+//                  }).catch(() => {});
+//              }
             })
           )
           
@@ -1010,15 +1010,14 @@
             item.status === "COMPLETED" && item.date_completed ? formatLocalDate(item.date_completed) : "—";
 
           // Add "Matched By: ..." only if completed
-          if (item.status === "COMPLETED" && item.matched_by?.fullname) {
-            const matchedRow = document.createElement("p");
-            matchedRow.className = "card-row";
-            matchedRow.innerHTML = `
-              <span class="card-label">Matched by:</span>
-              <span class="muted">${item.matched_by.fullname}</span>
-            `;
-            node.querySelector(".card-body").appendChild(matchedRow);
-          }
+          // if (item.status === "COMPLETED" && item.matched_by?.fullname) {
+          //   const matchedRow = document.createElement("p");
+          //   matchedRow.className = "card-row";
+          //   matchedRow.innerHTML = `
+          //     <span class="card-label">Match completed</span>
+          //   `;
+          //   node.querySelector(".card-body").appendChild(matchedRow);
+          // }
 
           // Metrics
           node.querySelector('[data-field="view_count"]').textContent           = item.view_count ?? 0;
@@ -1141,15 +1140,14 @@
                     res.status === "COMPLETED" && res.service_request.date_completed ? formatLocalDate(res.service_request.date_completed) : "—";
 
                   // Add "Matched By: ..." only if completed
-                  if (res.status === "COMPLETED" && res.matched_by?.fullname) {
-                    const matchedRow = document.createElement("p");
-                    matchedRow.className = "card-row";
-                    matchedRow.innerHTML = `
-                      <span class="card-label">Matched by:</span>
-                      <span class="muted">${res.matched_by.fullname}</span>
-                    `;
-                    card.querySelector(".card-body").appendChild(matchedRow);
-                  }
+                  // if (res.status === "COMPLETED" && res.matched_by?.fullname) {
+                  //   const matchedRow = document.createElement("p");
+                  //   matchedRow.className = "card-row";
+                  //   matchedRow.innerHTML = `
+                  //     <span class="card-label">Matched</span>
+                  //   `;
+                  //   card.querySelector(".card-body").appendChild(matchedRow);
+                  // }
                 }
                 else data.matched = 'none';
               })
@@ -1225,7 +1223,7 @@
           ViewDOM.matchBtn.disabled = true;
           ViewDOM.matchBtn.classList.add('matched');
           const label = ViewDOM.matchBtn.querySelector("span");
-          if (label) label.textContent = `Matched by: ${req.matched}`;
+          if (label) label.textContent = `Matched`;
         } 
         else {
           ViewDOM.matchBtn.disabled = false;
