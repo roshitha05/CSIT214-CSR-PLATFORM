@@ -572,16 +572,16 @@
           }
         }catch{}
 
-        if(response.status === 201 || response.status === 200){
+        if(response.ok === true){
           showOk(msg || "Account created successfully.");
           onSuccess?.(body);
           return;
         }
-        if(response.status === 400){ showErr(msg || "Registration failed. Please check your inputs."); return; }
-        if(response.status === 401){ showErr(msg || "Unauthorized. Please log in and try again."); return; }
-        if(response.status === 409){ showErr(msg || "This username or email already exists."); return; }
-
-        showErr(msg || `Unexpected error: ${response.status}`);
+        else {
+          showErr(msg || "Registration failed. Please check your inputs.");
+          return;
+        }
+        
       }
 
       /* =========================================================

@@ -298,16 +298,15 @@
         }
       }catch{}
 
-      if(response.status === 201 || response.status === 200){
-        const okFlag = body === true || body === "true" || !body; // accept boolean true or empty
-        if(okFlag){ showOk(serverMsg || "Category created successfully!"); onSuccess?.(body); return; }
-        showErr(serverMsg || "Unexpected response from server (expected true)."); return;
+      if(response.ok === true){
+        showOk(serverMsg || "Category created successfully!");
+        onSuccess?.(body);
+        return;
       }
-      if(response.status === 400){ showErr(serverMsg || "Failed to create category. Please check the inputs."); return; }
-      if(response.status === 401){ showErr(serverMsg || "Unauthorized. Please log in and try again."); return; }
-      if(response.status === 403){ showErr(serverMsg || "Forbidden. You do not have permission for this action."); return; }
-
-      showErr(serverMsg || `Unexpected Error: ${response.status}`);
+      else {
+        showErr(serverMsg || "Failed to create category. Please check your inputs.");
+        return;
+      }     
     }
 
     /* =========================================================
