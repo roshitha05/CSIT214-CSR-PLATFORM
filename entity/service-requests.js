@@ -85,10 +85,20 @@ export default class ServiceRequestsEntity extends Entity {
             )
         }
         if (filters.date_to !== undefined) {
-            conditions.push(
-                lte(serviceRequestsTable.date_completed, new Date(filters.date_to + 'T23:59:59+08:00')),
-                lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00'))
-            )
+            if (filters.date_from === undefined) {
+                conditions.push(
+                    lte(serviceRequestsTable.date_completed, new Date(filters.date_to + 'T23:59:59+08:00')),
+                    lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00'))
+                )
+            } else {
+                conditions.push(
+                    or (
+                        lte(serviceRequestsTable.date_completed, new Date(filters.date_to + 'T23:59:59+08:00')),
+                        isNull(serviceRequestsTable.date_completed)
+                    ),
+                    lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00'))
+                )
+            }
         }
         if (filters.date_completed_from !== undefined)
             conditions.push(gte(serviceRequestsTable.date_completed, new Date(filters.date_completed_from + 'T00:00:00+08:00')));
