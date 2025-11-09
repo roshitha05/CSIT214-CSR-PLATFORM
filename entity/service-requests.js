@@ -79,7 +79,7 @@ export default class ServiceRequestsEntity extends Entity {
             conditions.push(gte(serviceRequestsTable.date_created, new Date(filters.date_from + 'T00:00:00+08:00')))
             conditions.push( 
                 or(
-                    gte(serviceRequestsTable.date_completed, new Date(filters.date_from + 'T23:59:59+08:00')),
+                    gte(serviceRequestsTable.date_completed, new Date(filters.date_from + 'T00:00:00+08:00')),
                     isNull(serviceRequestsTable.date_completed)
                 )
             )
@@ -88,7 +88,7 @@ export default class ServiceRequestsEntity extends Entity {
             if (filters.date_from === undefined) {
                 conditions.push(
                     lte(serviceRequestsTable.date_completed, new Date(filters.date_to + 'T23:59:59+08:00')),
-                    lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00'))
+                    lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T23:59:59+08:00'))
                 )
             } else {
                 conditions.push(
@@ -96,14 +96,14 @@ export default class ServiceRequestsEntity extends Entity {
                         lte(serviceRequestsTable.date_completed, new Date(filters.date_to + 'T23:59:59+08:00')),
                         isNull(serviceRequestsTable.date_completed)
                     ),
-                    lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T00:00:00+08:00'))
+                    lte(serviceRequestsTable.date_created, new Date(filters.date_to + 'T23:59:59+08:00'))
                 )
             }
         }
         if (filters.date_completed_from !== undefined)
             conditions.push(gte(serviceRequestsTable.date_completed, new Date(filters.date_completed_from + 'T00:00:00+08:00')));
         if (filters.date_completed_to !== undefined)
-            conditions.push(lte(serviceRequestsTable.date_completed, new Date(filters.date_completed_to + 'T24:00:00+08:00')));
+            conditions.push(lte(serviceRequestsTable.date_completed, new Date(filters.date_completed_to + 'T23:59:59+08:00')));
         if (filters.status !== undefined)
             conditions.push(ilike(serviceRequestsTable.status, filters.status));
 
