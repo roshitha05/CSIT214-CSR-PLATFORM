@@ -857,8 +857,8 @@
         // Otherwise we’ll filter client-side (handled below).
         const qs = new URLSearchParams({ shortlisted_by: me });
         if (DOM.svc.value)      qs.set("category", DOM.svc.value);
-        if (DOM.dateFrom.value) qs.set("date_from", DOM.dateFrom.value);
-        if (DOM.dateTo.value)   qs.set("date_to", DOM.dateTo.value);
+       // if (DOM.dateFrom.value) qs.set("date_from", DOM.dateFrom.value);
+       // if (DOM.dateTo.value)   qs.set("date_to", DOM.dateTo.value);
 
         const { ok, status, data } = await fetchJSON(`${SHORTLISTS_API}/search?${qs.toString()}`);
         if (!ok) throw new Error(`Shortlists search failed (${status})`);
