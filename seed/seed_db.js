@@ -190,8 +190,6 @@ async function main(tx) {
     console.log('Seeding matches...');
 
     for (const { request, date_created } of requests) {
-        if (Math.random() < 0.4) continue;
-
         let date;
         do {
             date = randomDate();
